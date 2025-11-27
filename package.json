@@ -1,0 +1,72 @@
+{
+  "name": "polymesh-confidential-asset-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:gh": "tsc -b && vite build --mode github",
+    "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit --pretty false",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@apollo/client": "^4.0.9",
+    "@mantine/code-highlight": "^8.3.7",
+    "@mantine/core": "^8.3.7",
+    "@mantine/dates": "^8.3.7",
+    "@mantine/form": "^8.3.7",
+    "@mantine/hooks": "^8.3.7",
+    "@mantine/modals": "^8.3.7",
+    "@mantine/notifications": "^8.3.7",
+    "@polkadot/util": "12.6.2",
+    "@polkadot/util-crypto": "12.6.2",
+    "@polymesh/polymesh-dart-wasm": "file:./local_packages/polymesh-dart-wasm",
+    "@polymeshassociation/browser-extension-signing-manager": "^2.3.0",
+    "@polymeshassociation/polymesh-sdk": "^29.0.1",
+    "@tabler/icons-react": "^3.35.0",
+    "dayjs": "^1.11.19",
+    "graphql": "^16.12.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@polkadot/api": "11.2.1",
+    "@polkadot/types": "11.2.1",
+    "@polkadot/types-codec": "11.2.1",
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.45.0",
+    "vite": "^7.1.7",
+    "vite-plugin-node-polyfills": "^0.24.0",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.5.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "resolutions": {
+    "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
+  },
+  "overrides": {
+    "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
+  },
+  "pnpm": {
+    "overrides": {
+      "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
+    }
+  },
+  "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b"
+}

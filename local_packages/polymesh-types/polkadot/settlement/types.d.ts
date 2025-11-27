@@ -1,0 +1,2 @@
+export type PHANTOM_SETTLEMENT = 'settlement';
+//# sourceMappingURL=types.d.ts.map

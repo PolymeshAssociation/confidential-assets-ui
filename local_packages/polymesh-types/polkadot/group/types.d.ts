@@ -1,0 +1,2 @@
+export type PHANTOM_GROUP = 'group';
+//# sourceMappingURL=types.d.ts.map

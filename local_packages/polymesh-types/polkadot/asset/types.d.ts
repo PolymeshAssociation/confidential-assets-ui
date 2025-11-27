@@ -1,0 +1,2 @@
+export type PHANTOM_ASSET = 'asset';
+//# sourceMappingURL=types.d.ts.map

@@ -1,0 +1,12 @@
+/* Global component style overrides for Mantine theme */
+
+/* Tabs Component */
+.tab {
+  font-weight: 400;
+}
+
+.tab[data-active] {
+  font-weight: 600;
+  /* Use CSS variables that automatically respect light/dark mode and primaryShade */
+  color: var(--tabs-color);
+}
