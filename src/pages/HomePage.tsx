@@ -19,12 +19,11 @@ import { useState } from 'react';
 
 export function HomePage() {
   const {
-    isConnected,
-    isConnecting,
-    error,
+    isWalletConnected,
+    isWalletConnecting,
     accounts,
     selectedAccount,
-    connect,
+    connectWallet,
   } = usePolymesh();
   const [copiedAddress, setCopiedAddress] = useState(false);
 
@@ -66,7 +65,7 @@ export function HomePage() {
       </Stack>
 
       <Card padding="xl" shadow="sm">
-        {!isConnected ? (
+        {!isWalletConnected ? (
           <Stack gap="md">
             <Title order={3}>Connect Your Wallet</Title>
             <Text c="dimmed">
@@ -74,22 +73,20 @@ export function HomePage() {
               started with confidential assets.
             </Text>
 
-            {error && (
-              <Alert color="red" title="Connection Error">
-                {error}
-              </Alert>
-            )}
-
             <Button
               size="lg"
               leftSection={
-                isConnecting ? <Loader size={20} /> : <IconWallet size={20} />
+                isWalletConnecting ? (
+                  <Loader size={20} />
+                ) : (
+                  <IconWallet size={20} />
+                )
               }
-              onClick={connect}
-              disabled={isConnecting}
+              onClick={connectWallet}
+              disabled={isWalletConnecting}
               fullWidth
             >
-              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              {isWalletConnecting ? 'Connecting...' : 'Connect Wallet'}
             </Button>
           </Stack>
         ) : (
@@ -150,7 +147,7 @@ export function HomePage() {
           browser.
         </Text>
         <Text size="xs" c="dimmed">
-          Powered by Polymesh SDK • WASM Cryptography • Mantine
+          Powered by Polymesh
         </Text>
       </Stack>
     </Container>

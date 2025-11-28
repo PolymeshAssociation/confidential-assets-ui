@@ -5,10 +5,12 @@
  */
 
 import { PublicKeyExporter } from '@/components/key/PublicKeyExporter';
-import { MultiLegSettlementModal } from '@/components/settlement/MultiLegSettlementModal';
-import { ReceiveSettlementModal } from '@/components/settlement/ReceiveSettlementModal';
-import { SendSettlementModal } from '@/components/settlement/SendSettlementModal';
-import { SettlementDetailsModal } from '@/components/settlement/SettlementDetailsModal';
+import {
+  MultiLegSettlementModal,
+  ReceiveSettlementModal,
+  SendSettlementModal,
+  SettlementDetailsModal,
+} from '@/components/settlement';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { usePolymesh } from '@/hooks/usePolymesh';

@@ -4,7 +4,7 @@
  * Modal for creating confidential asset transfer instructions as the receiver
  */
 
-import { TruncatedKey } from '@/components/TruncatedKey';
+import { TruncatedKey } from '@/components';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { usePolymesh } from '@/hooks/usePolymesh';

@@ -1,3 +1,4 @@
+import { useNotification } from '@/hooks/useNotification';
 import { apolloClient } from '@/services/apollo';
 import { ApolloProvider } from '@apollo/client/react';
 import type { ApiPromise } from '@polkadot/api';
@@ -9,33 +10,83 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PolymeshContext } from './PolymeshContext';
 import type { Account } from './types';
-import { NETWORK, NODE_URL, PRIORITY_EXTENSIONS, STORAGE_KEYS } from './types';
+import { NODE_URL, PRIORITY_EXTENSIONS, STORAGE_KEYS } from './types';
 
 export function PolymeshProvider({ children }: { children: ReactNode }) {
+  const { showError } = useNotification();
   const [sdk, setSdk] = useState<PolymeshType | null>(null);
   const [polkadotApi, setPolkadotApi] = useState<ApiPromise | null>(null);
   const [signingManager, setSigningManager] =
     useState<SigningManagerType | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const [isWalletConnecting, setIsWalletConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
+  const sdkRef = useRef<PolymeshType | null>(null);
+
+  // Connect to Polymesh SDK on mount
+  useEffect(() => {
+    setIsConnecting(true);
+    // Set wallet connecting immediately if we have a saved connection to prevent flicker
+    const wasConnected = localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED);
+    if (wasConnected === 'true') {
+      setIsWalletConnecting(true);
+    }
+
+    (async () => {
+      try {
+        if (!sdkRef.current) {
+          const sdkInstance = await Polymesh.connect({
+            nodeUrl: NODE_URL,
+            signingManager: undefined,
+            polkadot: {
+              noInitWarn: true,
+            },
+          });
+          if (!sdkRef.current) {
+            setSdk(sdkInstance);
+            setPolkadotApi(sdkInstance._polkadotApi);
+            sdkRef.current = sdkInstance;
+            console.log(`Connected to ${NODE_URL}`);
+          }
+          setIsConnected(true);
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to connect to Polymesh';
+        setError(errorMessage);
+        console.error('Polymesh SDK connection error:', error);
+        // Clear on SDK error since auto-reconnect won't happen
+        setIsWalletConnecting(false);
+      } finally {
+        setIsConnecting(false);
+      }
+    })();
+  }, []);
+
   const disconnectWallet = useCallback(async () => {
     await sdk?.setSigningManager(null);
     setSigningManager(null);
-    setIsConnected(false);
+    setIsWalletConnected(false);
     setAccounts([]);
     setSelectedAccount(null);
-    setError(null);
     // Clear persistence
     localStorage.removeItem(STORAGE_KEYS.WALLET_CONNECTED);
     localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
   }, [sdk]);
 
-  const connect = useCallback(async () => {
-    setIsConnecting(true);
+  const connectWallet = useCallback(async () => {
+    if (!sdk) {
+      return;
+    }
+
+    setIsWalletConnecting(true);
     setError(null);
 
     try {
@@ -62,23 +113,17 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
       const manager = await BrowserExtensionSigningManager.create({
         appName: 'Polymesh Confidential Assets',
         extensionName: availableExtensions[0],
+        accountTypes: ['sr25519', 'ed25519', 'ecdsa'],
       });
 
       setSigningManager(manager);
 
-      // Connect to Polymesh first (this sets SS58 format on the signing manager)
-      const polymeshSdk = await Polymesh.connect({
-        nodeUrl: NODE_URL,
-        signingManager: manager,
-      });
+      // Attach signing manager to already-connected SDK
+      await sdk.setSigningManager(manager);
 
-      setSdk(polymeshSdk);
-      // Extract and expose polkadot API
-      setPolkadotApi(polymeshSdk._polkadotApi);
+      setIsWalletConnected(true);
 
-      setIsConnected(true);
-
-      // Get accounts with metadata from the extension (after SDK connection sets SS58 format)
+      // Get accounts with metadata from the extension
       const extensionAccounts = await manager.getAccountsWithMeta();
       const accountList: Account[] = extensionAccounts.map((account) => ({
         address: account.address,
@@ -95,7 +140,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
 
       if (accountToSelect) {
         // Set signing account in SDK - this also updates the polkadot API signer
-        await polymeshSdk.setSigningAccount(accountToSelect.address);
+        sdk.setSigningAccount(accountToSelect.address);
         setSelectedAccount(accountToSelect);
         localStorage.setItem(
           STORAGE_KEYS.SELECTED_ACCOUNT,
@@ -107,16 +152,17 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
       // Mark wallet as connected
       localStorage.setItem(STORAGE_KEYS.WALLET_CONNECTED, 'true');
 
-      console.log(`Connected to Polymesh ${NETWORK} network at ${NODE_URL}`);
+      console.log('Wallet connected successfully');
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to connect to Polymesh';
+        err instanceof Error ? err.message : 'Failed to connect wallet';
       setError(errorMessage);
-      console.error('Polymesh connection error:', err);
+      showError(errorMessage);
+      console.error('Wallet connection error:', err);
     } finally {
-      setIsConnecting(false);
+      setIsWalletConnecting(false);
     }
-  }, []);
+  }, [sdk, showError]);
 
   const selectAccount = useCallback(
     async (account: Account) => {
@@ -127,7 +173,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
 
       try {
         // Update the SDK's signing account - this also updates the polkadot API signer
-        await sdk.setSigningAccount(account.address);
+        sdk.setSigningAccount(account.address);
         setSelectedAccount(account);
         // Persist selected account
         localStorage.setItem(STORAGE_KEYS.SELECTED_ACCOUNT, account.address);
@@ -143,26 +189,28 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
   // Track if auto-reconnect attempted
   const autoReconnectAttempted = useRef(false);
 
-  // Auto-reconnect on mount if previously connected
+  // Auto-reconnect wallet if previously connected (after SDK is ready)
   useEffect(() => {
-    if (autoReconnectAttempted.current) return;
+    if (autoReconnectAttempted.current || !isConnected) return;
 
     const wasConnected = localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED);
-    if (wasConnected === 'true' && !isConnected && !isConnecting) {
+    if (wasConnected === 'true' && !isWalletConnected) {
       console.log('Auto-reconnecting wallet...');
       autoReconnectAttempted.current = true;
-      connect();
+      connectWallet();
+    } else {
+      setIsWalletConnecting(false);
     }
-  }, [isConnected, isConnecting, connect]);
+  }, [isConnected, isWalletConnected, isWalletConnecting, connectWallet]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (sdk) {
-        sdk.disconnect();
+      if (sdkRef.current) {
+        sdkRef.current.disconnect();
       }
     };
-  }, [sdk]);
+  }, []);
 
   const value = {
     sdk,
@@ -170,10 +218,12 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
     signingManager,
     isConnected,
     isConnecting,
+    isWalletConnected,
+    isWalletConnecting,
     error,
     accounts,
     selectedAccount,
-    connect,
+    connectWallet,
     disconnectWallet,
     selectAccount,
   };

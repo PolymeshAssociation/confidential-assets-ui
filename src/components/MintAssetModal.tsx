@@ -4,7 +4,7 @@
  * Modal for minting tokens for a confidential asset
  */
 
-import { TruncatedKey } from '@/components/TruncatedKey';
+import { TruncatedKey } from '@/components';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import {

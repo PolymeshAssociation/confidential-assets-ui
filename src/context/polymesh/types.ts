@@ -13,16 +13,17 @@ export interface PolymeshContextValue {
   signingManager: SigningManagerType | null;
   isConnected: boolean;
   isConnecting: boolean;
+  isWalletConnected: boolean;
+  isWalletConnecting: boolean;
   error: string | null;
   accounts: Account[];
   selectedAccount: Account | null;
-  connect: () => Promise<void>;
+  connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   selectAccount: (account: Account) => Promise<void>;
 }
 
 export const NODE_URL = import.meta.env.VITE_POLYMESH_NODE_URL;
-export const NETWORK = import.meta.env.VITE_NETWORK || 'testnet';
 
 // Priority wallet extensions
 export const PRIORITY_EXTENSIONS = ['polywallet', 'polkadot-js'];

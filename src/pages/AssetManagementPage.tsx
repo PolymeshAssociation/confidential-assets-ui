@@ -4,10 +4,12 @@
  * Main page for creating, viewing, and managing confidential assets
  */
 
-import { CreateAssetModal } from '@/components/CreateAssetModal';
-import { MintAssetModal } from '@/components/MintAssetModal';
-import { RegisterAssetModal } from '@/components/RegisterAssetModal';
-import { RegisterByAssetIdModal } from '@/components/RegisterByAssetIdModal';
+import {
+  CreateAssetModal,
+  MintAssetModal,
+  RegisterAssetModal,
+  RegisterByAssetIdModal,
+} from '@/components';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import type { AssetMetadata } from '@/types/asset';

@@ -1,5 +1,5 @@
-import { TruncatedKey } from '@/components/TruncatedKey';
-import { AccountKeyInput } from '@/components/settlement/AccountKeyInput';
+import { TruncatedKey } from '@/components';
+import { AccountKeyInput } from '@/components/settlement';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { usePolymesh } from '@/hooks/usePolymesh';

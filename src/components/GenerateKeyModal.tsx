@@ -1,4 +1,4 @@
-import { PasswordStrengthInput } from '@/components/PasswordStrengthInput';
+import { PasswordStrengthInput } from '@/components';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { downloadJsonFile } from '@/utils/fileUtils';
 import { validatePassword } from '@/utils/passwordValidation';

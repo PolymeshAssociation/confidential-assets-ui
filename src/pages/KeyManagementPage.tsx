@@ -1,6 +1,11 @@
-import { GenerateKeyModal } from '@/components/GenerateKeyModal';
-import { ImportKeyModal } from '@/components/ImportKeyModal';
-import { TruncatedKey } from '@/components/TruncatedKey';
+import {
+  DeleteKeyModal,
+  ExportKeyModal,
+  GenerateKeyModal,
+  ImportKeyModal,
+  RenameKeyModal,
+  TruncatedKey,
+} from '@/components';
 import type { ConfidentialKey } from '@/context/confidential-key/types';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { useNotification } from '@/hooks/useNotification';
@@ -81,6 +86,8 @@ export function KeyManagementPage() {
   );
   const importFileResetRef = useRef<() => void>(null);
 
+  const [hasCheckedRegistrations, setHasCheckedRegistrations] = useState(false);
+
   // Check registrations on mount
   useEffect(() => {
     async function checkRegistrations() {
@@ -89,6 +96,8 @@ export function KeyManagementPage() {
         await checkAllRegistrations(polkadotApi);
       } catch (error) {
         console.error('[Key Management] Failed to check registrations:', error);
+      } finally {
+        setHasCheckedRegistrations(true);
       }
     }
     checkRegistrations();
@@ -122,82 +131,90 @@ export function KeyManagementPage() {
     modals.open({
       title: 'Rename Key',
       children: (
-        <Stack gap="md">
-          <Text size="sm">Enter a new alias for the key "{key.alias}"</Text>
-          <TextInput
-            id="rename-input"
-            label="New Alias"
-            placeholder="New Key Name"
-            defaultValue={key.alias}
-            data-autofocus
-            maxLength={50}
-          />
-          <Group justify="flex-end" gap="sm">
-            <Button variant="subtle" onClick={() => modals.closeAll()}>
-              Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                const input = document.getElementById(
-                  'rename-input',
-                ) as HTMLInputElement;
-                const newAlias = input?.value?.trim();
-
-                if (!newAlias) {
-                  showError('Please provide a new alias');
-                  return;
-                }
-
-                try {
-                  await renameKey(key.publicKey, newAlias);
-                  showSuccess(
-                    `Key renamed from "${key.alias}" to "${newAlias}"`,
-                  );
-                  modals.closeAll();
-                } catch (error) {
-                  showError(
-                    error instanceof Error
-                      ? error.message
-                      : 'Failed to rename key',
-                  );
-                }
-              }}
-            >
-              Rename
-            </Button>
-          </Group>
-        </Stack>
+        <RenameKeyModal
+          keyToRename={key}
+          onRename={async (newAlias) => {
+            try {
+              await renameKey(key.publicKey, newAlias);
+              showSuccess(`Key renamed from "${key.alias}" to "${newAlias}"`);
+              modals.closeAll();
+            } catch (error) {
+              showError(
+                error instanceof Error ? error.message : 'Failed to rename key',
+              );
+            }
+          }}
+          onCancel={() => modals.closeAll()}
+          onError={showError}
+        />
       ),
     });
   };
 
-  const handleDeleteKey = (key: ConfidentialKey) => {
-    modals.openConfirmModal({
-      title: `Delete Key "${key.alias}"?`,
-      children: (
-        <Stack gap="sm">
-          <Text size="sm">
-            Are you sure you want to delete the key "{key.alias}"? This action
-            cannot be undone.
-          </Text>
-          <Alert color="yellow" icon={<IconDownload size={16} />}>
-            We strongly recommend downloading a backup before deleting.
-          </Alert>
-        </Stack>
-      ),
-      labels: { confirm: 'Delete', cancel: 'Cancel' },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        try {
-          await deleteKey(key.publicKey);
-          showSuccess(`Key "${key.alias}" deleted`);
-        } catch (error) {
-          showError(
-            error instanceof Error ? error.message : 'Failed to delete key',
-          );
-        }
-      },
-    });
+  const handleDeleteKey = async (key: ConfidentialKey) => {
+    // If key is encrypted, require password verification first
+    if (isKeyEncrypted(key.publicKey)) {
+      modals.open({
+        title: `Delete Key "${key.alias}"?`,
+        children: (
+          <DeleteKeyModal
+            keyToDelete={key}
+            onDelete={async () => {
+              await deleteKey(key.publicKey);
+
+              // Clear selection if this was the selected key
+              if (selectedKey?.publicKey === key.publicKey) {
+                selectKey(
+                  keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
+                    '',
+                );
+              }
+
+              showSuccess(`Key "${key.alias}" deleted`);
+              modals.closeAll();
+            }}
+            onCancel={() => modals.closeAll()}
+          />
+        ),
+      });
+    } else {
+      // Unencrypted key - use standard confirmation modal
+      modals.openConfirmModal({
+        title: `Delete Key "${key.alias}"?`,
+        children: (
+          <Stack gap="sm">
+            <Text size="sm">
+              Are you sure you want to delete the key "{key.alias}"? This action
+              cannot be undone.
+            </Text>
+            <Alert color="yellow" icon={<IconDownload size={16} />}>
+              We strongly recommend downloading a backup before deleting.
+            </Alert>
+          </Stack>
+        ),
+        labels: { confirm: 'Delete', cancel: 'Cancel' },
+        confirmProps: { color: 'red' },
+        onConfirm: async () => {
+          try {
+            await deleteKey(key.publicKey);
+
+            // Clear selection if this was the selected key
+            if (selectedKey?.publicKey === key.publicKey) {
+              selectKey(
+                keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
+                  '',
+              );
+            }
+
+            showSuccess(`Key "${key.alias}" deleted`);
+          } catch (error) {
+            showError(
+              error instanceof Error ? error.message : 'Failed to delete key',
+            );
+          }
+        },
+      });
+    }
   };
 
   const handleSelectKey = (key: ConfidentialKey) => {
@@ -263,11 +280,30 @@ export function KeyManagementPage() {
     }
   };
 
-  const handleExportKey = (key: ConfidentialKey) => {
-    executeWithKey(async () => {
+  const handleExportKey = async (key: ConfidentialKey) => {
+    // If key is encrypted, require password verification first
+    if (isKeyEncrypted(key.publicKey)) {
+      modals.open({
+        title: `Export Key "${key.alias}"`,
+        children: (
+          <ExportKeyModal
+            keyToExport={key}
+            exportKey={exportKey}
+            onSuccess={() => {
+              showSuccess('Backup downloaded successfully');
+              modals.closeAll();
+            }}
+            onCancel={() => modals.closeAll()}
+            onError={(error: string) => {
+              showError(error);
+            }}
+          />
+        ),
+      });
+    } else {
+      // Unencrypted key - export directly
       try {
         const keyJson = exportKey(key.publicKey);
-        // Trigger download
         const blob = new Blob([keyJson], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -281,13 +317,7 @@ export function KeyManagementPage() {
       } catch {
         showError('Failed to export key');
       }
-      return Promise.resolve();
-    }).catch((err) => {
-      // User cancelled or failed
-      if (err instanceof Error && err.message !== 'Password entry cancelled') {
-        showError(err.message);
-      }
-    });
+    }
   };
 
   if (!isInitialized) {
@@ -401,7 +431,7 @@ export function KeyManagementPage() {
       </Group>
 
       {/* Prominent alert for unregistered selected key */}
-      {selectedKey && !selectedKey.registeredDid && (
+      {hasCheckedRegistrations && selectedKey && !selectedKey.registeredDid && (
         <Alert
           color="red"
           title="Register Key On-Chain"

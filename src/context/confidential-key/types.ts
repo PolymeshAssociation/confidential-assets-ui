@@ -11,7 +11,6 @@ export interface ConfidentialKey {
   /** DID this key is registered to on-chain (if any) */
   registeredDid?: string | null;
   createdAt: number;
-  lastUsedAt: number;
 }
 
 export interface ConfidentialKeyContextValue {

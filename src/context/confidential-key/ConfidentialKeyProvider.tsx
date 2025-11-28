@@ -1,5 +1,5 @@
-import { ChangePasswordModal } from '@/components/ChangePasswordModal';
-import { PasswordModal } from '@/components/PasswordModal';
+import { ChangePasswordModal, PasswordModal } from '@/components';
+import { checkAccountRegistration } from '@/services/confidential';
 import {
   changePassword,
   decryptKey,
@@ -76,17 +76,24 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
   // Load keys from storage
   const loadKeys = useCallback(() => {
-    const storedKeys = keyStorage.listKeys();
-    const confidentialKeys: ConfidentialKey[] = storedKeys.map((stored) => ({
-      alias: stored.name,
-      publicKey: stored.public.account,
-      encryptionPublicKey: stored.public.encryption,
-      isUnlocked: false,
-      createdAt: stored.metadata.created,
-      lastUsedAt: stored.metadata.created, // No longer tracking last used
-      registeredDid: undefined, // Will be populated by checkAllRegistrations
-    }));
-    setKeys(confidentialKeys);
+    setKeys((prevKeys) => {
+      const storedKeys = keyStorage.listKeys();
+      const confidentialKeys: ConfidentialKey[] = storedKeys.map((stored) => {
+        // Preserve registration status from previous state if it exists
+        const existingKey = prevKeys.find(
+          (k) => k.publicKey === stored.public.account,
+        );
+        return {
+          alias: stored.name,
+          publicKey: stored.public.account,
+          encryptionPublicKey: stored.public.encryption,
+          isUnlocked: false,
+          createdAt: stored.metadata.created,
+          registeredDid: existingKey?.registeredDid,
+        };
+      });
+      return confidentialKeys;
+    });
   }, []);
 
   // Load keys on mount
@@ -527,11 +534,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     if (!polkadotApi) return;
 
     try {
-      // Import the registration check service
-      const { checkAccountRegistration } = await import(
-        '@/services/confidential'
-      );
-
       // Get current keys to avoid dependency on keys state
       const currentKeys = keyStorage.listKeys().map((stored) => ({
         alias: stored.name,

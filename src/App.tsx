@@ -1,4 +1,4 @@
-import { WasmErrorBoundary } from '@/components/WasmErrorBoundary';
+import { ErrorBoundary } from '@/components';
 import { AssetProvider } from '@/context/asset';
 import { ConfidentialKeyProvider } from '@/context/confidential-key';
 import { NotificationProvider } from '@/context/notification';
@@ -15,20 +15,25 @@ import { KeyManagementPage } from '@/pages/KeyManagementPage';
 import { SettlementPage } from '@/pages/SettlementPage';
 import {
   ActionIcon,
+  Alert,
   AppShell,
   Burger,
   Button,
+  Container,
   Group,
   Image,
+  Loader,
   Menu,
   NavLink,
   ScrollArea,
   Stack,
   Text,
   TextInput,
+  Title,
   Tooltip,
 } from '@mantine/core';
 import {
+  IconAlertCircle,
   IconArrowsExchange,
   IconChartBar,
   IconCheck,
@@ -54,12 +59,17 @@ import {
 function AppLayout() {
   const { mode, toggleTheme } = useTheme();
   const {
-    isConnected,
+    isConnecting,
+    isWalletConnected,
+    isWalletConnecting,
+    error,
+    connectWallet,
     disconnectWallet,
     accounts,
     selectedAccount,
     selectAccount,
   } = usePolymesh();
+
   const { selectedKey } = useConfidentialKey();
   const location = useLocation();
   const [opened, setOpened] = useState(false);
@@ -156,18 +166,18 @@ function AppLayout() {
               </Button>
             ) : (
               <Button
-                variant="filled"
+                variant="light"
                 color="polyPink"
                 leftSection={<IconUserShield size={18} />}
                 visibleFrom="md"
                 component={Link}
                 to="/confidential-accounts"
               >
-                Select Confidential Account
+                Confidential Account
               </Button>
             )}
 
-            {isConnected && selectedAccount && (
+            {isWalletConnected && selectedAccount ? (
               <Menu shadow="md" width={360} closeOnItemClick={false}>
                 <Menu.Target>
                   <Button
@@ -270,6 +280,16 @@ function AppLayout() {
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
+            ) : (
+              <Button
+                variant="default"
+                leftSection={<IconWallet size={18} />}
+                onClick={connectWallet}
+                loading={isWalletConnecting}
+                visibleFrom="sm"
+              >
+                Connect Wallet
+              </Button>
             )}
 
             <ActionIcon
@@ -347,7 +367,7 @@ function AppLayout() {
           )}
 
           {/* Account Selector (Mobile Only) */}
-          {isConnected && selectedAccount && (
+          {isWalletConnected && selectedAccount && (
             <>
               <Text
                 size="xs"
@@ -465,46 +485,112 @@ function AppLayout() {
             onClick={toggleTheme}
           />
 
-          {isConnected && (
-            <>
-              <Text
-                size="xs"
-                c="dimmed"
-                mt="md"
-                mb="xs"
-                px="xs"
-                fw={500}
-                hiddenFrom="sm"
-              >
-                SESSION
-              </Text>
-              <NavLink
-                label="Disconnect Wallet"
-                leftSection={<IconWallet size={20} />}
-                color="red"
-                onClick={() => {
-                  disconnectWallet();
-                  setOpened(false);
-                }}
-                hiddenFrom="sm"
-              />
-            </>
+          <Text
+            size="xs"
+            c="dimmed"
+            mt="md"
+            mb="xs"
+            px="xs"
+            fw={500}
+            hiddenFrom="sm"
+          >
+            SESSION
+          </Text>
+          {isWalletConnected ? (
+            <NavLink
+              label="Disconnect Wallet"
+              leftSection={<IconWallet size={20} />}
+              color="red"
+              onClick={() => {
+                disconnectWallet();
+                setOpened(false);
+              }}
+              hiddenFrom="sm"
+            />
+          ) : (
+            <NavLink
+              label="Connect Wallet"
+              leftSection={<IconWallet size={20} />}
+              onClick={() => {
+                connectWallet();
+                setOpened(false);
+              }}
+              hiddenFrom="sm"
+            />
           )}
         </Stack>
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <WasmErrorBoundary>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route
-              path="/confidential-accounts"
-              element={<KeyManagementPage />}
-            />
-            <Route path="/assets" element={<AssetManagementPage />} />
-            <Route path="/settlements" element={<SettlementPage />} />
-          </Routes>
-        </WasmErrorBoundary>
+        {isConnecting ? (
+          <Stack align="center" justify="center" h="100%" gap="md">
+            <Loader size="lg" />
+            <Text size="lg" fw={500}>
+              Connecting to Polymesh...
+            </Text>
+            <Text size="sm" c="dimmed">
+              Establishing connection to chain
+            </Text>
+          </Stack>
+        ) : error ? (
+          <Container size="sm" py="xl">
+            <Stack gap="lg">
+              <Alert
+                icon={<IconAlertCircle size={24} />}
+                title="Connection Error"
+                color="red"
+                variant="filled"
+              >
+                Unable to connect to the Polymesh network.
+              </Alert>
+
+              <div>
+                <Title order={3} mb="sm">
+                  Error Details
+                </Title>
+                <Text size="sm" c="dimmed">
+                  {error}
+                </Text>
+              </div>
+
+              <div>
+                <Title order={3} mb="sm">
+                  What you can try
+                </Title>
+                <Stack gap="xs">
+                  <Text size="sm">• Check your internet connection</Text>
+                  <Text size="sm">• Reload the page to try again</Text>
+                  <Text size="sm">• The network may be temporarily unavailable</Text>
+                </Stack>
+              </div>
+
+              <div>
+                <Title order={3} mb="sm">
+                  Need help?
+                </Title>
+                <Text size="sm">
+                  If this issue persists, please contact the Polymesh team for support.
+                </Text>
+              </div>
+
+              <Button onClick={() => window.location.reload()} size="md">
+                Reload Page
+              </Button>
+            </Stack>
+          </Container>
+        ) : (
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route
+                path="/confidential-accounts"
+                element={<KeyManagementPage />}
+              />
+              <Route path="/assets" element={<AssetManagementPage />} />
+              <Route path="/settlements" element={<SettlementPage />} />
+            </Routes>
+          </ErrorBoundary>
+        )}
       </AppShell.Main>
     </AppShell>
   );
