@@ -94,6 +94,34 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     loadKeys();
   }, [loadKeys]);
 
+  const selectKey = useCallback(
+    (publicKey: string) => {
+      const key = keys.find((k) => k.publicKey === publicKey);
+      if (!key) {
+        throw new Error(`Key not found: ${publicKey}`);
+      }
+
+      // SECURITY: Clear any previously loaded keys from WASM
+      // This prevents using the wrong key if switching selection
+      confidentialKeyManager.clearKeys();
+
+      // Cancel any pending unlock timeout
+      if (unlockTimeout) {
+        clearTimeout(unlockTimeout);
+        setUnlockTimeout(null);
+      }
+
+      // Reset keepUnlocked when changing keys
+      setKeepUnlocked(false);
+
+      setSelectedKey(key);
+
+      // Save selection to localStorage
+      localStorage.setItem('polymesh_selected_key_pubkey', key.publicKey);
+    },
+    [keys, unlockTimeout],
+  );
+
   const generateKey = useCallback(
     async (alias: string, seed?: string, password?: string) => {
       if (!isInitialized) {
@@ -365,34 +393,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     return key?.private.encryption === 'scrypt-xsalsa20-poly1305';
   }, []);
 
-  const selectKey = useCallback(
-    (publicKey: string) => {
-      const key = keys.find((k) => k.publicKey === publicKey);
-      if (!key) {
-        throw new Error(`Key not found: ${publicKey}`);
-      }
-
-      // SECURITY: Clear any previously loaded keys from WASM
-      // This prevents using the wrong key if switching selection
-      confidentialKeyManager.clearKeys();
-
-      // Cancel any pending unlock timeout
-      if (unlockTimeout) {
-        clearTimeout(unlockTimeout);
-        setUnlockTimeout(null);
-      }
-
-      // Reset keepUnlocked when changing keys
-      setKeepUnlocked(false);
-
-      setSelectedKey(key);
-
-      // Save selection to localStorage
-      localStorage.setItem('polymesh_selected_key_pubkey', publicKey);
-    },
-    [keys, unlockTimeout],
-  );
-
   const scheduleKeyClear = useCallback(
     (timeoutMs: number) => {
       // Clear any existing timeout
@@ -625,6 +625,74 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     };
   }, [selectedKey]);
 
+  const exportKey = useCallback((publicKey: string): string => {
+    const storedKey = keyStorage.getKey(publicKey);
+    if (!storedKey) {
+      throw new Error(`Key with public key "${publicKey}" not found`);
+    }
+    return JSON.stringify(storedKey, null, 2);
+  }, []);
+
+  const importKey = useCallback(
+    async (jsonData: string, password: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let keyRecord: any;
+      try {
+        keyRecord = JSON.parse(jsonData);
+      } catch {
+        throw new Error('Invalid JSON format');
+      }
+
+      // Basic validation
+      if (
+        !keyRecord.version ||
+        !keyRecord.name ||
+        !keyRecord.public?.account ||
+        !keyRecord.private
+      ) {
+        throw new Error('Invalid key file format');
+      }
+
+      // Check for duplicate
+      if (keyStorage.keyExistsByPublicKey(keyRecord.public.account)) {
+        throw new Error(
+          `Key with public key "${keyRecord.public.account}" already exists`,
+        );
+      }
+
+      // Verify password / Decrypt
+      if (keyRecord.private.encryption === 'scrypt-xsalsa20-poly1305') {
+        try {
+          await decryptKey(
+            keyRecord.private as EncryptedConfidentialKeyRecord['private'],
+            password,
+          );
+        } catch {
+          throw new Error('Incorrect password');
+        }
+      } else if (keyRecord.private.encryption !== 'none') {
+        throw new Error(
+          `Unsupported encryption type: ${keyRecord.private.encryption}`,
+        );
+      }
+
+      // Check if name exists and append suffix if needed
+      let name = keyRecord.name;
+      let counter = 1;
+      while (keyStorage.keyExists(name)) {
+        name = `${keyRecord.name} (${counter})`;
+        counter++;
+      }
+      keyRecord.name = name;
+
+      // Save
+      keyStorage.saveKey(keyRecord as AnyConfidentialKeyRecord);
+      loadKeys();
+      console.log(`Imported key: ${name}`);
+    },
+    [loadKeys],
+  );
+
   const value = {
     keys,
     isInitialized,
@@ -648,6 +716,8 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     pendingKeyAlias,
     handlePasswordSubmit,
     handlePasswordCancel,
+    exportKey,
+    importKey,
   };
 
   return (

@@ -1,4 +1,5 @@
-import { PasswordStrengthInput } from '@/components/PasswordStrengthInput';
+import { GenerateKeyModal } from '@/components/GenerateKeyModal';
+import { ImportKeyModal } from '@/components/ImportKeyModal';
 import { TruncatedKey } from '@/components/TruncatedKey';
 import type { ConfidentialKey } from '@/context/confidential-key/types';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
@@ -6,20 +7,21 @@ import { useNotification } from '@/hooks/useNotification';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { useTransaction } from '@/hooks/useTransaction';
 import { registerConfidentialAccount } from '@/services/confidential';
-import { validatePassword } from '@/utils/passwordValidation';
 import {
   ActionIcon,
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   Container,
   Divider,
+  FileButton,
   Group,
-  Modal,
+  SegmentedControl,
   SimpleGrid,
   Stack,
-  Switch,
+  Table,
   Text,
   TextInput,
   Title,
@@ -28,28 +30,27 @@ import {
 import { modals } from '@mantine/modals';
 import {
   IconCloudUpload,
+  IconDownload,
   IconEdit,
+  IconFileImport,
   IconKey,
+  IconLayoutGrid,
+  IconList,
   IconLock,
   IconPlus,
+  IconSearch,
   IconShieldCheck,
   IconTrash,
 } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 
-/**
- * Compact card-based grid layout for key management
- */
-export function KeyManagementPageGrid() {
+export function KeyManagementPage() {
   const {
     keys,
     selectedKey,
     selectKey,
     executeWithKey,
     isInitialized,
-    isGenerating,
-    generateKey,
     lockKey,
     deleteKey,
     renameKey,
@@ -58,30 +59,29 @@ export function KeyManagementPageGrid() {
     changeKeyPassword,
     isKeyEncrypted,
     keepUnlocked,
+    exportKey,
   } = useConfidentialKey();
 
   const { showSuccess, showError } = useNotification();
-
-  useEffect(() => {
-    const hasSeenWarning = localStorage.getItem('dart_backup_warning_seen');
-    if (!hasSeenWarning && keys.length === 0) {
-      // Will show warning after first successful key generation
-    }
-  }, [keys.length]);
-
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [alias, setAlias] = useState('');
-  const [advancedMode, setAdvancedMode] = useState(false);
-  const [customSeed, setCustomSeed] = useState('');
-  const [showBackupWarning, setShowBackupWarning] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [usePassword, setUsePassword] = useState(true);
-
   const { sdk, polkadotApi, selectedAccount } = usePolymesh();
   const { submitTransaction } = useTransaction();
 
+  // View state
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Modal states
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  // Generation form state
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [selectedImportFile, setSelectedImportFile] = useState<File | null>(
+    null,
+  );
+  const importFileResetRef = useRef<() => void>(null);
+
+  // Check registrations on mount
   useEffect(() => {
     async function checkRegistrations() {
       if (!polkadotApi) return;
@@ -94,66 +94,15 @@ export function KeyManagementPageGrid() {
     checkRegistrations();
   }, [polkadotApi, checkAllRegistrations]);
 
-  const handleGenerateKey = async () => {
-    if (!alias) {
-      showError('Please provide an alias');
-      return;
-    }
-
-    if (advancedMode && !/^[0-9a-fA-F]{64}$/.test(customSeed)) {
-      showError('Seed must be exactly 64 hexadecimal characters');
-      return;
-    }
-
-    // Validate password if encryption is enabled
-    if (usePassword) {
-      if (!password) {
-        showError('Password is required when encryption is enabled');
-        return;
-      }
-
-      const passwordError = validatePassword(password);
-      if (passwordError) {
-        showError(passwordError);
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        showError('Passwords do not match');
-        return;
-      }
-    }
-
-    try {
-      const isFirstKey = keys.length === 0;
-      await generateKey(
-        alias,
-        advancedMode ? customSeed : undefined,
-        usePassword ? password : undefined,
-      );
-      showSuccess(`DART key "${alias}" generated successfully`);
-      setGenerateDialogOpen(false);
-      setAlias('');
-      setCustomSeed('');
-      setPassword('');
-      setConfirmPassword('');
-      setAdvancedMode(false);
-
-      const hasSeenWarning = localStorage.getItem('dart_backup_warning_seen');
-      if (isFirstKey && !hasSeenWarning) {
-        setShowBackupWarning(true);
-      }
-    } catch (error) {
-      showError(
-        error instanceof Error ? error.message : 'Failed to generate key',
-      );
-    }
-  };
+  // Filter keys
+  const filteredKeys = keys.filter((key) =>
+    key.alias.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const handleLockKey = async () => {
     try {
       await lockKey();
-      showSuccess('DART key locked');
+      showSuccess('Key locked');
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Failed to lock key');
     }
@@ -176,12 +125,11 @@ export function KeyManagementPageGrid() {
         <Stack gap="md">
           <Text size="sm">Enter a new alias for the key "{key.alias}"</Text>
           <TextInput
-            id="rename-input-grid"
+            id="rename-input"
             label="New Alias"
             placeholder="New Key Name"
             defaultValue={key.alias}
             data-autofocus
-            description="A friendly name to identify this key (max 50 characters)"
             maxLength={50}
           />
           <Group justify="flex-end" gap="sm">
@@ -191,7 +139,7 @@ export function KeyManagementPageGrid() {
             <Button
               onClick={async () => {
                 const input = document.getElementById(
-                  'rename-input-grid',
+                  'rename-input',
                 ) as HTMLInputElement;
                 const newAlias = input?.value?.trim();
 
@@ -227,10 +175,15 @@ export function KeyManagementPageGrid() {
     modals.openConfirmModal({
       title: `Delete Key "${key.alias}"?`,
       children: (
-        <Text size="sm">
-          Are you sure you want to delete the key "{key.alias}"? This action
-          cannot be undone.
-        </Text>
+        <Stack gap="sm">
+          <Text size="sm">
+            Are you sure you want to delete the key "{key.alias}"? This action
+            cannot be undone.
+          </Text>
+          <Alert color="yellow" icon={<IconDownload size={16} />}>
+            We strongly recommend downloading a backup before deleting.
+          </Alert>
+        </Stack>
       ),
       labels: { confirm: 'Delete', cancel: 'Cancel' },
       confirmProps: { color: 'red' },
@@ -291,11 +244,9 @@ export function KeyManagementPageGrid() {
           submitTransaction,
           onProofGenerating: () => {
             showSuccess('Generating proof... This may take a moment');
-            console.log('Proof generation started');
           },
           onProofGenerated: () => {
             showSuccess('Proof generated, submitting transaction');
-            console.log('Proof generation complete, submitting transaction');
           },
         });
       });
@@ -312,6 +263,33 @@ export function KeyManagementPageGrid() {
     }
   };
 
+  const handleExportKey = (key: ConfidentialKey) => {
+    executeWithKey(async () => {
+      try {
+        const keyJson = exportKey(key.publicKey);
+        // Trigger download
+        const blob = new Blob([keyJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${key.alias.replace(/\s+/g, '_')}_backup.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showSuccess('Backup downloaded successfully');
+      } catch {
+        showError('Failed to export key');
+      }
+      return Promise.resolve();
+    }).catch((err) => {
+      // User cancelled or failed
+      if (err instanceof Error && err.message !== 'Password entry cancelled') {
+        showError(err.message);
+      }
+    });
+  };
+
   if (!isInitialized) {
     return (
       <Container size="xl" py="xl">
@@ -326,39 +304,114 @@ export function KeyManagementPageGrid() {
     <Container size="xl" py="xl">
       <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
         <Title order={2} style={{ flex: 1, minWidth: 'fit-content' }}>
-          Confidential Key Management
+          Confidential Account Management
         </Title>
-        <Button
-          leftSection={<IconPlus size={20} />}
-          onClick={() => setGenerateDialogOpen(true)}
-          disabled={!isInitialized}
-          size="sm"
-        >
-          Generate New Key
-        </Button>
+        <Group>
+          <FileButton
+            resetRef={importFileResetRef}
+            onChange={(file) => {
+              setSelectedImportFile(file);
+              setImportDialogOpen(true);
+            }}
+            accept="application/json"
+          >
+            {(props) => (
+              <Button
+                {...props}
+                leftSection={<IconFileImport size={20} />}
+                variant="light"
+              >
+                Import Key
+              </Button>
+            )}
+          </FileButton>
+          <Button
+            leftSection={<IconPlus size={20} />}
+            onClick={() => setGenerateDialogOpen(true)}
+            disabled={!isInitialized}
+          >
+            Generate New Keys
+          </Button>
+        </Group>
       </Group>
 
-      <Group gap="xs" mb="xl">
-        <Button component={Link} to="/keys" variant="light" size="xs">
-          Grid
-        </Button>
-        <Button component={Link} to="/keys/compact" variant="subtle" size="xs">
-          Compact
-        </Button>
+      {/* Import Key Modal */}
+      <ImportKeyModal
+        opened={importDialogOpen}
+        onClose={() => {
+          setImportDialogOpen(false);
+          setSelectedImportFile(null);
+          importFileResetRef.current?.();
+        }}
+        initialFile={selectedImportFile}
+        onKeyImported={() => {
+          if (polkadotApi) {
+            checkAllRegistrations(polkadotApi).catch((error) => {
+              console.error(
+                'Failed to check registrations after import:',
+                error,
+              );
+            });
+          }
+        }}
+      />
+
+      <Group justify="space-between" mb="xl">
+        <TextInput
+          placeholder="Search keys..."
+          leftSection={<IconSearch size={16} />}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.currentTarget.value)}
+          style={{ flex: 1, maxWidth: 400 }}
+        />
+        <SegmentedControl
+          value={viewMode}
+          onChange={(value) => setViewMode(value as 'grid' | 'list')}
+          data={[
+            {
+              value: 'grid',
+              label: (
+                <Box
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <IconLayoutGrid size={20} />
+                </Box>
+              ),
+            },
+            {
+              value: 'list',
+              label: (
+                <Box
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <IconList size={20} />
+                </Box>
+              ),
+            },
+          ]}
+        />
       </Group>
 
       {/* Prominent alert for unregistered selected key */}
       {selectedKey && !selectedKey.registeredDid && (
         <Alert
-          color="blue"
+          color="red"
           title="Register Key On-Chain"
           icon={<IconCloudUpload size={24} />}
           mb="md"
         >
           <Group justify="space-between" align="center">
             <Text size="sm">
-              Key "{selectedKey.alias}" needs to be registered on-chain before
-              it can be used for confidential transactions.
+              Key "{selectedKey.alias}" needs to be registered to an identity
+              on-chain before it can be used for confidential transactions.
             </Text>
             <Button
               variant="filled"
@@ -373,25 +426,33 @@ export function KeyManagementPageGrid() {
         </Alert>
       )}
 
-      {keys.length === 0 ? (
+      {filteredKeys.length === 0 ? (
         <Alert
           icon={<IconKey size={32} />}
-          title="No confidential keys yet"
+          title={
+            keys.length === 0
+              ? 'No confidential keys yet'
+              : 'No keys match your search'
+          }
           color="gray"
         >
           <Text size="sm" mb="md">
-            Generate your first confidential key to get started
+            {keys.length === 0
+              ? 'Generate your first confidential key to get started'
+              : 'Try adjusting your search query'}
           </Text>
-          <Button
-            leftSection={<IconPlus size={18} />}
-            onClick={() => setGenerateDialogOpen(true)}
-          >
-            Generate New Key
-          </Button>
+          {keys.length === 0 && (
+            <Button
+              leftSection={<IconPlus size={18} />}
+              onClick={() => setGenerateDialogOpen(true)}
+            >
+              Generate New Keys
+            </Button>
+          )}
         </Alert>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-          {keys.map((key) => (
+          {filteredKeys.map((key) => (
             <Card
               key={key.alias}
               withBorder
@@ -464,6 +525,18 @@ export function KeyManagementPageGrid() {
                           </ActionIcon>
                         </Tooltip>
                       )}
+                    <Tooltip label="Export Backup">
+                      <ActionIcon
+                        variant="light"
+                        color="blue"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportKey(key);
+                        }}
+                      >
+                        <IconDownload size={18} />
+                      </ActionIcon>
+                    </Tooltip>
                     <Tooltip label="Rename">
                       <ActionIcon
                         variant="light"
@@ -549,150 +622,176 @@ export function KeyManagementPageGrid() {
             </Card>
           ))}
         </SimpleGrid>
+      ) : (
+        <Box style={{ overflowX: 'auto' }}>
+          <Table striped highlightOnHover withTableBorder withColumnBorders>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Alias</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Registered To</Table.Th>
+                <Table.Th>Account Public Key</Table.Th>
+                <Table.Th>Encryption Public Key</Table.Th>
+                <Table.Th>Created</Table.Th>
+                <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {filteredKeys.map((key) => (
+                <Table.Tr
+                  key={key.alias}
+                  bg={
+                    selectedKey?.publicKey === key.publicKey
+                      ? 'var(--mantine-primary-color-light)'
+                      : undefined
+                  }
+                  style={{
+                    cursor:
+                      selectedKey?.publicKey === key.publicKey
+                        ? 'default'
+                        : 'pointer',
+                  }}
+                  onClick={() => {
+                    if (selectedKey?.publicKey !== key.publicKey) {
+                      handleSelectKey(key);
+                    }
+                  }}
+                >
+                  <Table.Td>
+                    <Text fw={600} size="sm">
+                      {key.alias}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      {selectedKey?.publicKey === key.publicKey && (
+                        <Badge color="green" size="sm">
+                          Selected
+                        </Badge>
+                      )}
+                      {selectedKey?.publicKey === key.publicKey &&
+                        keepUnlocked && (
+                          <Badge color="orange" size="sm">
+                            Unlocked
+                          </Badge>
+                        )}
+                      {key.registeredDid && (
+                        <Badge color="blue" size="sm">
+                          Registered
+                        </Badge>
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    {key.registeredDid ? (
+                      <TruncatedKey value={key.registeredDid} />
+                    ) : (
+                      <Text size="sm" c="dimmed">
+                        Not registered
+                      </Text>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    <TruncatedKey value={key.publicKey} />
+                  </Table.Td>
+                  <Table.Td>
+                    {key.encryptionPublicKey ? (
+                      <TruncatedKey value={key.encryptionPublicKey} />
+                    ) : (
+                      <Text size="sm" c="dimmed">
+                        N/A
+                      </Text>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">
+                      {new Intl.DateTimeFormat(undefined, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }).format(new Date(key.createdAt))}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs" justify="flex-end" wrap="nowrap">
+                      {selectedKey?.publicKey === key.publicKey &&
+                        keepUnlocked && (
+                          <Tooltip label="Lock Key">
+                            <ActionIcon
+                              variant="subtle"
+                              color="orange"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLockKey();
+                              }}
+                            >
+                              <IconLock size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      <Tooltip label="Export Backup">
+                        <ActionIcon
+                          variant="subtle"
+                          color="blue"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportKey(key);
+                          }}
+                        >
+                          <IconDownload size={18} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Rename">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRenameKey(key);
+                          }}
+                        >
+                          <IconEdit size={18} />
+                        </ActionIcon>
+                      </Tooltip>
+                      {isKeyEncrypted(key.publicKey) && (
+                        <Tooltip label="Change Password">
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChangePassword(key);
+                            }}
+                          >
+                            <IconShieldCheck size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      <Tooltip label="Delete">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteKey(key);
+                          }}
+                        >
+                          <IconTrash size={18} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Box>
       )}
 
       {/* Generate Key Modal */}
-      <Modal
+      <GenerateKeyModal
         opened={generateDialogOpen}
         onClose={() => setGenerateDialogOpen(false)}
-        title="Generate New DART Key"
-        size="md"
-      >
-        <Stack gap="md">
-          <Alert color="blue" title="Security">
-            Protect your keys with a password. Keys are stored locally in your
-            browser.
-          </Alert>
-
-          <Switch
-            label="Encrypt with Password"
-            description="Require a password to use this key (Recommended)"
-            checked={usePassword}
-            onChange={(e) => setUsePassword(e.currentTarget.checked)}
-          />
-
-          {usePassword && (
-            <>
-              <PasswordStrengthInput
-                value={password}
-                onChange={setPassword}
-                label="Password"
-                placeholder="Enter password"
-                required
-                error={
-                  password ? validatePassword(password) || undefined : undefined
-                }
-              />
-              <TextInput
-                type="password"
-                label="Confirm Password"
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={
-                  confirmPassword && password !== confirmPassword
-                    ? 'Passwords do not match'
-                    : null
-                }
-                required
-              />
-            </>
-          )}
-
-          <TextInput
-            label="Key Alias"
-            placeholder="My Key Name"
-            value={alias}
-            onChange={(e) => setAlias(e.target.value)}
-            description="A friendly name to identify this key (max 50 characters)"
-            maxLength={50}
-            required
-          />
-
-          <Switch
-            label="Advanced: Use Custom Seed"
-            description="Generate keys from a specific 64-character hex seed"
-            checked={advancedMode}
-            onChange={(e) => setAdvancedMode(e.currentTarget.checked)}
-          />
-
-          {advancedMode && (
-            <TextInput
-              label="Custom Seed"
-              placeholder="Enter 64 hexadecimal characters"
-              value={customSeed}
-              onChange={(e) => setCustomSeed(e.target.value)}
-              description="Must be exactly 64 hex characters (0-9, a-f)"
-              maxLength={64}
-              error={
-                customSeed && !/^[0-9a-fA-F]{64}$/.test(customSeed)
-                  ? 'Invalid seed format'
-                  : null
-              }
-              required
-            />
-          )}
-
-          <Group justify="flex-end" gap="sm">
-            <Button
-              variant="subtle"
-              onClick={() => {
-                setGenerateDialogOpen(false);
-                setAdvancedMode(false);
-                setCustomSeed('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleGenerateKey} loading={isGenerating}>
-              Generate
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-
-      {/* Backup Warning Modal */}
-      <Modal
-        opened={showBackupWarning}
-        onClose={() => {
-          setShowBackupWarning(false);
-          localStorage.setItem('dart_backup_warning_seen', 'true');
-        }}
-        title="Important: Back Up Your Keys"
-        size="md"
-      >
-        <Stack gap="md">
-          <Alert color="yellow" title="Keys Are Stored Locally">
-            Your DART keys are stored in your browser's localStorage without
-            password protection.
-          </Alert>
-
-          <Text size="sm">
-            <strong>Important considerations:</strong>
-          </Text>
-          <Stack gap="xs">
-            <Text size="sm">• Keys are tied to this browser and device</Text>
-            <Text size="sm">• Clearing browser data will delete your keys</Text>
-            <Text size="sm">• You cannot recover keys if lost</Text>
-            <Text size="sm">• Back up your browser profile regularly</Text>
-          </Stack>
-
-          <Alert color="blue">
-            Future versions will support key export and password encryption.
-          </Alert>
-
-          <Group justify="flex-end" gap="sm">
-            <Button
-              onClick={() => {
-                setShowBackupWarning(false);
-                localStorage.setItem('dart_backup_warning_seen', 'true');
-              }}
-            >
-              I Understand
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      />
     </Container>
   );
 }

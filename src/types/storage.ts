@@ -24,7 +24,7 @@ export interface ConfidentialKeyRecord {
 // Encrypted keys using Polkadot-standard cryptography (scrypt + XSalsa20-Poly1305)
 export interface EncryptedConfidentialKeyRecord
   extends Omit<ConfidentialKeyRecord, 'private' | 'version'> {
-  version: 3;
+  version: 2;
   private: {
     format: 'scale-base64';
     encryption: 'scrypt-xsalsa20-poly1305';

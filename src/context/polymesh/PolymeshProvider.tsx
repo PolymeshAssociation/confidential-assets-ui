@@ -22,12 +22,8 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
-  const disconnect = useCallback(() => {
-    if (sdk) {
-      sdk.disconnect();
-    }
-    setSdk(null);
-    setPolkadotApi(null);
+  const disconnectWallet = useCallback(async () => {
+    await sdk?.setSigningManager(null);
     setSigningManager(null);
     setIsConnected(false);
     setAccounts([]);
@@ -178,7 +174,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
     accounts,
     selectedAccount,
     connect,
-    disconnect,
+    disconnectWallet,
     selectAccount,
   };
 

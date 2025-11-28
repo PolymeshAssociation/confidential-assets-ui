@@ -17,7 +17,7 @@ export interface PolymeshContextValue {
   accounts: Account[];
   selectedAccount: Account | null;
   connect: () => Promise<void>;
-  disconnect: () => void;
+  disconnectWallet: () => void;
   selectAccount: (account: Account) => Promise<void>;
 }
 

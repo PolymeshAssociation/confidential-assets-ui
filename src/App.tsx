@@ -11,8 +11,7 @@ import { usePolymesh } from '@/hooks/usePolymesh';
 import { useTheme } from '@/hooks/useTheme';
 import { AssetManagementPage } from '@/pages/AssetManagementPage';
 import { HomePage } from '@/pages/HomePage';
-import { KeyManagementPageCompact } from '@/pages/KeyManagementPageCompact';
-import { KeyManagementPageGrid } from '@/pages/KeyManagementPageGrid';
+import { KeyManagementPage } from '@/pages/KeyManagementPage';
 import { SettlementPage } from '@/pages/SettlementPage';
 import {
   ActionIcon,
@@ -40,6 +39,7 @@ import {
   IconSearch,
   IconShieldLock,
   IconSun,
+  IconUserShield,
   IconWallet,
 } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
@@ -53,8 +53,13 @@ import {
 
 function AppLayout() {
   const { mode, toggleTheme } = useTheme();
-  const { isConnected, disconnect, accounts, selectedAccount, selectAccount } =
-    usePolymesh();
+  const {
+    isConnected,
+    disconnectWallet,
+    accounts,
+    selectedAccount,
+    selectAccount,
+  } = usePolymesh();
   const { selectedKey } = useConfidentialKey();
   const location = useLocation();
   const [opened, setOpened] = useState(false);
@@ -145,7 +150,7 @@ function AppLayout() {
                 leftSection={<IconKey size={18} />}
                 visibleFrom="md"
                 component={Link}
-                to="/keys"
+                to="/confidential-accounts"
               >
                 {selectedKey.alias}
               </Button>
@@ -153,12 +158,12 @@ function AppLayout() {
               <Button
                 variant="filled"
                 color="polyPink"
-                leftSection={<IconKey size={18} />}
+                leftSection={<IconUserShield size={18} />}
                 visibleFrom="md"
                 component={Link}
-                to="/keys"
+                to="/confidential-accounts"
               >
-                Select Key
+                Select Confidential Account
               </Button>
             )}
 
@@ -183,7 +188,7 @@ function AppLayout() {
                 </Menu.Target>
 
                 <Menu.Dropdown style={{ maxWidth: 'calc(100vw - 2rem)' }}>
-                  <Menu.Label>Select Account</Menu.Label>
+                  <Menu.Label>Select Key</Menu.Label>
                   <TextInput
                     placeholder="Search accounts..."
                     leftSection={<IconSearch size={16} />}
@@ -256,7 +261,11 @@ function AppLayout() {
                     )}
                   </ScrollArea.Autosize>
                   <Menu.Divider />
-                  <Menu.Item color="red" onClick={disconnect} closeMenuOnClick>
+                  <Menu.Item
+                    color="red"
+                    onClick={disconnectWallet}
+                    closeMenuOnClick
+                  >
                     Disconnect Wallet
                   </Menu.Item>
                 </Menu.Dropdown>
@@ -287,13 +296,12 @@ function AppLayout() {
             onClick={() => setOpened(false)}
           />
           <NavLink
-            label="Keys"
-            leftSection={<IconKey size={20} />}
+            label="Confidential Accounts"
+            leftSection={<IconUserShield size={20} />}
             component={Link}
-            to="/keys"
-            active={location.pathname === '/keys'}
+            to="/confidential-accounts"
+            active={location.pathname === '/confidential-accounts'}
             onClick={() => setOpened(false)}
-            disabled={!isConnected}
           />
           <NavLink
             label="Assets"
@@ -302,7 +310,6 @@ function AppLayout() {
             to="/assets"
             active={location.pathname === '/assets'}
             onClick={() => setOpened(false)}
-            disabled={!isConnected}
           />
           <NavLink
             label="Transfers"
@@ -311,7 +318,6 @@ function AppLayout() {
             to="/settlements"
             active={location.pathname === '/settlements'}
             onClick={() => setOpened(false)}
-            disabled={!isConnected}
           />
 
           {/* Selected Key Display (Mobile Only) */}
@@ -333,7 +339,7 @@ function AppLayout() {
                 description="Active confidential key"
                 leftSection={<IconKey size={20} />}
                 component={Link}
-                to="/keys"
+                to="/confidential-accounts"
                 onClick={() => setOpened(false)}
                 hiddenFrom="sm"
               />
@@ -352,12 +358,12 @@ function AppLayout() {
                 fw={500}
                 hiddenFrom="sm"
               >
-                ACCOUNT
+                SIGNING KEY
               </Text>
               <Menu shadow="md" width={250} closeOnItemClick={false}>
                 <Menu.Target>
                   <NavLink
-                    label={selectedAccount.name || 'Wallet Account'}
+                    label={selectedAccount.name || 'Wallet Key'}
                     description={`${selectedAccount.address.substring(
                       0,
                       8,
@@ -370,7 +376,7 @@ function AppLayout() {
                   />
                 </Menu.Target>
                 <Menu.Dropdown style={{ maxWidth: 'calc(100vw - 2rem)' }}>
-                  <Menu.Label>Select Account</Menu.Label>
+                  <Menu.Label>Select Key</Menu.Label>
                   <TextInput
                     placeholder="Search accounts..."
                     leftSection={<IconSearch size={16} />}
@@ -477,7 +483,7 @@ function AppLayout() {
                 leftSection={<IconWallet size={20} />}
                 color="red"
                 onClick={() => {
-                  disconnect();
+                  disconnectWallet();
                   setOpened(false);
                 }}
                 hiddenFrom="sm"
@@ -491,10 +497,9 @@ function AppLayout() {
         <WasmErrorBoundary>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/keys" element={<KeyManagementPageGrid />} />
             <Route
-              path="/keys/compact"
-              element={<KeyManagementPageCompact />}
+              path="/confidential-accounts"
+              element={<KeyManagementPage />}
             />
             <Route path="/assets" element={<AssetManagementPage />} />
             <Route path="/settlements" element={<SettlementPage />} />

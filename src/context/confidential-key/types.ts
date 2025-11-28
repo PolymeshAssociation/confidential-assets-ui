@@ -47,4 +47,6 @@ export interface ConfidentialKeyContextValue {
   checkAllRegistrations: (polkadotApi: ApiPromise) => Promise<void>;
   changeKeyPassword: (publicKey: string) => Promise<void>;
   isKeyEncrypted: (publicKey: string) => boolean;
+  exportKey: (publicKey: string) => string;
+  importKey: (jsonData: string, password: string) => Promise<void>;
 }
