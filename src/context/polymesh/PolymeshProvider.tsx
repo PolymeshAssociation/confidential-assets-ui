@@ -236,6 +236,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
         if (accountList.length === 0) {
           // No accounts - clear storage and show message
           localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
+          setSelectedAccount(null);
           showError('No accounts found in wallet');
           setIsWalletConnecting(false);
           return;
