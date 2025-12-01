@@ -1,4 +1,5 @@
 export { ChangePasswordModal } from './ChangePasswordModal';
+export { ConfidentialAccountSelectionModal } from './ConfidentialAccountSelectionModal';
 export { CreateAssetModal } from './CreateAssetModal';
 export { DeleteKeyModal } from './DeleteKeyModal';
 export { ErrorBoundary } from './ErrorBoundary';

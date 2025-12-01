@@ -61,7 +61,7 @@ function AppLayout() {
   } = usePolymesh();
 
   const { selectedKey } = useConfidentialKey();
-  const { openWalletModal } = useModal();
+  const { openWalletModal, openConfidentialAccountModal } = useModal();
   const location = useLocation();
   const [opened, setOpened] = useState(false);
 
@@ -134,8 +134,7 @@ function AppLayout() {
                 color="polyPink"
                 rightSection={<IconUserShield size={20} />}
                 visibleFrom="md"
-                component={Link}
-                to="/confidential-accounts"
+                onClick={openConfidentialAccountModal}
               >
                 {selectedKey.alias}
               </Button>
@@ -145,8 +144,7 @@ function AppLayout() {
                 color="polyPink"
                 leftSection={<IconUserShield size={18} />}
                 visibleFrom="md"
-                component={Link}
-                to="/confidential-accounts"
+                onClick={openConfidentialAccountModal}
               >
                 Confidential Account
               </Button>
@@ -232,9 +230,10 @@ function AppLayout() {
                 label={selectedKey.alias}
                 description="Active confidential key"
                 leftSection={<IconUserShield size={20} />}
-                component={Link}
-                to="/confidential-accounts"
-                onClick={() => setOpened(false)}
+                onClick={() => {
+                  openConfidentialAccountModal();
+                  setOpened(false);
+                }}
                 hiddenFrom="sm"
               />
             </>
@@ -368,25 +367,25 @@ function AppLayout() {
 
 export function App() {
   return (
-    <ThemeProvider>
-      <NotificationProvider>
-        <PolymeshProvider>
-          <ModalProvider>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <ThemeProvider>
+        <NotificationProvider>
+          <PolymeshProvider>
             <TransactionProvider>
               <ConfidentialKeyProvider>
-                <AssetProvider>
-                  <SettlementProvider>
-                    <BrowserRouter basename={import.meta.env.BASE_URL}>
+                <ModalProvider>
+                  <AssetProvider>
+                    <SettlementProvider>
                       <AppLayout />
-                    </BrowserRouter>
-                  </SettlementProvider>
-                </AssetProvider>
+                    </SettlementProvider>
+                  </AssetProvider>
+                </ModalProvider>
               </ConfidentialKeyProvider>
             </TransactionProvider>
-          </ModalProvider>
-        </PolymeshProvider>
-      </NotificationProvider>
-    </ThemeProvider>
+          </PolymeshProvider>
+        </NotificationProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 

@@ -304,6 +304,7 @@ export function SigningKeySelectionModal({
                     onClick={() => {
                       selectAccount(account);
                       setSearch('');
+                      onClose();
                     }}
                     className={classes.accountCard}
                     data-selected={

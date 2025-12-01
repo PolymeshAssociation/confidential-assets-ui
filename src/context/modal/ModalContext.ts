@@ -5,6 +5,8 @@ export interface ModalContextType {
   closeWalletModal: () => void;
   openKeySelectionModal: () => void;
   closeKeySelectionModal: () => void;
+  openConfidentialAccountModal: () => void;
+  closeConfidentialAccountModal: () => void;
 }
 
 export const ModalContext = createContext<ModalContextType | undefined>(
