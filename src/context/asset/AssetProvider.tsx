@@ -265,9 +265,6 @@ export function AssetProvider({ children }: { children: ReactNode }) {
   // Refresh owned assets when selected account changes
   useEffect(() => {
     if (selectedAccount && polkadotApi && sdk) {
-      console.log(
-        '[Asset Provider] Selected account changed, refreshing owned assets...',
-      );
       refreshOwnedAssets();
     }
   }, [selectedAccount, polkadotApi, sdk, refreshOwnedAssets]);
@@ -494,13 +491,6 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             newBalances.set(params.assetId, newBalance);
             return newBalances;
           });
-
-          console.log(
-            '[Asset Provider] Updated balance for asset',
-            params.assetId,
-            'to',
-            newBalance,
-          );
         } catch (err) {
           console.error(
             '[Asset Provider] Failed to decode updated balance:',

@@ -55,14 +55,11 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   // WASM initialization function
   const initializeWasm = useCallback(async () => {
     if (isInitialized) {
-      console.log('Confidential WASM already initialized');
       return;
     }
     try {
-      console.log('Initializing Confidential WASM module...');
       await confidentialKeyManager.initWasm();
       setIsInitialized(true);
-      console.log('Confidential WASM module initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Confidential WASM:', error);
       throw error;
@@ -186,8 +183,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
         // Refresh keys list
         loadKeys();
-
-        console.log(`Generated new Confidential key: ${alias}`);
       } catch (error) {
         if (error instanceof ConfidentialError) {
           throw error;
@@ -273,8 +268,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       setKeys((prevKeys) =>
         prevKeys.map((key) => ({ ...key, isUnlocked: false })),
       );
-
-      console.log('Locked Confidential key');
     } catch (error) {
       if (error instanceof ConfidentialError) {
         throw error;
@@ -304,8 +297,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
       // Refresh keys list
       loadKeys();
-
-      console.log(`Deleted confidential key: ${storedKey.name}`);
     },
     [selectedKey, lockKey, loadKeys],
   );
@@ -316,8 +307,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       if (!storedKey) {
         throw new Error(`Key with public key "${publicKey}" not found`);
       }
-
-      const oldAlias = storedKey.name;
 
       // Update in storage
       const success = keyStorage.updateName(publicKey, newAlias);
@@ -332,8 +321,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
       // Refresh keys list
       loadKeys();
-
-      console.log(`Renamed confidential key: ${oldAlias} -> ${newAlias}`);
     },
     [loadKeys, selectedKey],
   );
@@ -381,8 +368,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
       keyStorage.updateKey(updatedRecord);
 
-      console.log(`Changed password for key: ${storedKey.name}`);
-
       // Close modal on success
       setChangePasswordModalOpen(false);
       setChangePasswordKeyPublicKey(null);
@@ -404,16 +389,11 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     (timeoutMs: number) => {
       // Clear any existing timeout
       if (unlockTimeout) {
-        console.log('Clearing existing unlock timeout');
         clearTimeout(unlockTimeout);
       }
 
       // Schedule new clear
-      console.log(`Scheduling key clear in ${timeoutMs / 1000} seconds`);
       const timeout = setTimeout(() => {
-        console.log(
-          'Timeout expired, clearing keys and resetting keepUnlocked',
-        );
         confidentialKeyManager.clearKeys();
         setKeepUnlocked(false);
         setUnlockTimeout(null);
@@ -441,10 +421,8 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         let accountKeys: AccountKeys | null = null;
         try {
           accountKeys = confidentialKeyManager.getCurrentKeys();
-          console.log('Using already-loaded keys (keepUnlocked active)');
         } catch {
           // Keys not loaded, need to load them
-          console.log('Keys not loaded, requesting password');
         }
 
         // If keys aren't loaded, load them now
@@ -489,12 +467,8 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         // 1. The existing state (if keys were already loaded)
         // 2. The user's choice from the password modal (if we just unlocked)
         if (shouldKeepUnlocked) {
-          console.log(
-            'keepUnlocked is true, scheduling key clear for 10 minutes',
-          );
           scheduleKeyClear(10 * 60 * 1000); // 10 minutes
         } else {
-          console.log('keepUnlocked is false, clearing keys immediately');
           confidentialKeyManager.clearKeys();
         }
       }
@@ -520,11 +494,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         prevKeys.map((key) =>
           key.publicKey === publicKey ? { ...key, registeredDid } : key,
         ),
-      );
-
-      console.log(
-        `Updated registration status for ${publicKey}:`,
-        registeredDid || 'Not registered',
       );
     },
     [],
@@ -573,8 +542,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         const result = results.find((r) => r.alias === prev.alias);
         return result ? { ...prev, registeredDid: result.registeredDid } : prev;
       });
-
-      console.log('Checked registration status for all keys');
     } catch (error) {
       console.error('Failed to check registrations:', error);
     }
@@ -602,7 +569,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
       // Restore selection (no unlock)
       setSelectedKey(key);
-      console.log(`Auto-restored selected key: ${key.alias}`);
     };
 
     restoreSelectedKey();
@@ -690,7 +656,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       // Save
       keyStorage.saveKey(keyRecord as AnyConfidentialKeyRecord);
       loadKeys();
-      console.log(`Imported key: ${name}`);
     },
     [loadKeys],
   );

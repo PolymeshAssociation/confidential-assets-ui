@@ -135,8 +135,6 @@ export function SettlementDetailsModal({
       if (!polkadotApi || legIds.length === 0) return;
 
       try {
-        console.log('[Settlement Details] Querying leg affirmation status...');
-
         // Initialize status map for all legs
         const statusMap = new Map<number, LegAffirmationStatus>();
         for (const legId of legIds) {
@@ -158,12 +156,6 @@ export function SettlementDetailsModal({
             );
           allEntries.push(...entries);
         }
-
-        console.log(
-          '[Settlement Details] Found',
-          allEntries.length,
-          'affirmation status entries',
-        );
 
         // Process each entry
         for (const [key, value] of allEntries) {
@@ -201,17 +193,7 @@ export function SettlementDetailsModal({
           }
         }
 
-        console.log(
-          '[Settlement Details] Processed affirmation status for',
-          statusMap.size,
-          'legs',
-        );
-
         setLegAffirmationStatus(statusMap);
-        console.log(
-          '[Settlement Details] Affirmation status loaded:',
-          statusMap,
-        );
       } catch (err) {
         console.error('Failed to query leg affirmation status:', err);
       }
@@ -227,19 +209,12 @@ export function SettlementDetailsModal({
       setIsLoadingLegs(true);
       setError(null);
 
-      console.log(
-        '[Settlement Details] Querying legs for settlement:',
-        settlementId,
-      );
-
       // Query all settlement legs entries for this settlement
       // settlementLegs(SettlementRef, u8) - query with just the ref to get all legs
       const entries =
         await polkadotApi.query.confidentialAssets.settlementLegs.entries(
           settlementId,
         );
-
-      console.log('[Settlement Details] Found', entries.length, 'legs');
 
       // Extract leg IDs from the keys
       const legIds = entries

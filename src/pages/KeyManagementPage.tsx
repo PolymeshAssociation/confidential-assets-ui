@@ -38,7 +38,6 @@ import {
   IconDownload,
   IconEdit,
   IconFileImport,
-  IconKey,
   IconLayoutGrid,
   IconList,
   IconLock,
@@ -46,6 +45,7 @@ import {
   IconSearch,
   IconShieldCheck,
   IconTrash,
+  IconUserShield,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -458,7 +458,7 @@ export function KeyManagementPage() {
 
       {filteredKeys.length === 0 ? (
         <Alert
-          icon={<IconKey size={32} />}
+          icon={<IconUserShield size={32} />}
           title={
             keys.length === 0
               ? 'No confidential keys yet'

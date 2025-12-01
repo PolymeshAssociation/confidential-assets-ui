@@ -156,7 +156,7 @@ export function ImportKeyModal({
         {keyPreview && (
           <>
             <TextInput
-              label="Key Alias"
+              label="Confidential Account Name"
               value={keyPreview.name}
               readOnly
               variant="filled"

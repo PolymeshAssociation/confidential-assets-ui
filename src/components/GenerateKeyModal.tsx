@@ -53,7 +53,7 @@ export function GenerateKeyModal({
 
   const handleGenerate = async () => {
     if (!alias) {
-      setError('Please enter a key alias');
+      setError('Please enter a confidential account name');
       return;
     }
 
@@ -135,11 +135,11 @@ export function GenerateKeyModal({
           )}
 
           <TextInput
-            label="Key Alias"
+            label="Confidential Account Name"
             placeholder="My Key Name"
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
-            description="A friendly name to identify this key"
+            description="A friendly name to identify these keys"
             maxLength={50}
             required
             data-autofocus

@@ -1,0 +1,22 @@
+.walletCard {
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.walletCard:hover:not([data-disabled]) {
+  background-color: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-6)
+  );
+}
+
+.walletCard[data-disabled] {
+  cursor: default;
+  opacity: 0.7;
+}

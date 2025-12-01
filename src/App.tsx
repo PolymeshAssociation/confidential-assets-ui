@@ -1,12 +1,15 @@
 import { ErrorBoundary } from '@/components';
+import { SigningKeySelectionButton } from '@/components/SigningKeySelectionButton';
 import { AssetProvider } from '@/context/asset';
 import { ConfidentialKeyProvider } from '@/context/confidential-key';
+import { ModalProvider } from '@/context/modal';
 import { NotificationProvider } from '@/context/notification';
 import { PolymeshProvider } from '@/context/polymesh';
 import { SettlementProvider } from '@/context/settlement';
 import { ThemeProvider } from '@/context/theme';
 import { TransactionProvider } from '@/context/transaction';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
+import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { useTheme } from '@/hooks/useTheme';
 import { AssetManagementPage } from '@/pages/AssetManagementPage';
@@ -23,31 +26,22 @@ import {
   Group,
   Image,
   Loader,
-  Menu,
   NavLink,
-  ScrollArea,
   Stack,
   Text,
-  TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import {
   IconAlertCircle,
   IconArrowsExchange,
   IconChartBar,
-  IconCheck,
-  IconChevronDown,
-  IconCopy,
-  IconKey,
   IconMoon,
-  IconSearch,
   IconShieldLock,
   IconSun,
   IconUserShield,
   IconWallet,
 } from '@tabler/icons-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -63,32 +57,13 @@ function AppLayout() {
     isWalletConnected,
     isWalletConnecting,
     error,
-    connectWallet,
     disconnectWallet,
-    accounts,
-    selectedAccount,
-    selectAccount,
   } = usePolymesh();
 
   const { selectedKey } = useConfidentialKey();
+  const { openWalletModal } = useModal();
   const location = useLocation();
   const [opened, setOpened] = useState(false);
-  const [accountSearch, setAccountSearch] = useState('');
-
-  const filteredAccounts = useMemo(() => {
-    const search = accountSearch.toLowerCase();
-    const filtered = accounts.filter(
-      (account) =>
-        account.name?.toLowerCase().includes(search) ||
-        account.address.toLowerCase().includes(search),
-    );
-    // Sort to show selected account first
-    return filtered.sort((a, b) => {
-      if (a.address === selectedAccount?.address) return -1;
-      if (b.address === selectedAccount?.address) return 1;
-      return 0;
-    });
-  }, [accounts, accountSearch, selectedAccount?.address]);
 
   return (
     <AppShell
@@ -157,7 +132,7 @@ function AppLayout() {
               <Button
                 variant="subtle"
                 color="polyPink"
-                leftSection={<IconKey size={18} />}
+                rightSection={<IconUserShield size={20} />}
                 visibleFrom="md"
                 component={Link}
                 to="/confidential-accounts"
@@ -177,114 +152,13 @@ function AppLayout() {
               </Button>
             )}
 
-            {isWalletConnected && selectedAccount ? (
-              <Menu shadow="md" width={360} closeOnItemClick={false}>
-                <Menu.Target>
-                  <Button
-                    variant="subtle"
-                    color="dark"
-                    rightSection={<IconChevronDown size={16} />}
-                    leftSection={<IconWallet size={18} />}
-                    visibleFrom="sm"
-                  >
-                    {selectedAccount.name ||
-                      `${selectedAccount.address.substring(
-                        0,
-                        6,
-                      )}...${selectedAccount.address.substring(
-                        selectedAccount.address.length - 4,
-                      )}`}
-                  </Button>
-                </Menu.Target>
-
-                <Menu.Dropdown style={{ maxWidth: 'calc(100vw - 2rem)' }}>
-                  <Menu.Label>Select Key</Menu.Label>
-                  <TextInput
-                    placeholder="Search accounts..."
-                    leftSection={<IconSearch size={16} />}
-                    value={accountSearch}
-                    onChange={(e) => setAccountSearch(e.currentTarget.value)}
-                    mb="xs"
-                    mx="xs"
-                    styles={{ root: { width: 'calc(100% - 16px)' } }}
-                  />
-                  <ScrollArea.Autosize mah={300} type="auto">
-                    {filteredAccounts.length > 0 ? (
-                      filteredAccounts.map((account) => (
-                        <Menu.Item
-                          key={account.address}
-                          leftSection={
-                            selectedAccount.address === account.address ? (
-                              <IconCheck size={16} />
-                            ) : (
-                              <div style={{ width: 16 }} />
-                            )
-                          }
-                          onClick={() => {
-                            selectAccount(account);
-                            setAccountSearch('');
-                          }}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <Group justify="space-between" wrap="nowrap" gap="xs">
-                            <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-                              {account.name && (
-                                <Text size="sm" fw={500} lineClamp={1}>
-                                  {account.name}
-                                </Text>
-                              )}
-                              <Text
-                                size="xs"
-                                c="dimmed"
-                                lineClamp={1}
-                                style={{ fontFamily: 'monospace' }}
-                              >
-                                {account.address.substring(0, 12)}...
-                                {account.address.substring(
-                                  account.address.length - 12,
-                                )}
-                              </Text>
-                            </Stack>
-                            <Tooltip label="Copy address">
-                              <ActionIcon
-                                component="div"
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigator.clipboard.writeText(
-                                    account.address,
-                                  );
-                                }}
-                              >
-                                <IconCopy size={14} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </Group>
-                        </Menu.Item>
-                      ))
-                    ) : (
-                      <Text size="sm" c="dimmed" p="md" ta="center">
-                        No accounts found
-                      </Text>
-                    )}
-                  </ScrollArea.Autosize>
-                  <Menu.Divider />
-                  <Menu.Item
-                    color="red"
-                    onClick={disconnectWallet}
-                    closeMenuOnClick
-                  >
-                    Disconnect Wallet
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
+            {isWalletConnected ? (
+              <SigningKeySelectionButton />
             ) : (
               <Button
                 variant="default"
                 leftSection={<IconWallet size={18} />}
-                onClick={connectWallet}
+                onClick={openWalletModal}
                 loading={isWalletConnecting}
                 visibleFrom="sm"
               >
@@ -352,124 +226,17 @@ function AppLayout() {
                 fw={500}
                 hiddenFrom="sm"
               >
-                SELECTED KEY
+                SELECTED CONFIDENTIAL ACCOUNT
               </Text>
               <NavLink
                 label={selectedKey.alias}
                 description="Active confidential key"
-                leftSection={<IconKey size={20} />}
+                leftSection={<IconUserShield size={20} />}
                 component={Link}
                 to="/confidential-accounts"
                 onClick={() => setOpened(false)}
                 hiddenFrom="sm"
               />
-            </>
-          )}
-
-          {/* Account Selector (Mobile Only) */}
-          {isWalletConnected && selectedAccount && (
-            <>
-              <Text
-                size="xs"
-                c="dimmed"
-                mt="md"
-                mb="xs"
-                px="xs"
-                fw={500}
-                hiddenFrom="sm"
-              >
-                SIGNING KEY
-              </Text>
-              <Menu shadow="md" width={250} closeOnItemClick={false}>
-                <Menu.Target>
-                  <NavLink
-                    label={selectedAccount.name || 'Wallet Key'}
-                    description={`${selectedAccount.address.substring(
-                      0,
-                      8,
-                    )}...${selectedAccount.address.substring(
-                      selectedAccount.address.length - 6,
-                    )}`}
-                    leftSection={<IconWallet size={20} />}
-                    rightSection={<IconChevronDown size={16} />}
-                    hiddenFrom="sm"
-                  />
-                </Menu.Target>
-                <Menu.Dropdown style={{ maxWidth: 'calc(100vw - 2rem)' }}>
-                  <Menu.Label>Select Key</Menu.Label>
-                  <TextInput
-                    placeholder="Search accounts..."
-                    leftSection={<IconSearch size={16} />}
-                    value={accountSearch}
-                    onChange={(e) => setAccountSearch(e.currentTarget.value)}
-                    mb="xs"
-                    mx="xs"
-                    styles={{ root: { width: 'calc(100% - 16px)' } }}
-                  />
-                  <ScrollArea.Autosize mah={300} type="auto">
-                    {filteredAccounts.length > 0 ? (
-                      filteredAccounts.map((account) => (
-                        <Menu.Item
-                          key={account.address}
-                          leftSection={
-                            selectedAccount.address === account.address ? (
-                              <IconCheck size={16} />
-                            ) : (
-                              <div style={{ width: 16 }} />
-                            )
-                          }
-                          onClick={() => {
-                            selectAccount(account);
-                            setAccountSearch('');
-                          }}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <Group justify="space-between" wrap="nowrap" gap="xs">
-                            <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-                              {account.name && (
-                                <Text size="sm" fw={500} lineClamp={1}>
-                                  {account.name}
-                                </Text>
-                              )}
-                              <Text
-                                size="xs"
-                                c="dimmed"
-                                lineClamp={1}
-                                style={{ fontFamily: 'monospace' }}
-                              >
-                                {account.address.substring(0, 12)}...
-                                {account.address.substring(
-                                  account.address.length - 12,
-                                )}
-                              </Text>
-                            </Stack>
-                            <Tooltip label="Copy address">
-                              <ActionIcon
-                                component="div"
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigator.clipboard.writeText(
-                                    account.address,
-                                  );
-                                }}
-                              >
-                                <IconCopy size={14} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </Group>
-                        </Menu.Item>
-                      ))
-                    ) : (
-                      <Text size="sm" c="dimmed" p="md" ta="center">
-                        No accounts found
-                      </Text>
-                    )}
-                  </ScrollArea.Autosize>
-                </Menu.Dropdown>
-              </Menu>
             </>
           )}
 
@@ -494,7 +261,7 @@ function AppLayout() {
             fw={500}
             hiddenFrom="sm"
           >
-            SESSION
+            WALLET CONNECTION
           </Text>
           {isWalletConnected ? (
             <NavLink
@@ -512,7 +279,7 @@ function AppLayout() {
               label="Connect Wallet"
               leftSection={<IconWallet size={20} />}
               onClick={() => {
-                connectWallet();
+                openWalletModal();
                 setOpened(false);
               }}
               hiddenFrom="sm"
@@ -560,7 +327,9 @@ function AppLayout() {
                 <Stack gap="xs">
                   <Text size="sm">• Check your internet connection</Text>
                   <Text size="sm">• Reload the page to try again</Text>
-                  <Text size="sm">• The network may be temporarily unavailable</Text>
+                  <Text size="sm">
+                    • The network may be temporarily unavailable
+                  </Text>
                 </Stack>
               </div>
 
@@ -569,7 +338,8 @@ function AppLayout() {
                   Need help?
                 </Title>
                 <Text size="sm">
-                  If this issue persists, please contact the Polymesh team for support.
+                  If this issue persists, please contact the Polymesh team for
+                  support.
                 </Text>
               </div>
 
@@ -601,17 +371,19 @@ export function App() {
     <ThemeProvider>
       <NotificationProvider>
         <PolymeshProvider>
-          <TransactionProvider>
-            <ConfidentialKeyProvider>
-              <AssetProvider>
-                <SettlementProvider>
-                  <BrowserRouter basename={import.meta.env.BASE_URL}>
-                    <AppLayout />
-                  </BrowserRouter>
-                </SettlementProvider>
-              </AssetProvider>
-            </ConfidentialKeyProvider>
-          </TransactionProvider>
+          <ModalProvider>
+            <TransactionProvider>
+              <ConfidentialKeyProvider>
+                <AssetProvider>
+                  <SettlementProvider>
+                    <BrowserRouter basename={import.meta.env.BASE_URL}>
+                      <AppLayout />
+                    </BrowserRouter>
+                  </SettlementProvider>
+                </AssetProvider>
+              </ConfidentialKeyProvider>
+            </TransactionProvider>
+          </ModalProvider>
         </PolymeshProvider>
       </NotificationProvider>
     </ThemeProvider>

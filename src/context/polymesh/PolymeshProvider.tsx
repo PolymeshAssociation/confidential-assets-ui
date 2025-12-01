@@ -6,10 +6,12 @@ import type { BrowserExtensionSigningManager as SigningManagerType } from '@poly
 import { BrowserExtensionSigningManager } from '@polymeshassociation/browser-extension-signing-manager';
 import type { Polymesh as PolymeshType } from '@polymeshassociation/polymesh-sdk';
 import { Polymesh } from '@polymeshassociation/polymesh-sdk';
+import type { Balance } from '@polymeshassociation/polymesh-sdk/api/entities/Account/types';
+import type { UnsubCallback } from '@polymeshassociation/polymesh-sdk/types';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PolymeshContext } from './PolymeshContext';
-import type { Account } from './types';
+import type { Account, Wallet } from './types';
 import { NODE_URL, PRIORITY_EXTENSIONS, STORAGE_KEYS } from './types';
 
 export function PolymeshProvider({ children }: { children: ReactNode }) {
@@ -25,32 +27,109 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
+  const [connectedWalletId, setConnectedWalletId] = useState<string | null>(
+    () => localStorage.getItem(STORAGE_KEYS.LAST_WALLET_ID),
+  );
+  const [accountBalance, setAccountBalance] = useState<Balance | null>(null);
+  const [accountIdentity, setAccountIdentity] = useState<string | null>(null);
+  const [isAccountLoading, setIsAccountLoading] = useState(false);
 
   const sdkRef = useRef<PolymeshType | null>(null);
+  const detectedWalletsRef = useRef<string[]>([]);
+  // Track current wallet connection to prevent race conditions when switching wallets
+  const currentWalletConnectionRef = useRef<string | null>(null);
 
-  // Connect to Polymesh SDK on mount
+  const connectWallet = useCallback(
+    async (walletId: string) => {
+      setIsWalletConnecting(true);
+
+      try {
+        // Check if the wallet is in detected wallets
+        if (!detectedWalletsRef.current.includes(walletId)) {
+          throw new Error(
+            `${walletId} is not installed. Please install it to continue.`,
+          );
+        }
+
+        // Create signing manager (independent of SDK)
+        const manager = await BrowserExtensionSigningManager.create({
+          appName: 'Polymesh Confidential Assets',
+          extensionName: walletId,
+          accountTypes: ['sr25519', 'ed25519', 'ecdsa'], // filter out ethereum wallets
+        });
+
+        // Set signing manager state
+        setSigningManager(manager);
+
+        // Persist the wallet ID
+        localStorage.setItem(STORAGE_KEYS.LAST_WALLET_ID, walletId);
+        setConnectedWalletId(walletId);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to connect wallet';
+
+        showError(errorMessage);
+        console.error('Wallet connection error:', err);
+
+        // Clear state on error
+        setSigningManager(null);
+        setConnectedWalletId(null);
+        setIsWalletConnecting(false);
+        currentWalletConnectionRef.current = null;
+
+        // Re-throw so callers can handle the error
+        throw err;
+      }
+    },
+    [showError],
+  );
+
+  const selectAccount = useCallback(
+    async (account: Account) => {
+      if (!sdk) {
+        return;
+      }
+
+      try {
+        sdk.setSigningAccount(account.address);
+        setSelectedAccount(account);
+        localStorage.setItem(STORAGE_KEYS.SELECTED_ACCOUNT, account.address);
+      } catch (err) {
+        console.error('Failed to set signing account:', err);
+        showError('Failed to select account');
+        throw err;
+      }
+    },
+    [sdk, showError],
+  );
+
+  const disconnectWallet = useCallback(() => {
+    // Clear persistence
+    localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
+    localStorage.removeItem(STORAGE_KEYS.LAST_WALLET_ID);
+
+    // Trigger effect to handle SDK and state cleanup
+    setSigningManager(null);
+  }, []);
+
+  // Initialize Polymesh SDK (independent of wallet)
   useEffect(() => {
     setIsConnecting(true);
-    // Set wallet connecting immediately if we have a saved connection to prevent flicker
-    const wasConnected = localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED);
-    if (wasConnected === 'true') {
-      setIsWalletConnecting(true);
-    }
 
     (async () => {
       try {
         if (!sdkRef.current) {
           const sdkInstance = await Polymesh.connect({
             nodeUrl: NODE_URL,
-            signingManager: undefined,
             polkadot: {
               noInitWarn: true,
             },
           });
           if (!sdkRef.current) {
+            sdkRef.current = sdkInstance;
             setSdk(sdkInstance);
             setPolkadotApi(sdkInstance._polkadotApi);
-            sdkRef.current = sdkInstance;
             console.log(`Connected to ${NODE_URL}`);
           }
           setIsConnected(true);
@@ -62,146 +141,202 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
             : 'Failed to connect to Polymesh';
         setError(errorMessage);
         console.error('Polymesh SDK connection error:', error);
-        // Clear on SDK error since auto-reconnect won't happen
-        setIsWalletConnecting(false);
       } finally {
         setIsConnecting(false);
       }
     })();
   }, []);
 
-  const disconnectWallet = useCallback(async () => {
-    await sdk?.setSigningManager(null);
-    setSigningManager(null);
-    setIsWalletConnected(false);
-    setAccounts([]);
-    setSelectedAccount(null);
-    // Clear persistence
-    localStorage.removeItem(STORAGE_KEYS.WALLET_CONNECTED);
-    localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
-  }, [sdk]);
+  // Detect available wallets and auto-reconnect
+  useEffect(() => {
+    const extensions = BrowserExtensionSigningManager.getExtensionList();
+    detectedWalletsRef.current = extensions;
 
-  const connectWallet = useCallback(async () => {
-    if (!sdk) {
+    // Build availableWallets for UI
+    const wallets: Wallet[] = PRIORITY_EXTENSIONS.map((extName) => ({
+      name: extName,
+      isInstalled: extensions.includes(extName),
+    }));
+    setAvailableWallets(wallets);
+
+    // Auto-reconnect if previously connected
+    const lastWalletId = localStorage.getItem(STORAGE_KEYS.LAST_WALLET_ID);
+    if (lastWalletId) {
+      connectWallet(lastWalletId).catch((err) => {
+        console.error('Auto-reconnect failed:', err);
+        // Clear localStorage on failed auto-reconnect to prevent infinite retry
+        localStorage.removeItem(STORAGE_KEYS.LAST_WALLET_ID);
+      });
+    }
+  }, [connectWallet]);
+
+  // Attach signing manager to SDK and get accounts
+  useEffect(() => {
+    if (!sdk || !signingManager) {
+      // Clear wallet state when signing manager is removed
+      if (!signingManager) {
+        // Clear signing manager from SDK
+        if (sdk) {
+          sdk.setSigningManager(null);
+        }
+
+        // Clear all wallet state
+        setAccounts([]);
+        setSelectedAccount(null);
+        setAccountBalance(null);
+        setAccountIdentity(null);
+        setIsAccountLoading(false);
+        setIsWalletConnected(false);
+        setConnectedWalletId(null);
+        currentWalletConnectionRef.current = null;
+      }
       return;
     }
 
-    setIsWalletConnecting(true);
-    setError(null);
+    // Track this connection attempt
+    const connectionId = `${Date.now()}-${Math.random()}`;
+    currentWalletConnectionRef.current = connectionId;
 
-    try {
-      // Get available extensions
-      const extensions = BrowserExtensionSigningManager.getExtensionList();
-
-      if (extensions.length === 0) {
-        throw new Error(
-          'No Polymesh-compatible wallet extensions found. Please install Polymesh Wallet or Polkadot.js extension.',
-        );
-      }
-
-      // Filter for priority extensions
-      const priorityExtensions = extensions.filter((ext) =>
-        PRIORITY_EXTENSIONS.includes(ext.toLowerCase()),
-      );
-
-      const availableExtensions =
-        priorityExtensions.length > 0 ? priorityExtensions : extensions;
-
-      console.log('Available wallet extensions:', availableExtensions);
-
-      // Create signing manager with the first available priority extension
-      const manager = await BrowserExtensionSigningManager.create({
-        appName: 'Polymesh Confidential Assets',
-        extensionName: availableExtensions[0],
-        accountTypes: ['sr25519', 'ed25519', 'ecdsa'],
-      });
-
-      setSigningManager(manager);
-
-      // Attach signing manager to already-connected SDK
-      await sdk.setSigningManager(manager);
-
-      setIsWalletConnected(true);
-
-      // Get accounts with metadata from the extension
-      const extensionAccounts = await manager.getAccountsWithMeta();
-      const accountList: Account[] = extensionAccounts.map((account) => ({
-        address: account.address,
-        name: account.meta?.name || account.address.substring(0, 8) + '...',
-      }));
-      setAccounts(accountList);
-
-      // Try to restore previously selected account
-      const savedAccount = localStorage.getItem(STORAGE_KEYS.SELECTED_ACCOUNT);
-      const accountToSelect = savedAccount
-        ? accountList.find((acc) => acc.address === savedAccount) ||
-          accountList[0]
-        : accountList[0];
-
-      if (accountToSelect) {
-        // Set signing account in SDK - this also updates the polkadot API signer
-        sdk.setSigningAccount(accountToSelect.address);
-        setSelectedAccount(accountToSelect);
-        localStorage.setItem(
-          STORAGE_KEYS.SELECTED_ACCOUNT,
-          accountToSelect.address,
-        );
-        console.log('Initial signing account set:', accountToSelect.address);
-      }
-
-      // Mark wallet as connected
-      localStorage.setItem(STORAGE_KEYS.WALLET_CONNECTED, 'true');
-
-      console.log('Wallet connected successfully');
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to connect wallet';
-      setError(errorMessage);
-      showError(errorMessage);
-      console.error('Wallet connection error:', err);
-    } finally {
-      setIsWalletConnecting(false);
-    }
-  }, [sdk, showError]);
-
-  const selectAccount = useCallback(
-    async (account: Account) => {
-      if (!sdk) {
-        console.warn('SDK not available, cannot set signing account');
-        return;
-      }
-
+    const attachAndGetAccounts = async () => {
       try {
-        // Update the SDK's signing account - this also updates the polkadot API signer
-        sdk.setSigningAccount(account.address);
-        setSelectedAccount(account);
-        // Persist selected account
-        localStorage.setItem(STORAGE_KEYS.SELECTED_ACCOUNT, account.address);
-        console.log('Selected and set signing account:', account.address);
-      } catch (err) {
-        console.error('Failed to set signing account:', err);
-        throw err;
+        // Check if this is still the current connection attempt
+        if (currentWalletConnectionRef.current !== connectionId) {
+          return;
+        }
+
+        // Attach signing manager to SDK
+        await sdk.setSigningManager(signingManager);
+
+        // Check again after async operation
+        if (currentWalletConnectionRef.current !== connectionId) {
+          return;
+        }
+
+        // Get accounts with metadata
+        const extensionAccounts = await signingManager.getAccountsWithMeta();
+        const accountList: Account[] = extensionAccounts.map((account) => ({
+          address: account.address,
+          name: account.meta?.name || account.address.substring(0, 8) + '...',
+        }));
+
+        // Check again after async operation
+        if (currentWalletConnectionRef.current !== connectionId) {
+          return;
+        }
+
+        setAccounts(accountList);
+
+        if (accountList.length === 0) {
+          // No accounts - clear storage and show message
+          localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
+          showError('No accounts found in wallet');
+          setIsWalletConnecting(false);
+          return;
+        }
+
+        // Try to restore last selected account
+        const savedAddress = localStorage.getItem(
+          STORAGE_KEYS.SELECTED_ACCOUNT,
+        );
+        const accountToSelect = savedAddress
+          ? accountList.find((acc) => acc.address === savedAddress)
+          : undefined;
+
+        if (accountToSelect) {
+          // Last selected account still exists
+          await selectAccount(accountToSelect);
+        } else {
+          // Last selected not found or no saved account - use first
+          if (savedAddress) {
+            localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
+          }
+          await selectAccount(accountList[0]);
+        }
+
+        // Final check before completing
+        if (currentWalletConnectionRef.current !== connectionId) {
+          return;
+        }
+
+        setIsWalletConnected(true);
+        setIsWalletConnecting(false);
+      } catch (error) {
+        // Only show error if this is still the current connection
+        if (currentWalletConnectionRef.current === connectionId) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+
+          // Provide more specific error messages
+          if (errorMessage.includes('getAccountsWithMeta')) {
+            showError('Failed to retrieve accounts from wallet');
+          } else if (errorMessage.includes('setSigningAccount')) {
+            showError('Failed to select account');
+          } else if (errorMessage.includes('setSigningManager')) {
+            showError('Failed to connect wallet to SDK');
+          } else {
+            showError(`Failed to initialize wallet: ${errorMessage}`);
+          }
+
+          console.error('Error attaching signing manager:', error);
+          setIsWalletConnecting(false);
+        }
       }
-    },
-    [sdk],
-  );
+    };
 
-  // Track if auto-reconnect attempted
-  const autoReconnectAttempted = useRef(false);
+    attachAndGetAccounts();
+  }, [sdk, signingManager, selectAccount, showError]);
 
-  // Auto-reconnect wallet if previously connected (after SDK is ready)
+  // Subscribe to account balance and identity changes
   useEffect(() => {
-    if (autoReconnectAttempted.current || !isConnected) return;
-
-    const wasConnected = localStorage.getItem(STORAGE_KEYS.WALLET_CONNECTED);
-    if (wasConnected === 'true' && !isWalletConnected) {
-      console.log('Auto-reconnecting wallet...');
-      autoReconnectAttempted.current = true;
-      connectWallet();
-    } else {
-      setIsWalletConnecting(false);
+    if (!sdk || !selectedAccount) {
+      setAccountBalance(null);
+      setAccountIdentity(null);
+      setIsAccountLoading(false);
+      return;
     }
-  }, [isConnected, isWalletConnected, isWalletConnecting, connectWallet]);
+
+    // Set loading state immediately when account changes
+    setIsAccountLoading(true);
+    let balanceUnsubscribe: UnsubCallback | undefined;
+
+    const subscribeToAccountData = async () => {
+      try {
+        // Subscribe to balance updates
+        balanceUnsubscribe = await sdk.accountManagement.getAccountBalance(
+          { account: selectedAccount.address },
+          (balance) => {
+            setAccountBalance(balance);
+          },
+        );
+
+        // Fetch identity once (getIdentity is not a subscription)
+        const account = await sdk.accountManagement.getAccount({
+          address: selectedAccount.address,
+        });
+        const identity = await account.getIdentity();
+        if (identity) {
+          setAccountIdentity(identity.did);
+        } else {
+          setAccountIdentity(null);
+        }
+
+        setIsAccountLoading(false);
+      } catch (error) {
+        console.error('Error subscribing to account data:', error);
+        setAccountBalance(null);
+        setAccountIdentity(null);
+        setIsAccountLoading(false);
+      }
+    };
+
+    subscribeToAccountData();
+
+    return () => {
+      if (balanceUnsubscribe) {
+        balanceUnsubscribe();
+      }
+    };
+  }, [sdk, selectedAccount]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -223,6 +358,11 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
     error,
     accounts,
     selectedAccount,
+    availableWallets,
+    connectedWalletId,
+    accountBalance,
+    accountIdentity,
+    isAccountLoading,
     connectWallet,
     disconnectWallet,
     selectAccount,

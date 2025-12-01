@@ -1,3 +1,4 @@
+import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import {
   ActionIcon,
@@ -9,6 +10,7 @@ import {
   Group,
   Image,
   Loader,
+  Skeleton,
   Stack,
   Text,
   Title,
@@ -23,8 +25,11 @@ export function HomePage() {
     isWalletConnecting,
     accounts,
     selectedAccount,
-    connectWallet,
+    accountBalance,
+    accountIdentity,
+    isAccountLoading,
   } = usePolymesh();
+  const { openWalletModal } = useModal();
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   const handleCopyAddress = () => {
@@ -69,7 +74,7 @@ export function HomePage() {
           <Stack gap="md">
             <Title order={3}>Connect Your Wallet</Title>
             <Text c="dimmed">
-              Connect your Polymesh Wallet or Polkadot.js extension to get
+              Connect your Polymesh Wallet, or other supported wallets to get
               started with confidential assets.
             </Text>
 
@@ -82,7 +87,7 @@ export function HomePage() {
                   <IconWallet size={20} />
                 )
               }
-              onClick={connectWallet}
+              onClick={openWalletModal}
               disabled={isWalletConnecting}
               fullWidth
             >
@@ -129,6 +134,46 @@ export function HomePage() {
                   </Tooltip>
                 </Group>
               </Box>
+            )}
+
+            {/* Balance Section with Loading State */}
+            {isAccountLoading ? (
+              <Box>
+                <Text size="sm" c="dimmed">
+                  Balance:
+                </Text>
+                <Skeleton height={20} width="60%" mt={4} />
+              </Box>
+            ) : (
+              accountBalance && (
+                <Box>
+                  <Text size="sm" c="dimmed">
+                    Balance:
+                  </Text>
+                  <Text>{accountBalance.free.toFormat()} POLYX</Text>
+                </Box>
+              )
+            )}
+
+            {/* Identity Section with Loading State */}
+            {isAccountLoading ? (
+              <Box>
+                <Text size="sm" c="dimmed">
+                  DID:
+                </Text>
+                <Skeleton height={20} width="70%" mt={4} />
+              </Box>
+            ) : (
+              accountIdentity && (
+                <Box>
+                  <Text size="sm" c="dimmed">
+                    DID:
+                  </Text>
+                  <Text ff="monospace" size="sm">
+                    {accountIdentity}
+                  </Text>
+                </Box>
+              )
             )}
 
             <Text size="sm" c="dimmed">

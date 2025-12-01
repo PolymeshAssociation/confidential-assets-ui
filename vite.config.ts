@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import svgr from 'vite-plugin-svgr';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -12,6 +13,7 @@ export default defineConfig(({ mode }) => ({
     wasm(),
     topLevelAwait(),
     react(),
+    svgr(),
     tsconfigPaths(),
     nodePolyfills({
       // Enable polyfills for specific globals and modules
