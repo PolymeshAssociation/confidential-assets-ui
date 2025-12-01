@@ -121,12 +121,11 @@ export function SigningKeySelectionModal({
           <>
             <Alert
               icon={<IconAlertCircle size={20} />}
-              title="Wallet Connected, But No Accounts Available"
+              title="No Accounts Available"
               color="yellow"
             >
               <Text size="sm">
-                Your wallet is connected, but no accounts were found or
-                authorized.
+                No accounts were found or authorized for this application.
               </Text>
             </Alert>
 

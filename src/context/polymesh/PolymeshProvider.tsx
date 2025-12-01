@@ -53,6 +53,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
         }
 
         // Create signing manager (independent of SDK)
+        // Note: For some wallets like Talisman, this may succeed even if authorization is rejected.
         const manager = await BrowserExtensionSigningManager.create({
           appName: 'Polymesh Confidential Assets',
           extensionName: walletId,
@@ -62,7 +63,8 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
         // Set signing manager state
         setSigningManager(manager);
 
-        // Persist the wallet ID
+        // Persist the wallet ID optimistically
+        // Will be cleared by the useEffect if authorization fails
         localStorage.setItem(STORAGE_KEYS.LAST_WALLET_ID, walletId);
         setConnectedWalletId(walletId);
       } catch (err) {
@@ -77,6 +79,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
         setConnectedWalletId(null);
         setIsWalletConnecting(false);
         currentWalletConnectionRef.current = null;
+        localStorage.removeItem(STORAGE_KEYS.LAST_WALLET_ID);
 
         // Re-throw so callers can handle the error
         throw err;
@@ -149,6 +152,10 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
 
   // Detect available wallets and auto-reconnect
   useEffect(() => {
+    // Avoid re-detecting wallets if already done
+    if (detectedWalletsRef.current.length > 0) {
+      return;
+    }
     const extensions = BrowserExtensionSigningManager.getExtensionList();
     detectedWalletsRef.current = extensions;
 
@@ -273,11 +280,20 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
             showError('Failed to select account');
           } else if (errorMessage.includes('setSigningManager')) {
             showError('Failed to connect wallet to SDK');
+          } else if (errorMessage.includes('not been authorised')) {
+            showError('Wallet authorization was rejected or not completed');
           } else {
             showError(`Failed to initialize wallet: ${errorMessage}`);
           }
 
           console.error('Error attaching signing manager:', error);
+
+          // Clear signing manager - this will trigger the effect to clean up all wallet state
+          setSigningManager(null);
+
+          // Clear localStorage to prevent auto-reconnect attempts
+          localStorage.removeItem(STORAGE_KEYS.LAST_WALLET_ID);
+          localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
           setIsWalletConnecting(false);
         }
       }
