@@ -651,14 +651,6 @@ export function AssetManagementPage() {
                             {asset.metadata && (
                               <MetadataDisplay metadata={asset.metadata} />
                             )}
-
-                            <Divider />
-
-                            <Group gap="xs">
-                              <Button size="xs" variant="light" disabled>
-                                Transfer
-                              </Button>
-                            </Group>
                           </Stack>
                         </Card>
                       ))}
