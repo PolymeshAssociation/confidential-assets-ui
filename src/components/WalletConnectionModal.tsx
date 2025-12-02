@@ -144,6 +144,7 @@ export function WalletConnectionModal({
         duration: 300,
         timingFunction: 'linear',
       }}
+      zIndex={300}
     >
       <Stack gap="md">
         {!hasInstalledWallets && (

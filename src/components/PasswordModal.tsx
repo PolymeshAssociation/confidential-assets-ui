@@ -68,7 +68,7 @@ export function PasswordModal({
       closeOnClickOutside={false}
       closeOnEscape={!isSubmitting}
       withCloseButton={!isSubmitting}
-      zIndex={1000}
+      zIndex={300}
     >
       <form onSubmit={handleSubmit}>
         <Stack>

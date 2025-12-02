@@ -114,6 +114,7 @@ export function SigningKeySelectionModal({
         duration: 300,
         timingFunction: 'linear',
       }}
+      zIndex={300}
     >
       <Stack gap="md">
         {/* No Accounts Alert */}

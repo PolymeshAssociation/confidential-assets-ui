@@ -371,17 +371,17 @@ export function App() {
       <ThemeProvider>
         <NotificationProvider>
           <PolymeshProvider>
-            <TransactionProvider>
-              <ConfidentialKeyProvider>
-                <ModalProvider>
+            <ConfidentialKeyProvider>
+              <ModalProvider>
+                <TransactionProvider>
                   <AssetProvider>
                     <SettlementProvider>
                       <AppLayout />
                     </SettlementProvider>
                   </AssetProvider>
-                </ModalProvider>
-              </ConfidentialKeyProvider>
-            </TransactionProvider>
+                </TransactionProvider>
+              </ModalProvider>
+            </ConfidentialKeyProvider>
           </PolymeshProvider>
         </NotificationProvider>
       </ThemeProvider>

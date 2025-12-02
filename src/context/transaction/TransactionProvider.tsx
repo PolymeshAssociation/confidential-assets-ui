@@ -1,3 +1,4 @@
+import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { notifications } from '@mantine/notifications';
 import type { ApiPromise } from '@polkadot/api';
@@ -80,6 +81,7 @@ function extractErrorMessage(
 
 export function TransactionProvider({ children }: { children: ReactNode }) {
   const { selectedAccount, signingManager, polkadotApi } = usePolymesh();
+  const { openWalletModal, openKeySelectionModal } = useModal();
   const [transactions, setTransactions] = useState<
     Map<string, TransactionState>
   >(new Map());
@@ -102,12 +104,14 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     async (params: SubmitTransactionParams): Promise<TransactionResult> => {
       const { tx, tag, onStatusChange } = params;
 
-      if (!selectedAccount) {
-        throw new Error('No account selected');
+      if (!signingManager) {
+        openWalletModal();
+        throw new Error('Please connect your wallet');
       }
 
-      if (!signingManager) {
-        throw new Error('No signing manager available');
+      if (!selectedAccount) {
+        openKeySelectionModal();
+        throw new Error('Please select a signing key');
       }
 
       if (!polkadotApi) {
@@ -419,6 +423,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       polkadotApi,
       updateTransaction,
       transactions,
+      openWalletModal,
+      openKeySelectionModal,
     ],
   );
 
