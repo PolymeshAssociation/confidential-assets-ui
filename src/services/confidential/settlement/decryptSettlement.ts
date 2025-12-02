@@ -75,7 +75,7 @@ export async function decryptSettlement(
 
     if (!decryptedLeg) {
       throw new Error(
-        'Failed to decrypt settlement leg. You are not involved in this settlement.',
+        'Failed to decrypt leg. You are not involved in this transfer leg.',
       );
     }
   }

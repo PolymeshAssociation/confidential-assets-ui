@@ -79,21 +79,60 @@ export interface SettlementRecord {
 }
 
 // ============================================================================
+// Leg Affirmation Party (for queries)
+// ============================================================================
+
+/**
+ * Party type for leg affirmation queries
+ * Maps to: pallet_confidential_assets::settlement::LegAffirmParty
+ */
+export type LegAffirmParty =
+  | { Sender: null }
+  | { Receiver: null }
+  | { Mediator: number };
+
+/**
+ * Leg status as returned from chain queries
+ */
+export type LegStatus = 'Pending' | 'Affirmed' | 'Rejected' | 'Finalized';
+
+/**
+ * Affirmation status for a single leg
+ */
+export interface LegAffirmationStatus {
+  sender: LegStatus;
+  receiver: LegStatus;
+  mediators: Map<number, LegStatus>;
+}
+
+// ============================================================================
 // Settlement Chain Data
 // ============================================================================
 
 /**
- * Settlement details queried from chain
+ * Complete settlement details from chain queries
+ * Includes status, legs, affirmations, and memo
  */
-export interface SettlementChainData {
+export interface SettlementDetailsChainData {
   settlementId: string;
-  status: SettlementStatus;
-  memo: string;
-  assetRootBlock: number;
-  legs: unknown[]; // Encrypted leg data from chain
+  status: string;
   pendingAffirmations: number;
   pendingFinalizations: number;
+  legIds: number[];
+  legAffirmations: Map<number, LegAffirmationStatus>;
+  memo?: string;
 }
+
+/**
+ * Settlement chain data for UI display
+ * Simplified version without settlementId (used when ID is already known)
+ */
+export type SettlementChainData = Omit<
+  SettlementDetailsChainData,
+  'settlementId' | 'legIds'
+> & {
+  legCount: number;
+};
 
 /**
  * Complete settlement details with decrypted legs
@@ -108,14 +147,40 @@ export interface SettlementDetails {
 }
 
 // ============================================================================
-// Leg Affirmation Party (for queries)
+// Batch Decryption Results
 // ============================================================================
 
 /**
- * Party type for leg affirmation queries
- * Maps to: pallet_confidential_assets::settlement::LegAffirmParty
+ * Result of decrypting a single leg (success case)
  */
-export type LegAffirmParty =
-  | { Sender: null }
-  | { Receiver: null }
-  | { Mediator: number };
+export interface DecryptedLegSuccess {
+  status: 'success';
+  legId: number;
+  leg: SettlementLegDetails;
+  roles: SettlementRole[];
+}
+
+/**
+ * Result of decrypting a single leg (failure case)
+ */
+export interface DecryptedLegFailure {
+  status: 'failed';
+  legId: number;
+  error: string;
+}
+
+/**
+ * Result of decrypting a single leg (not involved case)
+ */
+export interface DecryptedLegNotInvolved {
+  status: 'not-involved';
+  legId: number;
+}
+
+/**
+ * Union type for decryption results
+ */
+export type DecryptedLegResult =
+  | DecryptedLegSuccess
+  | DecryptedLegFailure
+  | DecryptedLegNotInvolved;

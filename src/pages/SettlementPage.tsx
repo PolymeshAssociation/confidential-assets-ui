@@ -16,7 +16,7 @@ import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { useSettlement } from '@/hooks/useSettlement';
-import type { SettlementRecord } from '@/types/settlement';
+import type { SettlementChainData, SettlementRecord } from '@/types/settlement';
 import {
   ActionIcon,
   Alert,
@@ -59,25 +59,8 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type LegStatus = 'Pending' | 'Affirmed' | 'Rejected' | 'Finalized';
-
-interface LegAffirmationStatus {
-  sender: LegStatus;
-  receiver: LegStatus;
-  mediators: Map<number, LegStatus>;
-}
-
-interface SettlementChainData {
-  status: string;
-  pendingAffirmations: number;
-  pendingFinalizations: number;
-  legCount: number;
-  legAffirmations: Map<number, LegAffirmationStatus>;
-  memo?: string;
-}
-
 export function SettlementPage() {
-  const { settlements, isLoading, refreshSettlements, querySettlementStatus } =
+  const { settlements, isLoading, refreshSettlements, querySettlementDetails } =
     useSettlement();
   const { selectedKey } = useConfidentialKey();
   const { registeredAssets } = useAsset();
@@ -189,73 +172,17 @@ export function SettlementPage() {
       setLoadingChainData((prev) => new Set(prev).add(settlementId));
 
       try {
-        // Query settlement status
-        const status = await querySettlementStatus(settlementId);
-
-        // Query settlement memo (optional)
-        const memoOption =
-          await polkadotApi.query.confidentialAssets.settlementMemo(
-            settlementId,
-          );
-        const memo = memoOption.isSome
-          ? memoOption.unwrap().toUtf8()
-          : undefined;
-
-        // Query settlement legs
-        const legEntries =
-          await polkadotApi.query.confidentialAssets.settlementLegs.entries(
-            settlementId,
-          );
-
-        const legIds = legEntries
-          .map(([key]) => key.args[1].toNumber())
-          .sort((a, b) => a - b);
-
-        // Query affirmation status for all legs
-        const legAffirmations = new Map<number, LegAffirmationStatus>();
-
-        for (const legId of legIds) {
-          const affirmEntries =
-            await polkadotApi.query.confidentialAssets.legAffirmationStatus.entries(
-              settlementId,
-              legId,
-            );
-
-          const affirmStatus: LegAffirmationStatus = {
-            sender: 'Pending',
-            receiver: 'Pending',
-            mediators: new Map(),
-          };
-
-          for (const [key, value] of affirmEntries) {
-            const party = key.args[2];
-
-            if (value.isSome) {
-              const statusValue = value.unwrap().toString() as LegStatus;
-
-              if (party.isSender) {
-                affirmStatus.sender = statusValue;
-              } else if (party.isReceiver) {
-                affirmStatus.receiver = statusValue;
-              } else if (party.isMediator) {
-                const mediatorIndex = party.asMediator.toNumber();
-                affirmStatus.mediators.set(mediatorIndex, statusValue);
-              }
-            }
-          }
-
-          legAffirmations.set(legId, affirmStatus);
-        }
+        const details = await querySettlementDetails(settlementId);
 
         setSettlementChainData((prev) => {
           const newMap = new Map(prev);
           newMap.set(settlementId, {
-            status: status.status,
-            pendingAffirmations: status.pendingAffirmations,
-            pendingFinalizations: status.pendingFinalizations,
-            legCount: legIds.length,
-            legAffirmations,
-            memo,
+            status: details.status,
+            pendingAffirmations: details.pendingAffirmations,
+            pendingFinalizations: details.pendingFinalizations,
+            legCount: details.legIds.length,
+            legAffirmations: details.legAffirmations,
+            memo: details.memo,
           });
           return newMap;
         });
@@ -273,7 +200,7 @@ export function SettlementPage() {
         });
       }
     },
-    [polkadotApi, querySettlementStatus, loadingChainData],
+    [polkadotApi, querySettlementDetails, loadingChainData],
   );
 
   // Refresh all chain data for existing settlements

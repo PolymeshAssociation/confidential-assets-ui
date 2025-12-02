@@ -4,7 +4,12 @@
  * Defines the settlement context interface
  */
 
-import type { SettlementRecord, SettlementRole } from '@/types/settlement';
+import type {
+  DecryptedLegResult,
+  SettlementDetailsChainData,
+  SettlementRecord,
+  SettlementRole,
+} from '@/types/settlement';
 import type { AccountPublicKeys } from '@polymesh/polymesh-dart-wasm';
 import { createContext } from 'react';
 
@@ -66,6 +71,18 @@ export interface SettlementContextValue {
     };
     roles: SettlementRole[];
   }>;
+
+  /**
+   * Decrypt all legs of a settlement with a single password prompt
+   * Processes legs in parallel with configurable concurrency
+   * Returns results for all legs, including failures and not-involved cases
+   */
+  decryptAllLegs: (params: {
+    settlementId: string;
+    onLegDecrypted?: (result: DecryptedLegResult) => void;
+    onProgress?: (step: string) => void;
+    maxConcurrency?: number;
+  }) => Promise<DecryptedLegResult[]>;
 
   /**
    * Affirm settlement as sender
@@ -142,6 +159,15 @@ export interface SettlementContextValue {
     pendingAffirmations: number;
     pendingFinalizations: number;
   }>;
+
+  /**
+   * Query complete settlement details from chain
+   * Includes status, legs, affirmations, and memo
+   * This data should not be cached as it changes frequently
+   */
+  querySettlementDetails: (
+    settlementId: string,
+  ) => Promise<SettlementDetailsChainData>;
 
   /**
    * Refresh settlements from localStorage

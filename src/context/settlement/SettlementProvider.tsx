@@ -27,7 +27,14 @@ import {
   listSettlementsByAccount,
   saveSettlement,
 } from '@/services/storage/settlementStorage';
-import type { SettlementRecord, SettlementRole } from '@/types/settlement';
+import type {
+  DecryptedLegResult,
+  LegAffirmationStatus,
+  LegStatus,
+  SettlementDetailsChainData,
+  SettlementRecord,
+  SettlementRole,
+} from '@/types/settlement';
 import { notifications } from '@mantine/notifications';
 import type { u32 } from '@polkadot/types-codec';
 import { AccountPublicKeys, AssetState } from '@polymesh/polymesh-dart-wasm';
@@ -433,17 +440,20 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       assetId: string;
       amount?: string | number | bigint;
       onProgress?: (step: string) => void;
+      suppressNotifications?: boolean;
     }): Promise<void> => {
       if (!polkadotApi) throw new Error('Not connected to chain');
 
       const notificationId = `settlement-affirm-sender-${Date.now()}`;
-      notifications.show({
-        id: notificationId,
-        loading: true,
-        title: 'Affirming as Sender',
-        message: 'Starting...',
-        autoClose: false,
-      });
+      if (!params.suppressNotifications) {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Affirming as Sender',
+          message: 'Starting...',
+          autoClose: false,
+        });
+      }
 
       try {
         await executeWithKey(async (accountKeys) => {
@@ -471,17 +481,21 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             submitTransaction,
             onBuildingProof: () => {
               params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              }
             },
             onSubmitting: () => {
               params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              }
             },
           });
 
@@ -497,26 +511,30 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         // Refresh asset balances
         await refreshRegisteredAssets();
 
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Sender Affirmation Complete',
-          message: 'Settlement affirmed successfully',
-          color: 'green',
-          autoClose: 5000,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Sender Affirmation Complete',
+            message: 'Settlement affirmed successfully',
+            color: 'green',
+            autoClose: 5000,
+          });
+        }
 
         params.onProgress?.('Complete');
       } catch (err) {
         console.error('[Settlement Provider] Sender affirmation failed:', err);
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Affirmation Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
-          color: 'red',
-          autoClose: false,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Affirmation Failed',
+            message: err instanceof Error ? err.message : 'Unknown error',
+            color: 'red',
+            autoClose: false,
+          });
+        }
         throw err;
       }
     },
@@ -540,17 +558,20 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       assetId: string;
       amount?: string | number | bigint;
       onProgress?: (step: string) => void;
+      suppressNotifications?: boolean;
     }): Promise<void> => {
       if (!polkadotApi) throw new Error('Not connected to chain');
 
       const notificationId = `settlement-affirm-receiver-${Date.now()}`;
-      notifications.show({
-        id: notificationId,
-        loading: true,
-        title: 'Affirming as Receiver',
-        message: 'Starting...',
-        autoClose: false,
-      });
+      if (!params.suppressNotifications) {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Affirming as Receiver',
+          message: 'Starting...',
+          autoClose: false,
+        });
+      }
 
       try {
         await executeWithKey(async (accountKeys) => {
@@ -578,17 +599,21 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             submitTransaction,
             onBuildingProof: () => {
               params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              }
             },
             onSubmitting: () => {
               params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              }
             },
           });
 
@@ -604,14 +629,16 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         // Refresh asset balances
         await refreshRegisteredAssets();
 
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Receiver Affirmation Complete',
-          message: 'Settlement affirmed successfully',
-          color: 'green',
-          autoClose: 5000,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Receiver Affirmation Complete',
+            message: 'Settlement affirmed successfully',
+            color: 'green',
+            autoClose: 5000,
+          });
+        }
 
         params.onProgress?.('Complete');
       } catch (err) {
@@ -619,14 +646,16 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           '[Settlement Provider] Receiver affirmation failed:',
           err,
         );
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Affirmation Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
-          color: 'red',
-          autoClose: false,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Affirmation Failed',
+            message: err instanceof Error ? err.message : 'Unknown error',
+            color: 'red',
+            autoClose: false,
+          });
+        }
         throw err;
       }
     },
@@ -651,6 +680,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       amount?: string | number | bigint;
       accept?: boolean;
       onProgress?: (step: string) => void;
+      suppressNotifications?: boolean;
     }): Promise<void> => {
       if (!polkadotApi) throw new Error('Not connected to chain');
 
@@ -659,13 +689,15 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       const actionPast = isRejection ? 'Rejected' : 'Affirmed';
 
       const notificationId = `settlement-affirm-mediator-${Date.now()}`;
-      notifications.show({
-        id: notificationId,
-        loading: true,
-        title: `${actionName} as Mediator`,
-        message: 'Starting...',
-        autoClose: false,
-      });
+      if (!params.suppressNotifications) {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: `${actionName} as Mediator`,
+          message: 'Starting...',
+          autoClose: false,
+        });
+      }
 
       try {
         await executeWithKey(async (accountKeys) => {
@@ -680,29 +712,35 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             submitTransaction,
             onBuildingProof: () => {
               params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              }
             },
             onSubmitting: () => {
               params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              }
             },
           });
         });
 
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: `Mediator ${actionName} Complete`,
-          message: `Settlement ${actionPast.toLowerCase()} successfully`,
-          color: 'green',
-          autoClose: 5000,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: `Mediator ${actionName} Complete`,
+            message: `Settlement ${actionPast.toLowerCase()} successfully`,
+            color: 'green',
+            autoClose: 5000,
+          });
+        }
 
         params.onProgress?.('Complete');
       } catch (err) {
@@ -710,14 +748,16 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           `[Settlement Provider] Mediator ${actionName.toLowerCase()} failed:`,
           err,
         );
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: `${actionName} Failed`,
-          message: err instanceof Error ? err.message : 'Unknown error',
-          color: 'red',
-          autoClose: false,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: `${actionName} Failed`,
+            message: err instanceof Error ? err.message : 'Unknown error',
+            color: 'red',
+            autoClose: false,
+          });
+        }
         throw err;
       }
     },
@@ -735,17 +775,20 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       assetId: string;
       amount?: string | number | bigint;
       onProgress?: (step: string) => void;
+      suppressNotifications?: boolean;
     }): Promise<void> => {
       if (!polkadotApi) throw new Error('Not connected to chain');
 
       const notificationId = `settlement-claim-${Date.now()}`;
-      notifications.show({
-        id: notificationId,
-        loading: true,
-        title: 'Claiming Assets',
-        message: 'Starting...',
-        autoClose: false,
-      });
+      if (!params.suppressNotifications) {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Claiming Assets',
+          message: 'Starting...',
+          autoClose: false,
+        });
+      }
 
       try {
         await executeWithKey(async (accountKeys) => {
@@ -773,17 +816,21 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             submitTransaction,
             onBuildingProof: () => {
               params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              }
             },
             onSubmitting: () => {
               params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
+              if (!params.suppressNotifications) {
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              }
             },
           });
 
@@ -799,26 +846,30 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         // Refresh asset balances to show credited amount
         await refreshRegisteredAssets();
 
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Assets Claimed',
-          message: 'Assets credited to your account',
-          color: 'green',
-          autoClose: 5000,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Assets Claimed',
+            message: 'Assets successfully claimed to your account',
+            color: 'green',
+            autoClose: 5000,
+          });
+        }
 
         params.onProgress?.('Complete');
       } catch (err) {
         console.error('[Settlement Provider] Claim failed:', err);
-        notifications.update({
-          id: notificationId,
-          loading: false,
-          title: 'Claim Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
-          color: 'red',
-          autoClose: false,
-        });
+        if (!params.suppressNotifications) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'Claim Failed',
+            message: err instanceof Error ? err.message : 'Unknown error',
+            color: 'red',
+            autoClose: false,
+          });
+        }
         throw err;
       }
     },
@@ -1065,7 +1116,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         (await polkadotApi.queryMulti([
           [
             polkadotApi.query.confidentialAssets.settlementPendingAffirmations,
-          settlementId,
+            settlementId,
           ],
           [
             polkadotApi.query.confidentialAssets.settlementPendingFinalizations,
@@ -1083,6 +1134,326 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
   );
 
   // ============================================================================
+  // Query Settlement Details (with legs and affirmations)
+  // ============================================================================
+
+  const querySettlementDetails = useCallback(
+    async (settlementId: string): Promise<SettlementDetailsChainData> => {
+      if (!polkadotApi) throw new Error('Not connected to chain');
+
+      // Query settlement status
+      const status = await querySettlementStatus(settlementId);
+
+      // Query settlement memo (optional)
+      const memoOption =
+        await polkadotApi.query.confidentialAssets.settlementMemo(settlementId);
+      const memo = memoOption.isSome ? memoOption.unwrap().toUtf8() : undefined;
+
+      // Query all settlement legs
+      const legEntries =
+        await polkadotApi.query.confidentialAssets.settlementLegs.entries(
+          settlementId,
+        );
+
+      const legIds = legEntries
+        .map(([key]) => key.args[1].toNumber())
+        .sort((a, b) => a - b);
+
+      // Query affirmation status for all legs in parallel
+      const legAffirmations = new Map<number, LegAffirmationStatus>();
+
+      const affirmationPromises = legIds.map(async (legId) => {
+        const affirmEntries =
+          await polkadotApi.query.confidentialAssets.legAffirmationStatus.entries(
+            settlementId,
+            legId,
+          );
+
+        const affirmStatus: LegAffirmationStatus = {
+          sender: 'Pending',
+          receiver: 'Pending',
+          mediators: new Map(),
+        };
+
+        for (const [key, value] of affirmEntries) {
+          const party = key.args[2];
+
+          if (value.isSome) {
+            const statusValue = value.unwrap().toString() as LegStatus;
+
+            if (party.isSender) {
+              affirmStatus.sender = statusValue;
+            } else if (party.isReceiver) {
+              affirmStatus.receiver = statusValue;
+            } else if (party.isMediator) {
+              const mediatorIndex = party.asMediator.toNumber();
+              affirmStatus.mediators.set(mediatorIndex, statusValue);
+            }
+          }
+        }
+
+        return { legId, affirmStatus };
+      });
+
+      const affirmationResults = await Promise.all(affirmationPromises);
+      affirmationResults.forEach(({ legId, affirmStatus }) => {
+        legAffirmations.set(legId, affirmStatus);
+      });
+
+      return {
+        settlementId,
+        status: status.status,
+        pendingAffirmations: status.pendingAffirmations,
+        pendingFinalizations: status.pendingFinalizations,
+        legIds,
+        legAffirmations,
+        memo,
+      };
+    },
+    [polkadotApi, querySettlementStatus],
+  );
+
+  // ============================================================================
+  // Decrypt All Legs (Batch)
+  // ============================================================================
+
+  const decryptAllLegs = useCallback(
+    async (params: {
+      settlementId: string;
+      onLegDecrypted?: (result: DecryptedLegResult) => void;
+      onProgress?: (step: string) => void;
+      maxConcurrency?: number;
+    }): Promise<DecryptedLegResult[]> => {
+      if (!polkadotApi) throw new Error('Not connected to chain');
+      if (!selectedKey) throw new Error('No key selected');
+
+      const notificationId = `settlement-decrypt-all-${Date.now()}`;
+      const maxConcurrency = params.maxConcurrency || 5;
+
+      notifications.show({
+        id: notificationId,
+        loading: true,
+        title: 'Decrypting Settlement Legs',
+        message: 'Querying legs...',
+        autoClose: false,
+      });
+
+      try {
+        // Get all leg IDs
+        const legEntries =
+          await polkadotApi.query.confidentialAssets.settlementLegs.entries(
+            params.settlementId,
+          );
+
+        const legIds = legEntries
+          .map(([key]) => key.args[1].toNumber())
+          .sort((a, b) => a - b);
+
+        if (legIds.length === 0) {
+          notifications.update({
+            id: notificationId,
+            loading: false,
+            title: 'No Legs Found',
+            message: 'This settlement has no legs',
+            color: 'yellow',
+            autoClose: 5000,
+          });
+          return [];
+        }
+
+        params.onProgress?.(`Found ${legIds.length} legs`);
+        notifications.update({
+          id: notificationId,
+          message: `Decrypting ${legIds.length} legs...`,
+        });
+
+        // Decrypt all legs within a single executeWithKey call (one password prompt)
+        const results = await executeWithKey(async (accountKeys) => {
+          const allResults: DecryptedLegResult[] = [];
+          let successCount = 0;
+          let failedCount = 0;
+          let notInvolvedCount = 0;
+
+          // Process legs in batches with max concurrency
+          for (let i = 0; i < legIds.length; i += maxConcurrency) {
+            const batch = legIds.slice(i, i + maxConcurrency);
+
+            const batchPromises = batch.map(async (legId) => {
+              try {
+                const decryptResult = await decryptSettlementService({
+                  settlementId: params.settlementId,
+                  legId,
+                  polkadotApi,
+                  accountKeys,
+                });
+
+                // Fetch asset details to calculate roles
+                const assetDetails = await getAssetDetails(
+                  decryptResult.leg.assetId,
+                );
+
+                // Calculate roles using helper
+                const roles = calculateRolesForLeg(
+                  decryptResult.leg.senderPublicKey,
+                  decryptResult.leg.receiverPublicKey,
+                  assetDetails
+                    ? {
+                        mediators: assetDetails.mediators || [],
+                        auditors: assetDetails.auditors || [],
+                      }
+                    : null,
+                  selectedKey.publicKey,
+                  selectedKey.encryptionPublicKey,
+                );
+
+                const result: DecryptedLegResult = {
+                  status: 'success',
+                  legId,
+                  leg: decryptResult.leg,
+                  roles,
+                };
+
+                successCount++;
+                params.onLegDecrypted?.(result);
+                params.onProgress?.(
+                  `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                );
+
+                return result;
+              } catch (err) {
+                // Determine if this is a "not involved" case or actual failure
+                const errorMsg =
+                  err instanceof Error ? err.message : String(err);
+                const isNotInvolved = errorMsg.includes(
+                  'You are not involved in this transfer leg',
+                );
+
+                if (isNotInvolved) {
+                  notInvolvedCount++;
+                  const result: DecryptedLegResult = {
+                    status: 'not-involved',
+                    legId,
+                  };
+                  params.onLegDecrypted?.(result);
+                  params.onProgress?.(
+                    `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                  );
+                  return result;
+                } else {
+                  failedCount++;
+                  const result: DecryptedLegResult = {
+                    status: 'failed',
+                    legId,
+                    error: errorMsg,
+                  };
+                  params.onLegDecrypted?.(result);
+                  params.onProgress?.(
+                    `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                  );
+                  return result;
+                }
+              }
+            });
+
+            // Wait for batch to complete
+            const batchResults = await Promise.all(batchPromises);
+            allResults.push(...batchResults);
+          }
+
+          // Save/update settlement record with discovered roles
+          const allRoles = new Set<SettlementRole>();
+          allResults.forEach((result) => {
+            if (result.status === 'success') {
+              result.roles.forEach((role) => allRoles.add(role));
+            }
+          });
+
+          if (allRoles.size > 0) {
+            const existingRecord = settlements.get(params.settlementId);
+
+            if (existingRecord) {
+              // Update existing record if new roles found
+              const existingRoles = new Set(existingRecord.roles);
+              let hasNewRole = false;
+
+              allRoles.forEach((role) => {
+                if (!existingRoles.has(role)) {
+                  existingRoles.add(role);
+                  hasNewRole = true;
+                }
+              });
+
+              if (hasNewRole) {
+                const updatedRecord: SettlementRecord = {
+                  ...existingRecord,
+                  roles: Array.from(existingRoles),
+                };
+                saveSettlement(updatedRecord);
+                refreshSettlements();
+              }
+            } else {
+              // Create new record
+              const record: SettlementRecord = {
+                version: 1,
+                settlementId: params.settlementId,
+                accountPublicKey: selectedKey.publicKey,
+                roles: Array.from(allRoles),
+                createdAt: Date.now(),
+              };
+              saveSettlement(record);
+              refreshSettlements();
+            }
+          }
+
+          return allResults;
+        });
+
+        // Final notification
+        const successCount = results.filter(
+          (r) => r.status === 'success',
+        ).length;
+        const notInvolvedCount = results.filter(
+          (r) => r.status === 'not-involved',
+        ).length;
+        const failedCount = results.filter((r) => r.status === 'failed').length;
+
+        notifications.update({
+          id: notificationId,
+          loading: false,
+          title: 'Decryption Complete',
+          message: `Decrypted ${successCount} of ${legIds.length} legs${notInvolvedCount > 0 ? ` (${notInvolvedCount} not involved)` : ''}${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+          color: successCount > 0 ? 'green' : 'yellow',
+          autoClose: 5000,
+        });
+
+        params.onProgress?.('Complete');
+
+        return results;
+      } catch (err) {
+        console.error('[Settlement Provider] Batch decrypt failed:', err);
+        notifications.update({
+          id: notificationId,
+          loading: false,
+          title: 'Decryption Failed',
+          message: err instanceof Error ? err.message : 'Unknown error',
+          color: 'red',
+          autoClose: false,
+        });
+        throw err;
+      }
+    },
+    [
+      polkadotApi,
+      selectedKey,
+      executeWithKey,
+      getAssetDetails,
+      calculateRolesForLeg,
+      settlements,
+      refreshSettlements,
+    ],
+  );
+
+  // ============================================================================
   // Context Value
   // ============================================================================
 
@@ -1092,13 +1463,15 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
     error,
     createSettlement,
     decryptSettlement,
+    decryptAllLegs,
+    querySettlementStatus,
+    querySettlementDetails,
     affirmAsSender,
     affirmAsReceiver,
     affirmAsMediator,
     claimAssets,
     updateSenderCounter,
     revertSenderAffirmation,
-    querySettlementStatus,
     refreshSettlements,
   };
 

@@ -176,21 +176,19 @@ export function WalletConnectionModal({
                 className={classes.walletCard}
                 data-disabled={!canClick || undefined}
               >
-                <Group justify="space-between" wrap="nowrap">
-                  <Group gap="md">
-                    {getWalletIcon(wallet.name)}
-                    <div>
-                      <Text fw={500}>{getWalletDisplayName(wallet.name)}</Text>
-                      {!wallet.isInstalled && (
-                        <Text size="xs" c="dimmed">
-                          {getWalletDescription(wallet.name)}
-                        </Text>
-                      )}
-                    </div>
-                  </Group>
+                <Group gap="md" wrap="nowrap" align="center">
+                  {getWalletIcon(wallet.name)}
+                  <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                    <Text fw={500}>{getWalletDisplayName(wallet.name)}</Text>
+                    {!wallet.isInstalled && (
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
+                        {getWalletDescription(wallet.name)}
+                      </Text>
+                    )}
+                  </Stack>
                   {wallet.isInstalled ? (
                     isConnected ? (
-                      <Text size="xs" fw={600} c="green" px="sm">
+                      <Text size="xs" fw={600} c="green">
                         Connected
                       </Text>
                     ) : (
