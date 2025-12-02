@@ -9,6 +9,7 @@ import {
   MintAssetModal,
   RegisterAssetModal,
   RegisterByAssetIdModal,
+  TruncatedWithCopy,
 } from '@/components';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
@@ -21,7 +22,6 @@ import {
   Button,
   Card,
   Container,
-  CopyButton,
   Divider,
   Group,
   LoadingOverlay,
@@ -34,55 +34,13 @@ import {
 } from '@mantine/core';
 import {
   IconAlertCircle,
-  IconCheck,
   IconCircleCheck,
   IconCoin,
-  IconCopy,
   IconPlus,
   IconRefresh,
   IconUserPlus,
 } from '@tabler/icons-react';
 import { useState } from 'react';
-
-// Helper component to display truncated value with copy button
-function TruncatedWithCopy({
-  value,
-  label,
-}: {
-  value: string;
-  label?: string;
-}) {
-  const truncated = `${value.substring(0, 8)}...${value.substring(
-    value.length - 6,
-  )}`;
-
-  return (
-    <Group gap={4} wrap="nowrap">
-      {label && (
-        <Text size="xs" c="dimmed">
-          {label}:
-        </Text>
-      )}
-      <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-        {truncated}
-      </Text>
-      <CopyButton value={value} timeout={2000}>
-        {({ copied, copy }) => (
-          <Tooltip label={copied ? 'Copied' : 'Copy'}>
-            <ActionIcon
-              size="xs"
-              variant="subtle"
-              color={copied ? 'teal' : 'gray'}
-              onClick={copy}
-            >
-              {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
-            </ActionIcon>
-          </Tooltip>
-        )}
-      </CopyButton>
-    </Group>
-  );
-}
 
 // Helper to render metadata key-value pairs
 function MetadataDisplay({ metadata }: { metadata: AssetMetadata }) {

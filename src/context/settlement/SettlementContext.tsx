@@ -140,6 +140,7 @@ export interface SettlementContextValue {
   querySettlementStatus: (settlementId: string) => Promise<{
     status: string;
     pendingAffirmations: number;
+    pendingFinalizations: number;
   }>;
 
   /**

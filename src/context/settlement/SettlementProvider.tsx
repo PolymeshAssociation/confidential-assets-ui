@@ -29,6 +29,7 @@ import {
 } from '@/services/storage/settlementStorage';
 import type { SettlementRecord, SettlementRole } from '@/types/settlement';
 import { notifications } from '@mantine/notifications';
+import type { u32 } from '@polkadot/types-codec';
 import { AccountPublicKeys, AssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -1059,15 +1060,23 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
       const status = statusOption.unwrap().toString();
 
-      // Query pending affirmations
-      const pendingAffirmations =
-        await polkadotApi.query.confidentialAssets.settlementPendingAffirmations(
+      // Query pending affirmations and finalizations
+      const [pendingAffirmations, pendingFinalizations] =
+        (await polkadotApi.queryMulti([
+          [
+            polkadotApi.query.confidentialAssets.settlementPendingAffirmations,
           settlementId,
-        );
+          ],
+          [
+            polkadotApi.query.confidentialAssets.settlementPendingFinalizations,
+            settlementId,
+          ],
+        ])) as [u32, u32];
 
       return {
         status,
         pendingAffirmations: pendingAffirmations.toNumber(),
+        pendingFinalizations: pendingFinalizations.toNumber(),
       };
     },
     [polkadotApi],

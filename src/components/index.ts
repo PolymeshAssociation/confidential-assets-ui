@@ -13,3 +13,4 @@ export { RegisterAssetModal } from './RegisterAssetModal';
 export { RegisterByAssetIdModal } from './RegisterByAssetIdModal';
 export { RenameKeyModal } from './RenameKeyModal';
 export { TruncatedKey } from './TruncatedKey';
+export { TruncatedWithCopy } from './TruncatedWithCopy';
