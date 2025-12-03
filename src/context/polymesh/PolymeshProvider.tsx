@@ -116,6 +116,27 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
     setSigningManager(null);
   }, []);
 
+  const refreshIdentity = useCallback(async () => {
+    if (!sdk || !selectedAccount) {
+      return;
+    }
+
+    try {
+      const account = await sdk.accountManagement.getAccount({
+        address: selectedAccount.address,
+      });
+      const identity = await account.getIdentity();
+      if (identity) {
+        setAccountIdentity(identity.did);
+      } else {
+        setAccountIdentity(null);
+      }
+    } catch (error) {
+      console.error('Error refreshing identity:', error);
+      throw error;
+    }
+  }, [sdk, selectedAccount]);
+
   // Initialize Polymesh SDK (independent of wallet)
   useEffect(() => {
     setIsConnecting(true);
@@ -238,6 +259,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem(STORAGE_KEYS.SELECTED_ACCOUNT);
           setSelectedAccount(null);
           showError('No accounts found in wallet');
+          setIsWalletConnected(true);
           setIsWalletConnecting(false);
           return;
         }
@@ -383,6 +405,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
     connectWallet,
     disconnectWallet,
     selectAccount,
+    refreshIdentity,
   };
 
   return (

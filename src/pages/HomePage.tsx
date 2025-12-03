@@ -1,56 +1,243 @@
 import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
+import { onboardAccount } from '@/services/onboarding';
 import {
-  ActionIcon,
   Alert,
-  Box,
   Button,
   Card,
   Container,
   Group,
   Image,
+  List,
   Loader,
-  Skeleton,
   Stack,
   Text,
+  ThemeIcon,
   Title,
-  Tooltip,
 } from '@mantine/core';
-import { IconCheck, IconCopy, IconWallet } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import {
+  IconArrowRight,
+  IconCheck,
+  IconCoin,
+  IconId,
+  IconShieldLock,
+  IconWallet,
+} from '@tabler/icons-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export function HomePage() {
   const {
     isWalletConnected,
     isWalletConnecting,
-    accounts,
     selectedAccount,
-    accountBalance,
     accountIdentity,
     isAccountLoading,
+    refreshIdentity,
   } = usePolymesh();
-  const { openWalletModal } = useModal();
-  const [copiedAddress, setCopiedAddress] = useState(false);
+  const { openWalletModal, openKeySelectionModal } = useModal();
+  const [isOnboarding, setIsOnboarding] = useState(false);
 
-  const handleCopyAddress = () => {
-    if (selectedAccount) {
-      navigator.clipboard.writeText(selectedAccount.address);
-      setCopiedAddress(true);
-      setTimeout(() => setCopiedAddress(false), 2000);
+  const handleOnboard = async () => {
+    if (!selectedAccount) return;
+
+    setIsOnboarding(true);
+    const notificationId = notifications.show({
+      loading: true,
+      title: 'Onboarding',
+      message: 'Requesting DID and test POLYX...',
+      autoClose: false,
+      withCloseButton: false,
+    });
+
+    try {
+      const result = await onboardAccount(selectedAccount.address);
+
+      notifications.update({
+        id: notificationId,
+        color: 'green',
+        title: 'Onboarding Successful',
+        message: `Received ${result.polyxAmount} POLYX and DID created!`,
+        icon: <IconCheck size="1rem" />,
+        loading: false,
+        autoClose: 5000,
+      });
+
+      await refreshIdentity();
+    } catch (error) {
+      notifications.update({
+        id: notificationId,
+        color: 'red',
+        title: 'Onboarding Failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        loading: false,
+        autoClose: false,
+        withCloseButton: true,
+      });
+      setIsOnboarding(false);
     }
+  };
+
+  const renderContent = () => {
+    // 1. Wallet Not Connected
+    if (!isWalletConnected) {
+      return (
+        <Stack gap="md">
+          <Title order={3}>Connect Your Wallet</Title>
+          <Text c="dimmed">
+            Connect your Polymesh Wallet or other supported wallets to get
+            started with confidential assets.
+          </Text>
+
+          <Button
+            size="lg"
+            leftSection={
+              isWalletConnecting ? (
+                <Loader size={20} color="white" />
+              ) : (
+                <IconWallet size={20} />
+              )
+            }
+            onClick={openWalletModal}
+            disabled={isWalletConnecting}
+            fullWidth
+          >
+            {isWalletConnecting ? 'Connecting...' : 'Connect Wallet'}
+          </Button>
+        </Stack>
+      );
+    }
+
+    // 2. Wallet Connected but No Key Selected
+    if (!selectedAccount) {
+      return (
+        <Stack gap="md">
+          <Title order={3}>Select a Signing Key</Title>
+          <Text c="dimmed">
+            Please select a key from your wallet to use for signing
+            transactions.
+          </Text>
+
+          <Button
+            size="lg"
+            leftSection={<IconId size={20} />}
+            onClick={openKeySelectionModal}
+            fullWidth
+          >
+            Select Key
+          </Button>
+        </Stack>
+      );
+    }
+
+    // 3. Loading Account Data
+    if (isAccountLoading) {
+      return (
+        <Stack align="center" py="xl">
+          <Loader size="lg" />
+          <Text c="dimmed">Checking account status...</Text>
+        </Stack>
+      );
+    }
+
+    // 4. Connected, Key Selected, No DID (Needs Onboarding)
+    if (!accountIdentity) {
+      return (
+        <Stack gap="md">
+          <Alert
+            variant="light"
+            color="blue"
+            title="Welcome to the Confidential Assets Devnet"
+            icon={<IconShieldLock size={20} />}
+          >
+            To get started, you need a decentralized identity (DID) and some
+            test POLYX tokens.
+          </Alert>
+
+          <List
+            spacing="sm"
+            size="sm"
+            center
+            icon={
+              <ThemeIcon color="teal" size={24} radius="xl">
+                <IconCheck size={16} />
+              </ThemeIcon>
+            }
+          >
+            <List.Item>Create a DID for your account</List.Item>
+            <List.Item>Receive 50,000 test POLYX</List.Item>
+            <List.Item>Enable confidential asset features</List.Item>
+          </List>
+
+          <Button
+            size="lg"
+            color="teal"
+            leftSection={<IconCoin size={20} />}
+            onClick={handleOnboard}
+            loading={isOnboarding}
+            fullWidth
+          >
+            Get Test POLYX & DID
+          </Button>
+
+          <Text size="xs" c="dimmed" ta="center">
+            This will request funds from the devnet faucet.
+          </Text>
+        </Stack>
+      );
+    }
+
+    // 5. Connected, Key Selected, Has DID (Ready)
+    return (
+      <Stack gap="md">
+        <Alert
+          variant="light"
+          color="green"
+          title="Ready to Start"
+          icon={<IconCheck size={20} />}
+        >
+          Your account is set up and ready to use confidential assets.
+        </Alert>
+
+        <Group grow>
+          <Button
+            component={Link}
+            to="/confidential-accounts"
+            size="md"
+            variant="light"
+            leftSection={<IconShieldLock size={20} />}
+          >
+            Manage Confidential Account
+          </Button>
+          <Button
+            component={Link}
+            to="/assets"
+            size="md"
+            variant="light"
+            leftSection={<IconCoin size={20} />}
+          >
+            Create and View Assets
+          </Button>
+        </Group>
+
+        <Button
+          component={Link}
+          to="/settlements"
+          size="md"
+          variant="outline"
+          rightSection={<IconArrowRight size={20} />}
+        >
+          Transfer Assets
+        </Button>
+      </Stack>
+    );
   };
 
   return (
     <Container size="md" py="xl">
       <Stack align="center" gap="xl" mb={48}>
         <Stack align="center" gap="xl">
-          <Image
-            src={`${import.meta.env.BASE_URL}polymesh-icon.svg`}
-            alt="Polymesh"
-            w={100}
-            h={100}
-            fit="contain"
-          />
           <Image
             src={`${import.meta.env.BASE_URL}polymesh-logo.svg`}
             alt="Polymesh"
@@ -69,118 +256,8 @@ export function HomePage() {
         </Text>
       </Stack>
 
-      <Card padding="xl" shadow="sm">
-        {!isWalletConnected ? (
-          <Stack gap="md">
-            <Title order={3}>Connect Your Wallet</Title>
-            <Text c="dimmed">
-              Connect your Polymesh Wallet, or other supported wallets to get
-              started with confidential assets.
-            </Text>
-
-            <Button
-              size="lg"
-              leftSection={
-                isWalletConnecting ? (
-                  <Loader size={20} />
-                ) : (
-                  <IconWallet size={20} />
-                )
-              }
-              onClick={openWalletModal}
-              disabled={isWalletConnecting}
-              fullWidth
-            >
-              {isWalletConnecting ? 'Connecting...' : 'Connect Wallet'}
-            </Button>
-          </Stack>
-        ) : (
-          <Stack gap="md">
-            <Alert color="green" title="Connected">
-              Connected to Polymesh network
-            </Alert>
-
-            <Title order={4}>Connected Account</Title>
-            {selectedAccount && (
-              <Box>
-                <Text size="sm" c="dimmed">
-                  Name:
-                </Text>
-                <Text mb="sm">{selectedAccount.name}</Text>
-                <Text size="sm" c="dimmed" mb={4}>
-                  Address:
-                </Text>
-                <Group gap="xs" align="flex-start">
-                  <Text
-                    ff="monospace"
-                    size="sm"
-                    style={{ wordBreak: 'break-all', flex: 1 }}
-                  >
-                    {selectedAccount.address}
-                  </Text>
-                  <Tooltip label={copiedAddress ? 'Copied!' : 'Copy address'}>
-                    <ActionIcon
-                      variant="subtle"
-                      color={copiedAddress ? 'green' : 'gray'}
-                      size="sm"
-                      onClick={handleCopyAddress}
-                    >
-                      {copiedAddress ? (
-                        <IconCheck size={16} />
-                      ) : (
-                        <IconCopy size={16} />
-                      )}
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              </Box>
-            )}
-
-            {/* Balance Section with Loading State */}
-            {isAccountLoading ? (
-              <Box>
-                <Text size="sm" c="dimmed">
-                  Balance:
-                </Text>
-                <Skeleton height={20} width="60%" mt={4} />
-              </Box>
-            ) : (
-              accountBalance && (
-                <Box>
-                  <Text size="sm" c="dimmed">
-                    Balance:
-                  </Text>
-                  <Text>{accountBalance.free.toFormat()} POLYX</Text>
-                </Box>
-              )
-            )}
-
-            {/* Identity Section with Loading State */}
-            {isAccountLoading ? (
-              <Box>
-                <Text size="sm" c="dimmed">
-                  DID:
-                </Text>
-                <Skeleton height={20} width="70%" mt={4} />
-              </Box>
-            ) : (
-              accountIdentity && (
-                <Box>
-                  <Text size="sm" c="dimmed">
-                    DID:
-                  </Text>
-                  <Text ff="monospace" size="sm">
-                    {accountIdentity}
-                  </Text>
-                </Box>
-              )
-            )}
-
-            <Text size="sm" c="dimmed">
-              {accounts.length} account(s) available
-            </Text>
-          </Stack>
-        )}
+      <Card padding="xl" shadow="sm" radius="md" withBorder>
+        {renderContent()}
       </Card>
 
       <Stack align="center" gap="md" mt={48}>

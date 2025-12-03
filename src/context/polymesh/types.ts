@@ -32,6 +32,7 @@ export interface PolymeshContextValue {
   connectWallet: (walletId: string) => Promise<void>;
   disconnectWallet: () => void;
   selectAccount: (account: Account) => Promise<void>;
+  refreshIdentity: () => Promise<void>;
 }
 
 export const NODE_URL = import.meta.env.VITE_POLYMESH_NODE_URL;
