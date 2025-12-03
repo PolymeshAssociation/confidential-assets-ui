@@ -75,6 +75,7 @@ export function HomePage() {
         autoClose: false,
         withCloseButton: true,
       });
+    } finally {
       setIsOnboarding(false);
     }
   };
