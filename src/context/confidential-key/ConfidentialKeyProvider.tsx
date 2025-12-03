@@ -282,6 +282,13 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       // If this is the selected key, deselect it first
       if (selectedKey?.publicKey === publicKey) {
         await lockKey();
+        setSelectedKey(null);
+        
+        // Only clear localStorage if it matches the deleted key
+        const savedPublicKey = localStorage.getItem('polymesh_selected_key_pubkey');
+        if (savedPublicKey === publicKey) {
+          localStorage.removeItem('polymesh_selected_key_pubkey');
+        }
       }
 
       // Delete from storage
