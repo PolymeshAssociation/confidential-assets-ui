@@ -222,14 +222,20 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         setKeepUnlocked(true);
       }
 
-      passwordResolver.resolve({
-        password,
-        keepUnlocked: shouldKeepUnlocked,
-      });
       setPasswordModalOpen(false);
       setPendingKeyAlias(null);
       setEncryptedKeyToUnlock(null);
-      setPasswordResolver(null);
+
+      // Give React time to render the closed modal before unblocking the caller
+      // This prevents the UI from freezing while the modal is still open if the caller
+      // immediately starts a heavy WASM operation (like proof generation)
+      setTimeout(() => {
+        passwordResolver.resolve({
+          password,
+          keepUnlocked: shouldKeepUnlocked,
+        });
+        setPasswordResolver(null);
+      }, 100);
     },
     [passwordResolver, encryptedKeyToUnlock],
   );
@@ -283,9 +289,11 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       if (selectedKey?.publicKey === publicKey) {
         await lockKey();
         setSelectedKey(null);
-        
+
         // Only clear localStorage if it matches the deleted key
-        const savedPublicKey = localStorage.getItem('polymesh_selected_key_pubkey');
+        const savedPublicKey = localStorage.getItem(
+          'polymesh_selected_key_pubkey',
+        );
         if (savedPublicKey === publicKey) {
           localStorage.removeItem('polymesh_selected_key_pubkey');
         }

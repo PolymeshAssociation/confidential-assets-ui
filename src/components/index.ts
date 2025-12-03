@@ -12,5 +12,6 @@ export { PasswordStrengthInput } from './PasswordStrengthInput';
 export { RegisterAssetModal } from './RegisterAssetModal';
 export { RegisterByAssetIdModal } from './RegisterByAssetIdModal';
 export { RenameKeyModal } from './RenameKeyModal';
+export { TransactionNotification } from './TransactionNotification';
 export { TruncatedKey } from './TruncatedKey';
 export { TruncatedWithCopy } from './TruncatedWithCopy';

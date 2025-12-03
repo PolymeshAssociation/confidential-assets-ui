@@ -1,9 +1,9 @@
+import { TransactionNotification } from '@/components';
 import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { notifications } from '@mantine/notifications';
-import type { ApiPromise } from '@polkadot/api';
+import type { ApiPromise, SubmittableResult } from '@polkadot/api';
 import type { DispatchError } from '@polkadot/types/interfaces';
-import type { ISubmittableResult } from '@polkadot/types/types';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { TransactionContext } from './TransactionContext';
@@ -159,24 +159,22 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       return new Promise((resolve, reject) => {
         let unsub: (() => void) | undefined;
 
-        // Store transaction data that we'll need for final resolution
-        let capturedEvents: ISubmittableResult['events'] = [];
-        let capturedBlockNumber = 0;
-        let capturedTxIndex = 0;
-
         // Get the external signer from the signing manager
         const externalSigner = signingManager.getExternalSigner();
 
         tx.signAndSend(
           selectedAccount.address,
           { signer: externalSigner },
-          (result: ISubmittableResult) => {
+          (result: SubmittableResult) => {
             const { events, status } = result;
+            console.log('Transaction status:', status.type);
+            const txHash = result.txHash.toString();
+            const txIndex = result.txIndex;
+            const blockNumber = result.blockNumber?.toNumber();
 
             try {
               // Transaction approved and ready
               if (status.type === 'Ready') {
-                const txHash = result.txHash?.toString() || '';
                 updateStatus(Status.Running, { txHash });
                 notifications.update({
                   id: notificationId,
@@ -191,24 +189,22 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
               // Transaction in block
               if (status.isInBlock && status.asInBlock) {
                 const blockHash = status.asInBlock.toString();
-                const txHash = result.txHash?.toString() || '';
 
                 // Check for success or failure in events
                 let succeeded = false;
                 let failed = false;
                 let errorMessage = '';
-
                 events.forEach((record) => {
-                  const {
-                    event: { method, data },
-                  } = record;
-                  if (method === 'ExtrinsicSuccess') {
+                  const { event } = record;
+                  if (polkadotApi.events.system.ExtrinsicSuccess.is(event)) {
                     succeeded = true;
-                  } else if (method === 'ExtrinsicFailed') {
+                  } else if (
+                    polkadotApi.events.system.ExtrinsicFailed.is(event)
+                  ) {
                     failed = true;
                     // Extract human-readable error from DispatchError
                     // data[0] contains the DispatchError
-                    const dispatchError = data[0] as DispatchError;
+                    const dispatchError = event.data.dispatchError;
                     errorMessage = extractErrorMessage(
                       dispatchError,
                       polkadotApi,
@@ -217,67 +213,52 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
                 });
 
                 if (succeeded) {
-                  // Capture events from in-block phase for later use
-                  capturedEvents = events;
+                  updateStatus(Status.Succeeded, {
+                    txHash,
+                    blockHash,
+                    blockNumber,
+                    txIndex,
+                    events,
+                  });
 
-                  // Get block number from polkadot api
-                  polkadotApi.rpc.chain
-                    .getBlock(blockHash)
-                    .then((signedBlock) => {
-                      const blockNumber =
-                        signedBlock.block.header.number.toNumber();
-                      const txIndex = signedBlock.block.extrinsics.findIndex(
-                        (ex) => ex.hash.toString() === txHash,
-                      );
-
-                      // Capture block info for final resolution
-                      capturedBlockNumber = blockNumber;
-                      capturedTxIndex = txIndex;
-
-                      updateStatus(Status.Succeeded, {
-                        txHash,
-                        blockHash,
-                        blockNumber,
-                        txIndex,
-                        events,
-                      });
-
-                      notifications.update({
-                        id: notificationId,
-                        title: 'Transaction In Block',
-                        message: `Included in block ${blockNumber}, waiting for finalization...`,
-                        color: 'blue',
-                        autoClose: false,
-                        loading: true,
-                      });
-                    })
-                    .catch((err: Error) => {
-                      console.error('Failed to get block info:', err);
-                      updateStatus(Status.Succeeded, {
-                        txHash,
-                        blockHash,
-                      });
-
-                      notifications.update({
-                        id: notificationId,
-                        title: 'Transaction In Block',
-                        message: 'Waiting for finalization...',
-                        color: 'blue',
-                        autoClose: false,
-                        loading: true,
-                      });
-                    });
+                  notifications.update({
+                    id: notificationId,
+                    title: 'Transaction In Block',
+                    message: (
+                      <TransactionNotification
+                        tag={tag}
+                        txHash={txHash}
+                        blockNumber={blockNumber}
+                        blockHash={blockHash}
+                        txIndex={txIndex}
+                      />
+                    ),
+                    color: 'blue',
+                    autoClose: false,
+                    loading: true,
+                  });
                 } else if (failed) {
                   updateStatus(Status.Failed, {
                     txHash,
                     blockHash,
+                    blockNumber,
+                    txIndex,
                     error: errorMessage,
                   });
 
                   notifications.update({
                     id: notificationId,
                     title: 'Transaction Failed',
-                    message: errorMessage || 'Transaction failed on-chain',
+                    message: (
+                      <TransactionNotification
+                        tag={tag}
+                        txHash={txHash}
+                        blockNumber={blockNumber}
+                        blockHash={blockHash}
+                        txIndex={txIndex}
+                        error={errorMessage || 'Transaction failed on-chain'}
+                      />
+                    ),
                     color: 'red',
                     autoClose: false,
                     loading: false,
@@ -291,76 +272,40 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
               // Transaction finalized
               if (status.isFinalized && status.asFinalized) {
                 const finalizedBlockHash = status.asFinalized.toString();
-                const txHash = result.txHash?.toString() || '';
+                const currentState = transactions.get(txId);
 
-                // Get finalized block number
-                polkadotApi.rpc.chain
-                  .getBlock(finalizedBlockHash)
-                  .then((signedBlock) => {
-                    const finalizedBlockNumber =
-                      signedBlock.block.header.number.toNumber();
-                    const txIndex = signedBlock.block.extrinsics.findIndex(
-                      (ex) => ex.hash.toString() === txHash,
-                    );
+                updateStatus(Status.Finalized, {
+                  ...currentState,
+                  finalizedBlockHash,
+                  finalizedBlockNumber: blockNumber,
+                });
 
-                    const currentState = transactions.get(txId);
+                notifications.update({
+                  id: notificationId,
+                  title: 'Transaction Finalized',
+                  message: (
+                    <TransactionNotification
+                      tag={tag}
+                      txHash={txHash}
+                      blockNumber={blockNumber}
+                      blockHash={finalizedBlockHash}
+                      txIndex={txIndex}
+                    />
+                  ),
+                  color: 'green',
+                  autoClose: false, // Persist notification with explorer link
+                  loading: false,
+                });
 
-                    updateStatus(Status.Finalized, {
-                      ...currentState,
-                      finalizedBlockHash,
-                      finalizedBlockNumber,
-                    });
+                resolve({
+                  txHash,
+                  blockHash: finalizedBlockHash,
+                  blockNumber: blockNumber || 0,
+                  txIndex: txIndex || 0,
+                  events,
+                });
 
-                    notifications.update({
-                      id: notificationId,
-                      title: 'Transaction Finalized',
-                      message: `Finalized in block ${finalizedBlockNumber}`,
-                      color: 'green',
-                      autoClose: 5000,
-                      loading: false,
-                    });
-
-                    // Use captured data from in-block phase
-                    resolve({
-                      txHash,
-                      blockHash: finalizedBlockHash,
-                      blockNumber: finalizedBlockNumber,
-                      txIndex,
-                      events: capturedEvents,
-                    });
-
-                    if (unsub) unsub();
-                  })
-                  .catch((err: Error) => {
-                    console.error('Failed to get finalized block info:', err);
-                    const currentState = transactions.get(txId);
-
-                    updateStatus(Status.Finalized, {
-                      ...currentState,
-                      finalizedBlockHash,
-                    });
-
-                    notifications.update({
-                      id: notificationId,
-                      title: 'Transaction Finalized',
-                      message: 'Transaction has been finalized',
-                      color: 'green',
-                      autoClose: 5000,
-                      loading: false,
-                    });
-
-                    // Use captured data from in-block phase
-                    resolve({
-                      txHash,
-                      blockHash: finalizedBlockHash,
-                      blockNumber:
-                        capturedBlockNumber || currentState?.blockNumber || 0,
-                      txIndex: capturedTxIndex || currentState?.txIndex || 0,
-                      events: capturedEvents,
-                    });
-
-                    if (unsub) unsub();
-                  });
+                if (unsub) unsub();
               }
             } catch (err) {
               const error =

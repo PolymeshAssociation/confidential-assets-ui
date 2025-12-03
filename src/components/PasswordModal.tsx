@@ -63,7 +63,7 @@ export function PasswordModal({
     <Modal
       opened={opened}
       onClose={onCancel}
-      title="Unlock Key"
+      title="Unlock Confidential Account"
       centered
       closeOnClickOutside={false}
       closeOnEscape={!isSubmitting}
@@ -73,7 +73,7 @@ export function PasswordModal({
       <form onSubmit={handleSubmit}>
         <Stack>
           <Text size="sm" c="dimmed">
-            Enter password to unlock key:{' '}
+            Enter password to unlock:{' '}
             <Text span fw={700}>
               {keyAlias}
             </Text>
@@ -90,7 +90,7 @@ export function PasswordModal({
 
           <Checkbox
             label="Keep unlocked for 10 minutes"
-            description="Key will remain unlocked in memory for multiple transaction. Subsequent transactions will extend the unlock period."
+            description="Account will remain unlocked in memory for multiple transactions. Subsequent transactions will extend the unlock period."
             checked={localKeepUnlocked}
             onChange={(e) => setLocalKeepUnlocked(e.currentTarget.checked)}
             disabled={isSubmitting}
