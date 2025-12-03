@@ -1,6 +1,6 @@
 import '@polkadot/api-base/types/storage';
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
-import type { BTreeSet, Bytes, Null, Option, U8aFixed, Vec, WrapperOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeSet, Bytes, Null, Option, Text, U8aFixed, Vec, WrapperOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
 import type { FrameSupportDispatchPerDispatchClassWeight, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, PalletAssetAssetDetails, PalletAssetTickerRegistration, PalletAssetTickerRegistrationConfig, PalletBalancesBalanceLock, PalletCommitteePolymeshVotes, PalletConfidentialAssetsDartAssetDetail, PalletConfidentialAssetsSettlementAffirmationStatus, PalletConfidentialAssetsSettlementLegAffirmParty, PalletConfidentialAssetsSettlementSettlementStatus, PalletContractsStorageContractInfo, PalletContractsStorageDeletedContract, PalletContractsWasmOwnerInfo, PalletContractsWasmPrefabWasmModule, PalletCorporateActionsBallotBallotMeta, PalletCorporateActionsBallotBallotTimeRange, PalletCorporateActionsBallotBallotVote, PalletCorporateActionsCaId, PalletCorporateActionsCorporateAction, PalletCorporateActionsDistribution, PalletCorporateActionsTargetIdentities, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletIdentityClaim1stKey, PalletIdentityClaim2ndKey, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletPipsDepositInfo, PalletPipsPip, PalletPipsPipsMetadata, PalletPipsProposalState, PalletPipsSnapshotMetadata, PalletPipsSnapshottedPip, PalletPipsVote, PalletPipsVotingResult, PalletPreimageRequestStatus, PalletRelayerSubsidy, PalletSchedulerScheduled, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingPermissionedIdentityPrefs, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingSlashingSwitch, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStoFundraiser, PalletTransactionPaymentReleases, PolymeshCommonUtilitiesCheckpointNextCheckpoints, PolymeshCommonUtilitiesCheckpointScheduleCheckpoints, PolymeshCommonUtilitiesProtocolFeeProtocolOp, PolymeshContractsApi, PolymeshContractsApiCodeHash, PolymeshContractsChainExtensionExtrinsicId, PolymeshContractsNextUpgrade, PolymeshDartBpAccountAccountStateCommitment, PolymeshDartBpAccountAccountStateNullifier, PolymeshDartBpFeeFeeAccountStateCommitment, PolymeshDartBpFeeFeeAccountStateNullifier, PolymeshDartBpKeysAccountPublicKey, PolymeshDartBpKeysEncryptionPublicKey, PolymeshDartBpLegSettlementRef, PolymeshDartCurveTreeCommonCompressedInner, PolymeshDartCurveTreeCommonCompressedLeafValue, PolymeshDartCurveTreeCommonNodeLocation, PolymeshDartCurveTreeCompressedCurveTreeRoot, PolymeshPrimitivesAgentAgentGroup, PolymeshPrimitivesAssetAssetId, PolymeshPrimitivesAssetIdentifier, PolymeshPrimitivesAssetMetadataAssetMetadataKey, PolymeshPrimitivesAssetMetadataAssetMetadataSpec, PolymeshPrimitivesAssetMetadataAssetMetadataValueDetail, PolymeshPrimitivesAuthorization, PolymeshPrimitivesComplianceManagerAssetCompliance, PolymeshPrimitivesConditionTrustedIssuer, PolymeshPrimitivesDocument, PolymeshPrimitivesGroupInactiveMember, PolymeshPrimitivesIdentityClaim, PolymeshPrimitivesIdentityDidRecord, PolymeshPrimitivesIdentityId, PolymeshPrimitivesIdentityIdPortfolioId, PolymeshPrimitivesMaybeBlock, PolymeshPrimitivesMemo, PolymeshPrimitivesMultisigProposalState, PolymeshPrimitivesMultisigProposalVoteCount, PolymeshPrimitivesNftNftCollection, PolymeshPrimitivesSecondaryKeyExtrinsicPermissions, PolymeshPrimitivesSecondaryKeyKeyRecord, PolymeshPrimitivesSecondaryKeySignatory, PolymeshPrimitivesSettlementAffirmationStatus, PolymeshPrimitivesSettlementInstruction, PolymeshPrimitivesSettlementInstructionStatus, PolymeshPrimitivesSettlementLeg, PolymeshPrimitivesSettlementLegStatus, PolymeshPrimitivesSettlementMediatorAffirmationStatus, PolymeshPrimitivesSettlementVenue, PolymeshPrimitivesStatisticsStat1stKey, PolymeshPrimitivesStatisticsStat2ndKey, PolymeshPrimitivesStatisticsStatType, PolymeshPrimitivesSubsetSubsetRestrictionAssetId, PolymeshPrimitivesSubsetSubsetRestrictionPortfolioId, PolymeshPrimitivesTicker, PolymeshPrimitivesTransferComplianceAssetTransferCompliance, PolymeshPrimitivesTransferComplianceTransferConditionExemptKey, PolymeshRuntimeDevelopRuntimeSessionKeys, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
@@ -548,7 +548,7 @@ declare module '@polkadot/api-base/types/storage' {
         };
         confidentialAssets: {
             /**
-             * Dart account asset registrations.
+             * Confidential account asset registrations.
              *
              * The chain must prevent the same account from registering the same asset multiple times.
              *
@@ -559,7 +559,7 @@ declare module '@polkadot/api-base/types/storage' {
                 u32
             ]>;
             /**
-             * The current CurveTree Root for DART accounts curve tree.
+             * The current CurveTree Root for Confidential accounts curve tree.
              **/
             accountCurveTreeCurrentRoot: AugmentedQuery<ApiType, () => Observable<Option<PolymeshDartCurveTreeCompressedCurveTreeRoot>>, [
             ]>;
@@ -570,7 +570,7 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             accountCurveTreeLastUpdate: AugmentedQuery<ApiType, () => Observable<u32>, []>;
             /**
-             * CurveTree Roots for DART accounts curve tree.
+             * CurveTree Roots for Confidential accounts curve tree.
              *
              * At the end of each block we will store the root of the accounts curve tree.
              * The map key is the block number and the value is the root of the accounts curve tree.
@@ -579,19 +579,19 @@ declare module '@polkadot/api-base/types/storage' {
                 u32
             ]>;
             /**
-             * Dart account to identity mapping.
+             * Confidential account to identity mapping.
              **/
             accountDid: AugmentedQuery<ApiType, (arg: PolymeshDartBpKeysAccountPublicKey | string | Uint8Array) => Observable<Option<PolymeshPrimitivesIdentityId>>, [
                 PolymeshDartBpKeysAccountPublicKey
             ]>;
             /**
-             * Mapping of Dart account public keys to their encryption keys.
+             * Mapping of Confidential account public keys to their encryption keys.
              **/
             accountEncryptionKey: AugmentedQuery<ApiType, (arg: PolymeshDartBpKeysAccountPublicKey | string | Uint8Array) => Observable<Option<PolymeshDartBpKeysEncryptionPublicKey>>, [
                 PolymeshDartBpKeysAccountPublicKey
             ]>;
             /**
-             * Inner node storage for DART accounts curve tree.
+             * Inner node storage for Confidential accounts curve tree.
              **/
             accountInnerNodes: AugmentedQuery<ApiType, (arg: PolymeshDartCurveTreeCommonNodeLocation | {
                 Leaf: any;
@@ -603,7 +603,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartCurveTreeCommonNodeLocation
             ]>;
             /**
-             * Leaf storage for DART accounts curve tree.
+             * Leaf storage for Confidential accounts curve tree.
              *
              * The leaves are immutable, so we use a simple storage map.
              **/
@@ -611,7 +611,7 @@ declare module '@polkadot/api-base/types/storage' {
                 u64
             ]>;
             /**
-             * Nullifiers for DART account state commitments.
+             * Nullifiers for Confidential account state commitments.
              *
              * This is used to ensure that the same account state commitment cannot be used twice.
              **/
@@ -619,7 +619,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartBpAccountAccountStateNullifier
             ]>;
             /**
-             * The current CurveTree Root for DART assets curve tree.
+             * The current CurveTree Root for Confidential assets curve tree.
              **/
             assetCurveTreeCurrentRoot: AugmentedQuery<ApiType, () => Observable<Option<PolymeshDartCurveTreeCompressedCurveTreeRoot>>, [
             ]>;
@@ -630,7 +630,7 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             assetCurveTreeLastUpdate: AugmentedQuery<ApiType, () => Observable<u32>, []>;
             /**
-             * CurveTree Roots for DART assets curve tree.
+             * CurveTree Roots for Confidential assets curve tree.
              *
              * At the end of each block we will store the root of the assets curve tree.
              * The map key is the block number and the value is the root of the assets curve tree.
@@ -639,7 +639,7 @@ declare module '@polkadot/api-base/types/storage' {
                 u32
             ]>;
             /**
-             * Inner node storage for DART assets curve tree.
+             * Inner node storage for Confidential assets curve tree.
              **/
             assetInnerNodes: AugmentedQuery<ApiType, (arg: PolymeshDartCurveTreeCommonNodeLocation | {
                 Leaf: any;
@@ -651,7 +651,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartCurveTreeCommonNodeLocation
             ]>;
             /**
-             * Leaf storage for DART assets curve tree.
+             * Leaf storage for Confidential assets curve tree.
              *
              * A counted map is used since we need to support updating the leaves in the tree.
              **/
@@ -668,6 +668,24 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             cachedAssetCurveTreeParameters: AugmentedQuery<ApiType, () => Observable<Option<Bytes>>, []>;
             /**
+             * A Confidential assets token decimals.
+             **/
+            confidentialAssetDecimals: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u8>>, [
+                u32
+            ]>;
+            /**
+             * A Confidential assets token name.
+             **/
+            confidentialAssetNames: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<Text>>, [
+                u32
+            ]>;
+            /**
+             * A Confidential assets token symbol.
+             **/
+            confidentialAssetSymbols: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<Text>>, [
+                u32
+            ]>;
+            /**
              * Counter for the related counted storage map
              **/
             counterForAssetLeaves: AugmentedQuery<ApiType, () => Observable<u32>, []>;
@@ -676,20 +694,20 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             currentBatchId: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []>;
             /**
-             * Mapping of Dart Asset ID to its details.
+             * Mapping of Confidential Asset ID to its details.
              **/
             dartAssetDetails: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletConfidentialAssetsDartAssetDetail>>, [
                 u32
             ]>;
             /**
-             * Mapping of identity to their Dart accounts.
+             * Mapping of identity to their Confidential accounts.
              **/
             didAccounts: AugmentedQuery<ApiType, (arg1: PolymeshPrimitivesIdentityId | string | Uint8Array, arg2: PolymeshDartBpKeysAccountPublicKey | string | Uint8Array) => Observable<Option<Null>>, [
                 PolymeshPrimitivesIdentityId,
                 PolymeshDartBpKeysAccountPublicKey
             ]>;
             /**
-             * Mapping of Dart encryption keys to their public keys.
+             * Mapping of Confidential encryption keys to their public keys.
              **/
             encryptionKeyAccount: AugmentedQuery<ApiType, (arg: PolymeshDartBpKeysEncryptionPublicKey | string | Uint8Array) => Observable<Option<PolymeshDartBpKeysAccountPublicKey>>, [
                 PolymeshDartBpKeysEncryptionPublicKey
@@ -703,7 +721,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartBpKeysEncryptionPublicKey
             ]>;
             /**
-             * The current CurveTree Root for DART fee accounts curve tree.
+             * The current CurveTree Root for Confidential fee accounts curve tree.
              **/
             feeAccountCurveTreeCurrentRoot: AugmentedQuery<ApiType, () => Observable<Option<PolymeshDartCurveTreeCompressedCurveTreeRoot>>, [
             ]>;
@@ -714,7 +732,7 @@ declare module '@polkadot/api-base/types/storage' {
              **/
             feeAccountCurveTreeLastUpdate: AugmentedQuery<ApiType, () => Observable<u32>, []>;
             /**
-             * CurveTree Roots for DART fee accounts curve tree.
+             * CurveTree Roots for Confidential fee accounts curve tree.
              *
              * At the end of each block we will store the root of the fee accounts curve tree.
              * The map key is the block number and the value is the root of the fee accounts curve tree.
@@ -723,13 +741,13 @@ declare module '@polkadot/api-base/types/storage' {
                 u32
             ]>;
             /**
-             * Dart fee account to identity mapping.
+             * Confidential fee account to identity mapping.
              **/
             feeAccountDid: AugmentedQuery<ApiType, (arg: PolymeshDartBpKeysAccountPublicKey | string | Uint8Array) => Observable<Option<PolymeshPrimitivesIdentityId>>, [
                 PolymeshDartBpKeysAccountPublicKey
             ]>;
             /**
-             * Inner node storage for DART fee accounts curve tree.
+             * Inner node storage for Confidential fee accounts curve tree.
              **/
             feeAccountInnerNodes: AugmentedQuery<ApiType, (arg: PolymeshDartCurveTreeCommonNodeLocation | {
                 Leaf: any;
@@ -741,7 +759,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartCurveTreeCommonNodeLocation
             ]>;
             /**
-             * Leaf storage for DART fee accounts curve tree.
+             * Leaf storage for Confidential fee accounts curve tree.
              *
              * The leaves are immutable, so we use a simple storage map.
              **/
@@ -749,7 +767,7 @@ declare module '@polkadot/api-base/types/storage' {
                 u64
             ]>;
             /**
-             * Dart fee account egistrations.
+             * Confidential fee account egistrations.
              *
              * The chain must prevent the same account from registering the multiple times.
              **/
@@ -757,7 +775,7 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartBpKeysAccountPublicKey
             ]>;
             /**
-             * Nullifiers for DART fee account state commitments.
+             * Nullifiers for Confidential fee account state commitments.
              *
              * This is used to ensure that the same fee account state commitment cannot be used twice.
              **/
@@ -765,13 +783,13 @@ declare module '@polkadot/api-base/types/storage' {
                 PolymeshDartBpFeeFeeAccountStateNullifier
             ]>;
             /**
-             * The last committed leaf index for DART accounts curve tree.
+             * The last committed leaf index for Confidential accounts curve tree.
              *
              * This is used to do batched inserts into the tree.
              **/
             lastCommittedAccountLeafIndex: AugmentedQuery<ApiType, () => Observable<u64>, []>;
             /**
-             * The last committed leaf index for DART fee accounts curve tree.
+             * The last committed leaf index for Confidential fee accounts curve tree.
              *
              * This is used to do batched inserts into the tree.
              **/
@@ -792,17 +810,17 @@ declare module '@polkadot/api-base/types/storage' {
                 PalletConfidentialAssetsSettlementLegAffirmParty
             ]>;
             /**
-             * Next leaf index for DART accounts curve tree.
+             * Next leaf index for Confidential accounts curve tree.
              *
              * This is used to allocate new leaves in the tree.
              **/
             nextAccountLeafIndex: AugmentedQuery<ApiType, () => Observable<u64>, []>;
             /**
-             * Next Asset ID to be used for DART assets.
+             * Next Asset ID to be used for Confidential assets.
              **/
             nextAssetId: AugmentedQuery<ApiType, () => Observable<u32>, []>;
             /**
-             * Next leaf index for DART fee accounts curve tree.
+             * Next leaf index for Confidential fee accounts curve tree.
              *
              * This is used to allocate new leaves in the tree.
              **/

@@ -7,11 +7,11 @@
 import type { AccountKeys } from '@polymesh/polymesh-dart-wasm';
 
 /**
- * Stored Confidential keys structure (SCALE-encoded AccountKeys)
+ * Stored Confidential keys structure
  */
 export interface StoredConfidentialKeys {
-  /** Base64-encoded SCALE bytes from AccountKeys.toBytes() */
-  scaleBytes: string;
+  /** 64-character hexadecimal seed used to generate the AccountKeys */
+  seed: string;
   /** Version of the storage format for future compatibility */
   version: number;
 }
@@ -51,28 +51,28 @@ export interface ConfidentialKeyManager {
 
   /**
    * Generate new random account keys
-   * @returns SCALE-encoded bytes and public keys
+   * @returns The seed and public keys
    */
   generateKeys(): Promise<{
-    scaleBytes: string;
+    seed: string;
     publicKeys: ConfidentialAccountPublicKeys;
   }>;
 
   /**
    * Generate account keys from a specific seed (advanced mode)
    * @param seed - 64-character hex string
-   * @returns SCALE-encoded bytes and public keys
+   * @returns The seed and public keys
    */
   generateKeysFromSeed(seed: string): Promise<{
-    scaleBytes: string;
+    seed: string;
     publicKeys: ConfidentialAccountPublicKeys;
   }>;
 
   /**
-   * Load account keys from stored SCALE bytes
-   * @param scaleBase64 - Base64-encoded SCALE bytes
+   * Load account keys from stored seed
+   * @param seed - 64-character hexadecimal seed
    */
-  loadKeys(scaleBase64: string): Promise<void>;
+  loadKeys(seed: string): Promise<void>;
 
   /**
    * Get public keys of the currently loaded keys

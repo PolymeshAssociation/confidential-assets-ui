@@ -75,7 +75,7 @@ export function GenerateKeyModal({
 
     try {
       setError(null);
-      await generateKey(alias, undefined, password);
+      await generateKey({ alias, password });
       setActiveStep(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate key');
@@ -84,7 +84,7 @@ export function GenerateKeyModal({
 
   const handleDownload = (publicKey: string) => {
     try {
-      const keyJson = exportKey(publicKey);
+      const keyJson = exportKey({ publicKey });
       const keyData = JSON.parse(keyJson);
       downloadJsonFile(keyData, `${alias.replace(/\s+/g, '_')}_backup.json`);
       setHasBackedUp(true);
@@ -101,7 +101,7 @@ export function GenerateKeyModal({
   // Auto-select the generated key when it becomes available
   useEffect(() => {
     if (activeStep === 1 && generatedKey) {
-      selectKey(generatedKey.publicKey);
+      selectKey({ publicKey: generatedKey.publicKey });
     }
   }, [activeStep, generatedKey, selectKey]);
 

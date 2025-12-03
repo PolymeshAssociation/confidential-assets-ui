@@ -278,7 +278,7 @@ export function ConfidentialAccountSelectionModal({
                     key={key.publicKey}
                     component="button"
                     onClick={() => {
-                      selectKey(key.publicKey);
+                      selectKey({ publicKey: key.publicKey });
                       setSearch('');
                       onClose();
                     }}

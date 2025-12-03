@@ -24,18 +24,12 @@ export type AssetTemplateType =
  */
 export interface AssetMetadataKnownFields {
   // ===== Universal Fields (Required/Common) =====
-  /** Full legal name of the asset */
-  name: string;
-  /** Short identifier (e.g., BTC, AAPL, GOLD, USDC) - formerly 'ticker' */
-  symbol?: string;
   /** Broad category (e.g. "Equity", "Debt") */
   assetType: string;
   /** Specific type (e.g. "Common Stock", "Convertible Bond") */
   assetSubType?: string;
   /** Detailed description of the asset */
   description?: string;
-  /** Number of decimal places for divisibility (0-18) */
-  decimals?: number;
   /** ISO 4217 currency code (USD, EUR, GBP) */
   currency?: string;
   /** Legal name of the issuing entity */
@@ -228,6 +222,12 @@ export interface AssetMetadata extends AssetMetadataKnownFields {
 export interface AssetDetails {
   /** Asset ID */
   assetId: string;
+  /** Asset name (queried from confidentialAssetNames) */
+  name: string;
+  /** Asset symbol/ticker (queried from confidentialAssetSymbols) */
+  symbol: string;
+  /** Number of decimal places (queried from confidentialAssetDecimals) */
+  decimals: number;
   /** Total supply from chain (raw value, not scaled by decimals) */
   totalSupply: string;
   /** Owner DID from chain */

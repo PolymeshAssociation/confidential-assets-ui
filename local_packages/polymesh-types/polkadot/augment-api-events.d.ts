@@ -1,6 +1,6 @@
 import '@polkadot/api-base/types/events';
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeSet, Bytes, Null, Option, Result, Text, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perbill, Permill } from '@polkadot/types/interfaces/runtime';
 import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceStatus, PalletConfidentialAssetsSettlementSettlementStatus, PalletCorporateActionsBallotBallotMeta, PalletCorporateActionsBallotBallotTimeRange, PalletCorporateActionsBallotBallotVote, PalletCorporateActionsCaId, PalletCorporateActionsCorporateAction, PalletCorporateActionsDistribution, PalletCorporateActionsTargetIdentities, PalletElectionProviderMultiPhaseElectionCompute, PalletElectionProviderMultiPhasePhase, PalletImOnlineSr25519AppSr25519Public, PalletPipsProposalData, PalletPipsProposalState, PalletPipsProposer, PalletPipsSnapshottedPip, PalletStakingExposure, PalletStakingForcing, PalletStakingSlashingSwitch, PalletStakingValidatorPrefs, PalletStoFundingAsset, PalletStoFundraiser, PolymeshCommonUtilitiesCheckpointScheduleCheckpoints, PolymeshContractsApi, PolymeshContractsChainExtensionExtrinsicId, PolymeshContractsChainVersion, PolymeshDartBpAccountAccountStateCommitment, PolymeshDartBpBatchedProofHash, PolymeshDartBpFeeFeeAccountStateCommitment, PolymeshDartBpKeysAccountPublicKey, PolymeshDartBpKeysEncryptionPublicKey, PolymeshDartBpLegLegRef, PolymeshDartBpLegSettlementRef, PolymeshDartCurveTreeCommonCompressedLeafValue, PolymeshDartCurveTreeCompressedCurveTreeRoot, PolymeshPrimitivesAgentAgentGroup, PolymeshPrimitivesAssetAssetId, PolymeshPrimitivesAssetAssetType, PolymeshPrimitivesAssetIdentifier, PolymeshPrimitivesAssetMetadataAssetMetadataKey, PolymeshPrimitivesAssetMetadataAssetMetadataSpec, PolymeshPrimitivesAssetMetadataAssetMetadataValueDetail, PolymeshPrimitivesAuthorizationAuthorizationData, PolymeshPrimitivesComplianceManagerComplianceRequirement, PolymeshPrimitivesConditionTrustedIssuer, PolymeshPrimitivesDocument, PolymeshPrimitivesEventOnly, PolymeshPrimitivesIdentityClaim, PolymeshPrimitivesIdentityId, PolymeshPrimitivesIdentityIdPortfolioId, PolymeshPrimitivesMaybeBlock, PolymeshPrimitivesMemo, PolymeshPrimitivesNftNfTs, PolymeshPrimitivesPortfolioFundDescription, PolymeshPrimitivesPortfolioPortfolioUpdateReason, PolymeshPrimitivesPosRatio, PolymeshPrimitivesSecondaryKey, PolymeshPrimitivesSecondaryKeyExtrinsicPermissions, PolymeshPrimitivesSecondaryKeyPermissions, PolymeshPrimitivesSettlementLeg, PolymeshPrimitivesSettlementReceiptMetadata, PolymeshPrimitivesSettlementSettlementType, PolymeshPrimitivesSettlementVenueType, PolymeshPrimitivesStatisticsStatType, PolymeshPrimitivesStatisticsStatUpdate, PolymeshPrimitivesTicker, PolymeshPrimitivesTransferComplianceTransferCondition, PolymeshPrimitivesTransferComplianceTransferConditionExemptKey, SpConsensusGrandpaAppPublic, SpNposElectionsElectionScore, SpRuntimeDispatchError } from '@polkadot/types/lookup';
@@ -641,7 +641,7 @@ declare module '@polkadot/api-base/types/events' {
                 root: PolymeshDartCurveTreeCompressedCurveTreeRoot;
             }>;
             /**
-             * A new DART account has been registered.
+             * A new Confidential account has been registered.
              **/
             AccountRegistered: AugmentedEvent<ApiType, [
                 callerDid: PolymeshPrimitivesIdentityId,
@@ -665,19 +665,25 @@ declare module '@polkadot/api-base/types/events' {
                 accountCommitment: PolymeshDartBpAccountAccountStateCommitment;
             }>;
             /**
-             * A new DART asset has been created.
+             * A new Confidential asset has been created.
              **/
             AssetCreated: AugmentedEvent<ApiType, [
                 callerDid: PolymeshPrimitivesIdentityId,
                 assetId: u32,
                 mediators: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>,
                 auditors: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>,
+                name: Text,
+                symbol_: Text,
+                decimals: u8,
                 data: Bytes
             ], {
                 callerDid: PolymeshPrimitivesIdentityId;
                 assetId: u32;
                 mediators: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>;
                 auditors: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>;
+                name: Text;
+                symbol: Text;
+                decimals: u8;
                 data: Bytes;
             }>;
             /**
@@ -689,7 +695,7 @@ declare module '@polkadot/api-base/types/events' {
                 root: PolymeshDartCurveTreeCompressedCurveTreeRoot;
             }>;
             /**
-             * Minted DART asset.
+             * Minted Confidential asset.
              **/
             AssetMinted: AugmentedEvent<ApiType, [
                 callerDid: PolymeshPrimitivesIdentityId,
@@ -717,7 +723,7 @@ declare module '@polkadot/api-base/types/events' {
                 assetLeaf: PolymeshDartCurveTreeCommonCompressedLeafValue;
             }>;
             /**
-             * A DART asset has been updated.
+             * A Confidential asset has been updated.
              **/
             AssetUpdated: AugmentedEvent<ApiType, [
                 callerDid: PolymeshPrimitivesIdentityId,
@@ -800,17 +806,21 @@ declare module '@polkadot/api-base/types/events' {
              * Mediator has affirmed a leg.
              **/
             MediatorAffirmed: AugmentedEvent<ApiType, [
-                legRef: PolymeshDartBpLegLegRef
+                legRef: PolymeshDartBpLegLegRef,
+                keyIndex: u8
             ], {
                 legRef: PolymeshDartBpLegLegRef;
+                keyIndex: u8;
             }>;
             /**
              * Mediator has rejected a leg.
              **/
             MediatorRejected: AugmentedEvent<ApiType, [
-                legRef: PolymeshDartBpLegLegRef
+                legRef: PolymeshDartBpLegLegRef,
+                keyIndex: u8
             ], {
                 legRef: PolymeshDartBpLegLegRef;
+                keyIndex: u8;
             }>;
             /**
              * Receiver has affirmed a leg.

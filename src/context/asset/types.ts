@@ -31,6 +31,9 @@ export interface AssetContextValue {
 }
 
 export interface CreateAssetParams {
+  name: string;
+  symbol: string;
+  decimals: number; // Number of decimal places for divisibility - 0 to 8 (max)
   metadata: AssetMetadata;
   mediators: string[]; // Encryption public key hex strings
   auditors: string[]; // Encryption public key hex strings

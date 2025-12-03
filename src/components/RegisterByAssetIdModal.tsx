@@ -216,11 +216,11 @@ export function RegisterByAssetIdModal({
                   <Group justify="space-between" align="start">
                     <div>
                       <Text size="sm" fw={500}>
-                        {assetDetails.metadata?.name || 'Unknown Asset'}
+                        {assetDetails.name || 'Unknown Asset'}
                       </Text>
-                      {assetDetails.metadata?.ticker && (
+                      {assetDetails.symbol && (
                         <Text size="xs" c="dimmed">
-                          {assetDetails.metadata.ticker}
+                          {assetDetails.symbol}
                         </Text>
                       )}
                     </div>
@@ -237,7 +237,7 @@ export function RegisterByAssetIdModal({
                   )}
                   <Group gap="xs">
                     <Text size="xs" c="dimmed">
-                      Decimals: {assetDetails.metadata?.decimals ?? 0}
+                      Decimals: {assetDetails.decimals ?? 0}
                     </Text>
                   </Group>
                 </Stack>
@@ -336,12 +336,12 @@ export function RegisterByAssetIdModal({
                     Registered Asset
                   </Text>
                   <Text size="sm" fw={500}>
-                    {assetDetails.metadata?.name ||
+                    {assetDetails.name ||
                       `Asset ${normalizedAssetId}`}
                   </Text>
-                  {assetDetails.metadata?.ticker && (
+                  {assetDetails.symbol && (
                     <Text size="sm" c="dimmed">
-                      {assetDetails.metadata.ticker}
+                      {assetDetails.symbol}
                     </Text>
                   )}
                   <Code style={{ fontSize: '11px' }}>

@@ -2,9 +2,10 @@
  * Confidential Key Storage Schema
  *
  * Storage format for DART confidential keys in localStorage.
+ * All keys are password-protected using Polkadot-standard cryptography (scrypt + XSalsa20-Poly1305)
  */
 
-export interface ConfidentialKeyRecord {
+export interface EncryptedConfidentialKeyRecord {
   version: 1;
   name: string;
   public: {
@@ -12,21 +13,7 @@ export interface ConfidentialKeyRecord {
     encryption: string; // hex string (encryption public key)
   };
   private: {
-    format: 'scale-base64';
-    encryption: 'none';
-    data: string; // base64-encoded SCALE bytes from AccountKeys.toBytes()
-  };
-  metadata: {
-    created: number; // Unix milliseconds
-  };
-}
-
-// Encrypted keys using Polkadot-standard cryptography (scrypt + XSalsa20-Poly1305)
-export interface EncryptedConfidentialKeyRecord
-  extends Omit<ConfidentialKeyRecord, 'private' | 'version'> {
-  version: 2;
-  private: {
-    format: 'scale-base64';
+    format: 'seed-hex';
     encryption: 'scrypt-xsalsa20-poly1305';
     kdf: {
       function: 'scrypt';
@@ -41,10 +28,12 @@ export interface EncryptedConfidentialKeyRecord
       algorithm: 'xsalsa20-poly1305';
       nonce: string; // base64
     };
-    data: string; // base64-encoded encrypted ciphertext
+    data: string; // base64-encoded encrypted ciphertext of the seed
+  };
+  metadata: {
+    created: number; // Unix milliseconds
   };
 }
 
-export type AnyConfidentialKeyRecord =
-  | ConfidentialKeyRecord
-  | EncryptedConfidentialKeyRecord;
+// Type alias for consistency with existing code
+export type AnyConfidentialKeyRecord = EncryptedConfidentialKeyRecord;

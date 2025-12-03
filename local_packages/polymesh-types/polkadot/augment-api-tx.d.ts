@@ -1,9 +1,9 @@
 import '@polkadot/api-base/types/submittable';
 import type { ApiTypes, AugmentedSubmittable, SubmittableExtrinsic, SubmittableExtrinsicFunction } from '@polkadot/api-base/types';
-import type { BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeSet, Bytes, Compact, Option, Text, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, MultiAddress, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { PalletContractsWasmDeterminism, PalletCorporateActionsBallotBallotMeta, PalletCorporateActionsBallotBallotTimeRange, PalletCorporateActionsBallotBallotVote, PalletCorporateActionsCaId, PalletCorporateActionsCaKind, PalletCorporateActionsInitiateCorporateActionArgs, PalletCorporateActionsRecordDateSpec, PalletCorporateActionsTargetIdentities, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletPipsSnapshotResult, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingSlashingSwitch, PalletStakingValidatorPrefs, PalletStoFundingMethod, PalletStoPriceTier, PalletUtilityUniqueCall, PolymeshCommonUtilitiesCheckpointScheduleCheckpoints, PolymeshCommonUtilitiesIdentityCreateChildIdentityWithAuth, PolymeshCommonUtilitiesIdentitySecondaryKeyWithAuth, PolymeshCommonUtilitiesProtocolFeeProtocolOp, PolymeshContractsApi, PolymeshContractsChainExtensionExtrinsicId, PolymeshContractsNextUpgrade, PolymeshDartBpAccountBatchedAccountAssetRegistrationProof, PolymeshDartBpAssetAssetMintingProof, PolymeshDartBpBatchedBatchedProofs, PolymeshDartBpFeeBatchedFeeAccountRegistrationProof, PolymeshDartBpFeeBatchedFeeAccountTopupProof, PolymeshDartBpFeeFeePaymentWithBatchedProofs, PolymeshDartBpKeysAccountRegistrationProof, PolymeshDartBpKeysEncryptionKeyRegistrationProof, PolymeshDartBpKeysEncryptionPublicKey, PolymeshDartBpLegBatchedSettlementProof, PolymeshDartBpLegMediatorAffirmationProof, PolymeshDartBpLegReceiverAffirmationProof, PolymeshDartBpLegReceiverClaimProof, PolymeshDartBpLegSenderAffirmationProof, PolymeshDartBpLegSenderCounterUpdateProof, PolymeshDartBpLegSenderReversalProof, PolymeshDartBpLegSettlementProof, PolymeshPrimitivesAgentAgentGroup, PolymeshPrimitivesAssetAssetId, PolymeshPrimitivesAssetAssetType, PolymeshPrimitivesAssetIdentifier, PolymeshPrimitivesAssetMetadataAssetMetadataKey, PolymeshPrimitivesAssetMetadataAssetMetadataSpec, PolymeshPrimitivesAssetMetadataAssetMetadataValueDetail, PolymeshPrimitivesAssetNonFungibleType, PolymeshPrimitivesAuthorizationAuthorizationData, PolymeshPrimitivesBeneficiary, PolymeshPrimitivesComplianceManagerComplianceRequirement, PolymeshPrimitivesCondition, PolymeshPrimitivesConditionTrustedIssuer, PolymeshPrimitivesDocument, PolymeshPrimitivesIdentityClaimClaim, PolymeshPrimitivesIdentityClaimClaimType, PolymeshPrimitivesIdentityClaimScope, PolymeshPrimitivesIdentityId, PolymeshPrimitivesIdentityIdPortfolioId, PolymeshPrimitivesIdentityIdPortfolioKind, PolymeshPrimitivesMaybeBlock, PolymeshPrimitivesMemo, PolymeshPrimitivesNftNfTs, PolymeshPrimitivesNftNftCollectionKeys, PolymeshPrimitivesNftNftMetadataAttribute, PolymeshPrimitivesPortfolioFund, PolymeshPrimitivesPosRatio, PolymeshPrimitivesSecondaryKey, PolymeshPrimitivesSecondaryKeyExtrinsicPermissions, PolymeshPrimitivesSecondaryKeyPermissions, PolymeshPrimitivesSecondaryKeySignatory, PolymeshPrimitivesSettlementAffirmationCount, PolymeshPrimitivesSettlementAssetCount, PolymeshPrimitivesSettlementLeg, PolymeshPrimitivesSettlementReceiptDetails, PolymeshPrimitivesSettlementSettlementType, PolymeshPrimitivesSettlementVenueType, PolymeshPrimitivesStatisticsStatType, PolymeshPrimitivesStatisticsStatUpdate, PolymeshPrimitivesTicker, PolymeshPrimitivesTransferComplianceTransferCondition, PolymeshPrimitivesTransferComplianceTransferConditionExemptKey, PolymeshRuntimeDevelopRuntimeOriginCaller, PolymeshRuntimeDevelopRuntimeSessionKeys, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusGrandpaEquivocationProof, SpConsensusSlotsEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeMultiSignature, SpSessionMembershipProof, SpWeightsWeightV2Weight } from '@polkadot/types/lookup';
+import type { PalletContractsWasmDeterminism, PalletCorporateActionsBallotBallotMeta, PalletCorporateActionsBallotBallotTimeRange, PalletCorporateActionsBallotBallotVote, PalletCorporateActionsCaId, PalletCorporateActionsCaKind, PalletCorporateActionsInitiateCorporateActionArgs, PalletCorporateActionsRecordDateSpec, PalletCorporateActionsTargetIdentities, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletPipsSnapshotResult, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingSlashingSwitch, PalletStakingValidatorPrefs, PalletStoFundingMethod, PalletStoPriceTier, PalletUtilityUniqueCall, PolymeshCommonUtilitiesCheckpointScheduleCheckpoints, PolymeshCommonUtilitiesIdentityCreateChildIdentityWithAuth, PolymeshCommonUtilitiesIdentitySecondaryKeyWithAuth, PolymeshCommonUtilitiesProtocolFeeProtocolOp, PolymeshContractsApi, PolymeshContractsChainExtensionExtrinsicId, PolymeshContractsNextUpgrade, PolymeshDartBpAccountBatchedAccountAssetRegistrationProof, PolymeshDartBpAssetAssetMintingProof, PolymeshDartBpBatchedBatchedProofs, PolymeshDartBpFeeBatchedFeeAccountRegistrationProof, PolymeshDartBpFeeBatchedFeeAccountTopupProof, PolymeshDartBpFeeFeePaymentWithBatchedProofs, PolymeshDartBpKeysAccountRegistrationProof, PolymeshDartBpKeysEncryptionKeyRegistrationProof, PolymeshDartBpKeysEncryptionPublicKey, PolymeshDartBpLegInstantInstantReceiverAffirmationProof, PolymeshDartBpLegInstantInstantSenderAffirmationProof, PolymeshDartBpLegInstantInstantSettlementProof, PolymeshDartBpLegProofsBatchedSettlementProof, PolymeshDartBpLegProofsMediatorAffirmationProof, PolymeshDartBpLegProofsReceiverAffirmationProof, PolymeshDartBpLegProofsReceiverClaimProof, PolymeshDartBpLegProofsSenderAffirmationProof, PolymeshDartBpLegProofsSenderCounterUpdateProof, PolymeshDartBpLegProofsSenderReversalProof, PolymeshDartBpLegSettlementProof, PolymeshPrimitivesAgentAgentGroup, PolymeshPrimitivesAssetAssetId, PolymeshPrimitivesAssetAssetType, PolymeshPrimitivesAssetIdentifier, PolymeshPrimitivesAssetMetadataAssetMetadataKey, PolymeshPrimitivesAssetMetadataAssetMetadataSpec, PolymeshPrimitivesAssetMetadataAssetMetadataValueDetail, PolymeshPrimitivesAssetNonFungibleType, PolymeshPrimitivesAuthorizationAuthorizationData, PolymeshPrimitivesBeneficiary, PolymeshPrimitivesComplianceManagerComplianceRequirement, PolymeshPrimitivesCondition, PolymeshPrimitivesConditionTrustedIssuer, PolymeshPrimitivesDocument, PolymeshPrimitivesIdentityClaimClaim, PolymeshPrimitivesIdentityClaimClaimType, PolymeshPrimitivesIdentityClaimScope, PolymeshPrimitivesIdentityId, PolymeshPrimitivesIdentityIdPortfolioId, PolymeshPrimitivesIdentityIdPortfolioKind, PolymeshPrimitivesMaybeBlock, PolymeshPrimitivesMemo, PolymeshPrimitivesNftNfTs, PolymeshPrimitivesNftNftCollectionKeys, PolymeshPrimitivesNftNftMetadataAttribute, PolymeshPrimitivesPortfolioFund, PolymeshPrimitivesPosRatio, PolymeshPrimitivesSecondaryKey, PolymeshPrimitivesSecondaryKeyExtrinsicPermissions, PolymeshPrimitivesSecondaryKeyPermissions, PolymeshPrimitivesSecondaryKeySignatory, PolymeshPrimitivesSettlementAffirmationCount, PolymeshPrimitivesSettlementAssetCount, PolymeshPrimitivesSettlementLeg, PolymeshPrimitivesSettlementReceiptDetails, PolymeshPrimitivesSettlementSettlementType, PolymeshPrimitivesSettlementVenueType, PolymeshPrimitivesStatisticsStatType, PolymeshPrimitivesStatisticsStatUpdate, PolymeshPrimitivesTicker, PolymeshPrimitivesTransferComplianceTransferCondition, PolymeshPrimitivesTransferComplianceTransferConditionExemptKey, PolymeshRuntimeDevelopRuntimeOriginCaller, PolymeshRuntimeDevelopRuntimeSessionKeys, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusGrandpaEquivocationProof, SpConsensusSlotsEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeMultiSignature, SpSessionMembershipProof, SpWeightsWeightV2Weight } from '@polkadot/types/lookup';
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
 export type __SubmittableExtrinsic<ApiType extends ApiTypes> = SubmittableExtrinsic<ApiType>;
 export type __SubmittableExtrinsicFunction<ApiType extends ApiTypes> = SubmittableExtrinsicFunction<ApiType>;
@@ -1723,14 +1723,14 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `SettlementMissingLegs` if the settlement has no legs.
              * * `SettlementTooManyLegs` if the settlement has more legs than the maximum allowed.
              **/
-            batchedSettlement: AugmentedSubmittable<(proof: PolymeshDartBpLegBatchedSettlementProof | {
+            batchedSettlement: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsBatchedSettlementProof | {
                 settlement?: any;
                 legAffirmations?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegBatchedSettlementProof
+                PolymeshDartBpLegProofsBatchedSettlementProof
             ]>;
             /**
-             * Create a new DART Asset.
+             * Create a new Confidential Asset.
              *
              * # Arguments
              * * `auditor_or_mediator` - The auditor or mediator public key.
@@ -1740,7 +1740,10 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `AccountMissing` if the auditor or mediator is not registered.
              * * `EncryptionKeyMissing` if the encryption key of the auditor or mediator is not registered.
              **/
-            createAsset: AugmentedSubmittable<(mediators: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>, auditors: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>, data: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
+            createAsset: AugmentedSubmittable<(name: Text | string, symbol: Text | string, decimals: u8 | AnyNumber | Uint8Array, mediators: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>, auditors: BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>, data: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
+                Text,
+                Text,
+                u8,
                 BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>,
                 BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>,
                 Bytes
@@ -1766,6 +1769,77 @@ declare module '@polkadot/api-base/types/submittable' {
                 PolymeshDartBpLegSettlementProof
             ]>;
             /**
+             * Create and execute an instant settlement.
+             *
+             * # Arguments
+             * * `origin` - The origin of the call.
+             * * `proof` - The settlement proof with batched leg affirmations.
+             *
+             * # Errors
+             * * `BadOrigin` if `origin` isn't signed.
+             * * `InvalidProof` if the proof is invalid.
+             * * `SettlementMissingLegs` if the settlement has no legs.
+             * * `SettlementTooManyLegs` if the settlement has more legs than the maximum allowed.
+             **/
+            executeInstantSettlement: AugmentedSubmittable<(proof: PolymeshDartBpLegInstantInstantSettlementProof | {
+                settlement?: any;
+                legAffirmations?: any;
+            } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
+                PolymeshDartBpLegInstantInstantSettlementProof
+            ]>;
+            /**
+             * Receiver affirms a settlement leg as the last pending affirmation.
+             *
+             * This can only be used when the receiver affirmation is the last pending affirmation for the settlement.
+             *
+             * # Arguments
+             * * `origin` - The origin of the call.
+             * * `proof` - The instant receiver affirmation proof.
+             *
+             * # Errors
+             * * `BadOrigin` if `origin` isn't signed.
+             * * `SettlementNotPending` if the settlement is not pending.
+             * * `SettlementNotFound` if the settlement is not found.
+             * * `LegNotFound` if the leg is not found in the settlement.
+             * * `AlreadyAffirmed` if the leg has already been affirmed by the receiver.
+             * * `NotLastPendingAffirmation` if the receiver affirmation is not the last pending affirmation for the settlement.
+             **/
+            instantReceiverAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegInstantInstantReceiverAffirmationProof | {
+                legRef?: any;
+                rootBlock?: any;
+                updatedAccountStateCommitment?: any;
+                nullifier?: any;
+                inner?: any;
+            } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
+                PolymeshDartBpLegInstantInstantReceiverAffirmationProof
+            ]>;
+            /**
+             * Sender affirms a settlement leg as the last pending affirmation.
+             *
+             * This can only be used when the sender affirmation is the last pending affirmation for the settlement.
+             *
+             * # Arguments
+             * * `origin` - The origin of the call.
+             * * `proof` - The instant sender affirmation proof.
+             *
+             * # Errors
+             * * `BadOrigin` if `origin` isn't signed.
+             * * `SettlementNotPending` if the settlement is not pending.
+             * * `SettlementNotFound` if the settlement is not found.
+             * * `LegNotFound` if the leg is not found in the settlement.
+             * * `AlreadyAffirmed` if the leg has already been affirmed by the sender.
+             * * `NotLastPendingAffirmation` if the sender affirmation is not the last pending affirmation for the settlement.
+             **/
+            instantSenderAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegInstantInstantSenderAffirmationProof | {
+                legRef?: any;
+                rootBlock?: any;
+                updatedAccountStateCommitment?: any;
+                nullifier?: any;
+                inner?: any;
+            } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
+                PolymeshDartBpLegInstantInstantSenderAffirmationProof
+            ]>;
+            /**
              * Mediator affirms a settlement leg.
              *
              * # Arguments
@@ -1780,29 +1854,29 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `AlreadyAffirmed` if the leg has already been affirmed by the mediator.
              * * `NoMediatorForThisLeg` if the leg does not have a mediator.
              **/
-            mediatorAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegMediatorAffirmationProof | {
+            mediatorAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsMediatorAffirmationProof | {
                 legRef?: any;
                 accept?: any;
                 keyIndex?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegMediatorAffirmationProof
+                PolymeshDartBpLegProofsMediatorAffirmationProof
             ]>;
             /**
-             * Mint a DART asset.
+             * Mint a Confidential asset.
              *
              * # Arguments
-             * * `origin` - The origin of the call. They must be the owner of the DART asset and DART account.
+             * * `origin` - The origin of the call. They must be the owner of the Confidential asset and Confidential account.
              * * `proof` - The minting proof.
              *
              * # Errors
              * * `BadOrigin` if `origin` isn't signed.
-             * * `AccountMissing` if the DART account is not registered.
-             * * `AssetMissing` if the DART asset is not registered.
-             * * `NotAccountOwner` if the caller is not the owner of the DART account.
+             * * `AccountMissing` if the Confidential account is not registered.
+             * * `AssetMissing` if the Confidential asset is not registered.
+             * * `NotAccountOwner` if the caller is not the owner of the Confidential account.
              * * `InvalidProof` if the proof is invalid.
-             * * `NotAssetOwner` if the caller is not the owner of the DART asset.
-             * * `MaxTotalSupplyExceeded` if the total supply of the DART asset exceeds the maximum total supply.
+             * * `NotAssetOwner` if the caller is not the owner of the Confidential asset.
+             * * `MaxTotalSupplyExceeded` if the total supply of the Confidential asset exceeds the maximum total supply.
              * * `NullifierAlreadyUsed` if the nullifier for the account state commitment has already been used.
              **/
             mintAsset: AugmentedSubmittable<(proof: PolymeshDartBpAssetAssetMintingProof | {
@@ -1812,7 +1886,7 @@ declare module '@polkadot/api-base/types/submittable' {
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
                 PolymeshDartBpAssetAssetMintingProof
             ]>;
@@ -1830,14 +1904,14 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `LegNotFound` if the leg is not found in the settlement.
              * * `AlreadyAffirmed` if the leg has already been affirmed by the receiver.
              **/
-            receiverAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegReceiverAffirmationProof | {
+            receiverAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsReceiverAffirmationProof | {
                 legRef?: any;
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegReceiverAffirmationProof
+                PolymeshDartBpLegProofsReceiverAffirmationProof
             ]>;
             /**
              * Receiver claims their assets after a settlement has been executed.
@@ -1853,30 +1927,30 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `LegNotFound` if the leg is not found in the settlement.
              * * `ReceiverHasNotAffirmed` if the receiver has not affirmed the leg.
              **/
-            receiverClaim: AugmentedSubmittable<(proof: PolymeshDartBpLegReceiverClaimProof | {
+            receiverClaim: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsReceiverClaimProof | {
                 legRef?: any;
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegReceiverClaimProof
+                PolymeshDartBpLegProofsReceiverClaimProof
             ]>;
             /**
              * Batch register multiple accounts and assets.
              *
-             * This is used to initialize the first account state commitment of the DART asset for the DART account.
+             * This is used to initialize the first account state commitment of the Confidential asset for the Confidential account.
              *
              * # Arguments
-             * * `origin` - The origin of the call.  They must be the owner of the DART account.
+             * * `origin` - The origin of the call.  They must be the owner of the Confidential account.
              * * `proof` - The Batched Account asset registration proof.
              *
              * # Errors
              * * `BadOrigin` if `origin` isn't signed.
-             * * `AccountMissing` if the DART account is not registered.
-             * * `AssetMissing` if the DART asset is not registered.
-             * * `AccountAssetAlreadyRegistered` if the DART account has already registered the DART asset.
-             * * `NotAccountOwner` if the caller is not the owner of the DART account.
+             * * `AccountMissing` if the Confidential account is not registered.
+             * * `AssetMissing` if the Confidential asset is not registered.
+             * * `AccountAssetAlreadyRegistered` if the Confidential account has already registered the Confidential asset.
+             * * `NotAccountOwner` if the caller is not the owner of the Confidential account.
              * * `InvalidProof` if the proof is invalid.
              **/
             registerAccountAssets: AugmentedSubmittable<(proof: PolymeshDartBpAccountBatchedAccountAssetRegistrationProof | {
@@ -1897,7 +1971,7 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             registerAccounts: AugmentedSubmittable<(proof: PolymeshDartBpKeysAccountRegistrationProof | {
                 accounts?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
                 PolymeshDartBpKeysAccountRegistrationProof
             ]>;
@@ -1915,14 +1989,14 @@ declare module '@polkadot/api-base/types/submittable' {
              **/
             registerEncryptionKeys: AugmentedSubmittable<(proof: PolymeshDartBpKeysEncryptionKeyRegistrationProof | {
                 keys_?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
                 PolymeshDartBpKeysEncryptionKeyRegistrationProof
             ]>;
             /**
              * Batch register multiple fee accounts.
              *
-             * This is used to register fee accounts for DART private fee payments.
+             * This is used to register fee accounts for Confidential private fee payments.
              *
              * # Arguments
              * * `origin` - The origin of the call.
@@ -1944,17 +2018,17 @@ declare module '@polkadot/api-base/types/submittable' {
             /**
              * Relayer submit a batch of proofs paid using a private fee payment.
              *
-             * Users can use a Relayer service to submit their DART proofs for privacy (i.e., the origin is not the user).
-             * The Relayer is paid/reimbursed using a private fee payment from the user's DART fee account.
+             * Users can use a Relayer service to submit their Confidential proofs for privacy (i.e., the origin is not the user).
+             * The Relayer is paid/reimbursed using a private fee payment from the user's Confidential fee account.
              *
              * Relayers can charge a commission fee on top of the transaction fee (i.e. `commission fee + transaction fee = fee amount`).
              *
-             * Relayers should verify that the fee payment proof is valid before submitting the batched DART proofs.  They are not required
-             * to verify the batched DART proofs.  If the user's DART proofs are invalid, the user is still responsible for paying the fee to the relayer.
+             * Relayers should verify that the fee payment proof is valid before submitting the batched Confidential proofs.  They are not required
+             * to verify the batched Confidential proofs.  If the user's Confidential proofs are invalid, the user is still responsible for paying the fee to the relayer.
              *
              * # Arguments
              * * `origin` - The origin of the call.  This is the relayer.
-             * * `proof` - The fee payment proof and batched DART proofs.
+             * * `proof` - The fee payment proof and batched Confidential proofs.
              *
              * # Errors
              * * `BadOrigin` if `origin` isn't signed.
@@ -1981,14 +2055,14 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `LegNotFound` if the leg is not found in the settlement.
              * * `AlreadyAffirmed` if the leg has already been affirmed by the sender.
              **/
-            senderAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegSenderAffirmationProof | {
+            senderAffirmation: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsSenderAffirmationProof | {
                 legRef?: any;
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegSenderAffirmationProof
+                PolymeshDartBpLegProofsSenderAffirmationProof
             ]>;
             /**
              * Sender reverts their affirmation after a settlement has been rejected.
@@ -2004,14 +2078,14 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `LegNotFound` if the leg is not found in the settlement.
              * * `SenderHasNotAffirmed` if the sender has not affirmed the leg.
              **/
-            senderRevert: AugmentedSubmittable<(proof: PolymeshDartBpLegSenderReversalProof | {
+            senderRevert: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsSenderReversalProof | {
                 legRef?: any;
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegSenderReversalProof
+                PolymeshDartBpLegProofsSenderReversalProof
             ]>;
             /**
              * Sender updates their counter after a settlement has been executed.
@@ -2027,14 +2101,14 @@ declare module '@polkadot/api-base/types/submittable' {
              * * `LegNotFound` if the leg is not found in the settlement.
              * * `SenderHasNotAffirmed` if the sender has not affirmed the leg.
              **/
-            senderUpdateCounter: AugmentedSubmittable<(proof: PolymeshDartBpLegSenderCounterUpdateProof | {
+            senderUpdateCounter: AugmentedSubmittable<(proof: PolymeshDartBpLegProofsSenderCounterUpdateProof | {
                 legRef?: any;
                 rootBlock?: any;
                 updatedAccountStateCommitment?: any;
                 nullifier?: any;
-                proof?: any;
+                inner?: any;
             } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [
-                PolymeshDartBpLegSenderCounterUpdateProof
+                PolymeshDartBpLegProofsSenderCounterUpdateProof
             ]>;
             /**
              * Submit a batch of proofs.

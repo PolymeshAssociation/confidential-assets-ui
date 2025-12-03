@@ -80,6 +80,50 @@ declare module '@polkadot/api-base/types/consts' {
              **/
             feeAccountId: AccountId32 & AugmentedConst<ApiType>;
             /**
+             * The maximum number of account asset registration proofs in a single transaction.
+             **/
+            maxAccountAssetRegProofs: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of asset auditors.
+             **/
+            maxAssetAuditors: u32 & AugmentedConst<ApiType>;
+            /**
+             * Maximum asset data length.
+             **/
+            maxAssetDataLength: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of asset mediators.
+             **/
+            maxAssetMediators: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of proofs in a single batched proof.
+             **/
+            maxBatchedProofs: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of fee account registration proofs in a single transaction.
+             **/
+            maxFeeAccountRegProofs: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of fee account topup proofs in a single transaction.
+             **/
+            maxFeeAccountTopupProofs: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of keys in an account registration proof.
+             **/
+            maxKeysPerRegProof: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of legs in a settlement.
+             **/
+            maxSettlementLegs: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum settlement memo length.
+             **/
+            maxSettlementMemoLength: u32 & AugmentedConst<ApiType>;
+            /**
+             * Maximum total supply.
+             **/
+            maxTotalSupply: u128 & AugmentedConst<ApiType>;
+            /**
              * Get the Confidential Assets fee pallet id.
              **/
             palletFeeId: FrameSupportPalletId & AugmentedConst<ApiType>;

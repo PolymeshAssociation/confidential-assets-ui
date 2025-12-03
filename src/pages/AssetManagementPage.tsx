@@ -196,7 +196,7 @@ export function AssetManagementPage() {
                         <div>
                           <Group justify="space-between" mb="xs">
                             <Text fw={600} size="lg">
-                              {asset.metadata?.name || `Asset ${asset.assetId}`}
+                              {asset.name || `Asset ${asset.assetId}`}
                             </Text>
                             {asset.metadata?.template && (
                               <Badge variant="light" size="sm">
@@ -206,9 +206,9 @@ export function AssetManagementPage() {
                           </Group>
 
                           <Group gap="xs" mb="xs">
-                            {asset.metadata?.symbol && (
+                            {asset.symbol && (
                               <Badge variant="outline" color="gray" size="sm">
-                                {asset.metadata.symbol}
+                                {asset.symbol}
                               </Badge>
                             )}
                             {asset.metadata?.assetType && (
@@ -251,7 +251,7 @@ export function AssetManagementPage() {
                           >
                             {formatTokenAmount(
                               asset.totalSupply,
-                              asset.metadata?.decimals ?? 0,
+                              asset.decimals ?? 0,
                             )}
                           </Text>
                         </div>
@@ -265,7 +265,7 @@ export function AssetManagementPage() {
                             fw={500}
                             style={{ fontFamily: 'monospace' }}
                           >
-                            {asset.metadata?.decimals ?? 0}
+                            {asset.decimals ?? 0}
                           </Text>
                         </div>
 
@@ -326,7 +326,7 @@ export function AssetManagementPage() {
                                 setSelectedAssetForRegistration({
                                   assetId: asset.assetId,
                                   assetName:
-                                    asset.metadata?.name ||
+                                  asset.name ||
                                     `Asset ${asset.assetId}`,
                                 });
                                 setRegisterModalOpened(true);
@@ -344,9 +344,9 @@ export function AssetManagementPage() {
                                 setSelectedAssetForMinting({
                                   assetId: asset.assetId,
                                   assetName:
-                                    asset.metadata?.name ||
-                                    `Asset ${asset.assetId}`,
-                                  decimals: asset.metadata?.decimals,
+                                  asset.name ||
+                                  `Asset ${asset.assetId}`,
+                                decimals: asset.decimals,
                                 });
                                 setMintModalOpened(true);
                               }}
@@ -479,15 +479,15 @@ export function AssetManagementPage() {
                             <div>
                               <Group justify="space-between" mb="xs">
                                 <Text fw={600} size="lg">
-                                  {asset.metadata?.name || 'Unknown Asset'}
+                                  {asset.name || 'Unknown Asset'}
                                 </Text>
                                 <Badge color="green" variant="light" size="sm">
                                   Registered
                                 </Badge>
                               </Group>
-                              {asset.metadata?.symbol && (
+                              {asset.symbol && (
                                 <Text size="sm" c="dimmed" mb="xs">
-                                  {asset.metadata.symbol}
+                                  {asset.symbol}
                                 </Text>
                               )}
                               {asset.metadata?.description && (
@@ -519,7 +519,7 @@ export function AssetManagementPage() {
                                 >
                                   {formatTokenAmount(
                                     asset.totalSupply,
-                                    asset.metadata?.decimals ?? 0,
+                                    asset.decimals ?? 0,
                                   )}
                                 </Text>
                               </div>
@@ -537,7 +537,7 @@ export function AssetManagementPage() {
                                 >
                                   {formatTokenAmount(
                                     asset.balance,
-                                    asset.metadata?.decimals ?? 0,
+                                    asset.decimals ?? 0,
                                   )}
                                 </Text>
                               </div>
@@ -552,7 +552,7 @@ export function AssetManagementPage() {
                                 fw={500}
                                 style={{ fontFamily: 'monospace' }}
                               >
-                                {asset.metadata?.decimals ?? 0}
+                                {asset.decimals ?? 0}
                               </Text>
                             </div>
 

@@ -146,7 +146,13 @@ export function SettlementDetailsModal({
     } catch (err) {
       console.error('Failed to refresh affirmation status:', err);
     }
-  }, [polkadotApi, querySettlementDetails, settlementId, availableLegIds, showSuccess]);
+  }, [
+    polkadotApi,
+    querySettlementDetails,
+    settlementId,
+    availableLegIds,
+    showSuccess,
+  ]);
 
   // Batch decrypt all legs
   const handleDecryptAllLegs = useCallback(async () => {
@@ -588,8 +594,8 @@ export function SettlementDetailsModal({
                                   Asset
                                 </Text>
                                 <Text fw={600}>
-                                  {asset?.metadata?.symbol ||
-                                    asset?.metadata?.name ||
+                                  {asset?.symbol ||
+                                    asset?.name ||
                                     'Unknown Asset'}
                                 </Text>
                                 <Text size="sm" c="dimmed">
@@ -605,7 +611,7 @@ export function SettlementDetailsModal({
                                 <Text fw={500} size="lg">
                                   {fromSmallestUnit(
                                     decryptedLeg.details.amount,
-                                    asset?.metadata?.decimals ?? 6,
+                                    asset?.decimals ?? 0,
                                   )}
                                 </Text>
                               </Stack>

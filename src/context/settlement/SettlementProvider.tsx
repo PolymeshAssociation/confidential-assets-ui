@@ -36,7 +36,6 @@ import type {
   SettlementRole,
 } from '@/types/settlement';
 import { notifications } from '@mantine/notifications';
-import type { u32 } from '@polkadot/types-codec';
 import { AccountPublicKeys, AssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -325,7 +324,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       // Small delay to allow toast to render before heavy computation
       await new Promise((resolve) => setTimeout(resolve, 100));
       try {
-        const result = await executeWithKey(async (accountKeys) => {
+        const result = await executeWithKey({ operation: async (accountKeys) => {
           const decryptResult = await decryptSettlementService({
             settlementId: params.settlementId,
             legId: params.legId,
@@ -334,7 +333,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           });
 
           return decryptResult;
-        });
+        }});
 
         // Fetch asset details to calculate roles
         const assetDetails = await getAssetDetails(result.leg.assetId);
@@ -456,7 +455,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) throw new Error('No active key found');
 
           // Get account asset state from storage
@@ -506,7 +505,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
           // Save using the asset storage service
           saveAccountAssetState(storedState);
-        });
+        }});
 
         // Refresh asset balances
         await refreshRegisteredAssets();
@@ -574,7 +573,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) throw new Error('No active key found');
 
           // Get account asset state from storage
@@ -624,7 +623,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
           // Save using the asset storage service
           saveAccountAssetState(storedState);
-        });
+        }});
 
         // Refresh asset balances
         await refreshRegisteredAssets();
@@ -700,7 +699,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           await affirmSettlementMediator({
             settlementId: params.settlementId,
             legId: params.legId,
@@ -729,7 +728,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
               }
             },
           });
-        });
+        }});
 
         if (!params.suppressNotifications) {
           notifications.update({
@@ -791,7 +790,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) throw new Error('No active key found');
 
           // Get account asset state from storage
@@ -841,7 +840,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
           // Save using the asset storage service
           saveAccountAssetState(storedState);
-        });
+        }});
 
         // Refresh asset balances to show credited amount
         await refreshRegisteredAssets();
@@ -906,7 +905,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) throw new Error('No active key found');
 
           const storedState = getAccountAssetState(
@@ -949,7 +948,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           storedState.updatedAt = Date.now();
 
           saveAccountAssetState(storedState);
-        });
+        }});
 
         await refreshRegisteredAssets();
 
@@ -1009,7 +1008,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) throw new Error('No active key found');
 
           const storedState = getAccountAssetState(
@@ -1052,7 +1051,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           storedState.updatedAt = Date.now();
 
           saveAccountAssetState(storedState);
-        });
+        }});
 
         await refreshRegisteredAssets();
 
@@ -1112,17 +1111,14 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       const status = statusOption.unwrap().toString();
 
       // Query pending affirmations and finalizations
-      const [pendingAffirmations, pendingFinalizations] =
-        (await polkadotApi.queryMulti([
-          [
-            polkadotApi.query.confidentialAssets.settlementPendingAffirmations,
-            settlementId,
-          ],
-          [
-            polkadotApi.query.confidentialAssets.settlementPendingFinalizations,
-            settlementId,
-          ],
-        ])) as [u32, u32];
+      const [pendingAffirmations, pendingFinalizations] = await Promise.all([
+        polkadotApi.query.confidentialAssets.settlementPendingAffirmations(
+          settlementId,
+        ),
+        polkadotApi.query.confidentialAssets.settlementPendingFinalizations(
+          settlementId,
+        ),
+      ]);
 
       return {
         status,
@@ -1268,7 +1264,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         });
 
         // Decrypt all legs within a single executeWithKey call (one password prompt)
-        const results = await executeWithKey(async (accountKeys) => {
+        const results = await executeWithKey({ operation: async (accountKeys) => {
           const allResults: DecryptedLegResult[] = [];
           let successCount = 0;
           let failedCount = 0;
@@ -1406,7 +1402,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           }
 
           return allResults;
-        });
+        }});
 
         // Final notification
         const successCount = results.filter(

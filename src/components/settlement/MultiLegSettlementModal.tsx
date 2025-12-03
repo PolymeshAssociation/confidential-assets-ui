@@ -212,14 +212,14 @@ export function MultiLegSettlementModal({
         setFieldValue(`legs.${index}.assetDecimals`, undefined);
       } else {
         setFieldValue(`legs.${index}.assetExists`, true);
-        setFieldValue(`legs.${index}.assetName`, assetDetails.metadata?.name);
+        setFieldValue(`legs.${index}.assetName`, assetDetails.name);
         setFieldValue(
           `legs.${index}.assetTicker`,
-          assetDetails.metadata?.symbol,
+          assetDetails.symbol,
         );
         setFieldValue(
           `legs.${index}.assetDecimals`,
-          assetDetails.metadata?.decimals,
+          assetDetails.decimals,
         );
         clearFieldError(`legs.${index}.assetId`);
 

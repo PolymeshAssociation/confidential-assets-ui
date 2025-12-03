@@ -196,7 +196,7 @@ export function ReceiveSettlementModal({
   }, [senderEncryptionKey, selectedAssetId, polkadotApi, senderAccountKey]);
 
   // Get asset decimals for display
-  const decimals = selectedAsset?.metadata?.decimals || 0;
+  const decimals = selectedAsset?.decimals || 0;
 
   // Validate step 1
   const canProceed =
@@ -325,9 +325,9 @@ export function ReceiveSettlementModal({
                   placeholder="Select asset to receive"
                   data={registeredAssets.map((asset) => ({
                     value: asset.assetId,
-                    label: asset.metadata?.name
-                      ? `${asset.metadata.name} (${
-                          asset.metadata.symbol || asset.assetId
+                    label: asset.name
+                      ? `${asset.name} (${
+                          asset.symbol || asset.assetId
                         })`
                       : `Asset ${asset.assetId}`,
                   }))}
@@ -352,7 +352,7 @@ export function ReceiveSettlementModal({
                   description={
                     selectedAsset
                       ? `Smallest unit: ${Math.pow(10, -decimals)} ${
-                          selectedAsset.metadata?.symbol || 'tokens'
+                          selectedAsset.symbol || 'tokens'
                         }`
                       : undefined
                   }
@@ -484,7 +484,7 @@ export function ReceiveSettlementModal({
                         Asset:
                       </Text>
                       <Text size="sm" fw={500} ta="right">
-                        {selectedAsset?.metadata?.name || selectedAssetId}
+                        {selectedAsset?.name || selectedAssetId}
                       </Text>
                     </Group>
                     <Group justify="space-between" wrap="nowrap">
@@ -492,7 +492,7 @@ export function ReceiveSettlementModal({
                         Amount:
                       </Text>
                       <Text size="sm" fw={500} ta="right">
-                        {amount} {selectedAsset?.metadata?.symbol || 'tokens'}
+                        {amount} {selectedAsset?.symbol || 'tokens'}
                       </Text>
                     </Group>
                   </Stack>

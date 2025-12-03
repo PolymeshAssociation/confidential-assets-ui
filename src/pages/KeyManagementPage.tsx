@@ -93,7 +93,7 @@ export function KeyManagementPage() {
     async function checkRegistrations() {
       if (!polkadotApi) return;
       try {
-        await checkAllRegistrations(polkadotApi);
+        await checkAllRegistrations({ polkadotApi });
       } catch (error) {
         console.error('[Key Management] Failed to check registrations:', error);
       } finally {
@@ -119,7 +119,7 @@ export function KeyManagementPage() {
 
   const handleChangePassword = async (key: ConfidentialKey) => {
     try {
-      await changeKeyPassword(key.publicKey);
+      await changeKeyPassword({ publicKey: key.publicKey });
     } catch (error) {
       showError(
         error instanceof Error ? error.message : 'Failed to change password',
@@ -135,7 +135,7 @@ export function KeyManagementPage() {
           keyToRename={key}
           onRename={async (newAlias) => {
             try {
-              await renameKey(key.publicKey, newAlias);
+              await renameKey({ publicKey: key.publicKey, newAlias });
               showSuccess(`Key renamed from "${key.alias}" to "${newAlias}"`);
               modals.closeAll();
             } catch (error) {
@@ -153,21 +153,21 @@ export function KeyManagementPage() {
 
   const handleDeleteKey = async (key: ConfidentialKey) => {
     // If key is encrypted, require password verification first
-    if (isKeyEncrypted(key.publicKey)) {
+    if (isKeyEncrypted({ publicKey: key.publicKey })) {
       modals.open({
         title: `Delete Key "${key.alias}"?`,
         children: (
           <DeleteKeyModal
             keyToDelete={key}
             onDelete={async () => {
-              await deleteKey(key.publicKey);
+              await deleteKey({ publicKey: key.publicKey });
 
               // Clear selection if this was the selected key
               if (selectedKey?.publicKey === key.publicKey) {
-                selectKey(
-                  keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
-                    '',
-                );
+                const nextKey = keys.find((k) => k.publicKey !== key.publicKey)?.publicKey || '';
+                if (nextKey) {
+                  selectKey({ publicKey: nextKey });
+                }
               }
 
               showSuccess(`Key "${key.alias}" deleted`);
@@ -196,14 +196,14 @@ export function KeyManagementPage() {
         confirmProps: { color: 'red' },
         onConfirm: async () => {
           try {
-            await deleteKey(key.publicKey);
+            await deleteKey({ publicKey: key.publicKey });
 
             // Clear selection if this was the selected key
             if (selectedKey?.publicKey === key.publicKey) {
-              selectKey(
-                keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
-                  '',
-              );
+              const nextKey = keys.find((k) => k.publicKey !== key.publicKey)?.publicKey || '';
+              if (nextKey) {
+                selectKey({ publicKey: nextKey });
+              }
             }
 
             showSuccess(`Key "${key.alias}" deleted`);
@@ -219,7 +219,7 @@ export function KeyManagementPage() {
 
   const handleSelectKey = (key: ConfidentialKey) => {
     try {
-      selectKey(key.publicKey);
+      selectKey({ publicKey: key.publicKey });
     } catch (error) {
       showError(
         error instanceof Error ? error.message : 'Failed to select key',
@@ -253,7 +253,7 @@ export function KeyManagementPage() {
 
       const did = identity.did;
 
-      await executeWithKey(async (accountKeys) => {
+      await executeWithKey({ operation: async (accountKeys) => {
         await registerConfidentialAccount({
           did,
           polkadotApi,
@@ -266,9 +266,9 @@ export function KeyManagementPage() {
             showSuccess('Proof generated, submitting transaction');
           },
         });
-      });
+      }});
 
-      updateRegistrationStatus(selectedKey.publicKey, did);
+      updateRegistrationStatus({ publicKey: selectedKey.publicKey, registeredDid: did });
       showSuccess(`Confidential account registered successfully to ${did}`);
     } catch (error) {
       console.error('Registration failed:', error);
@@ -282,7 +282,7 @@ export function KeyManagementPage() {
 
   const handleExportKey = async (key: ConfidentialKey) => {
     // If key is encrypted, require password verification first
-    if (isKeyEncrypted(key.publicKey)) {
+    if (isKeyEncrypted({ publicKey: key.publicKey })) {
       modals.open({
         title: `Export Key "${key.alias}"`,
         children: (
@@ -303,7 +303,7 @@ export function KeyManagementPage() {
     } else {
       // Unencrypted key - export directly
       try {
-        const keyJson = exportKey(key.publicKey);
+        const keyJson = exportKey({ publicKey: key.publicKey });
         const blob = new Blob([keyJson], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -376,7 +376,7 @@ export function KeyManagementPage() {
         initialFile={selectedImportFile}
         onKeyImported={() => {
           if (polkadotApi) {
-            checkAllRegistrations(polkadotApi).catch((error) => {
+            checkAllRegistrations({ polkadotApi }).catch((error) => {
               console.error(
                 'Failed to check registrations after import:',
                 error,
@@ -579,7 +579,7 @@ export function KeyManagementPage() {
                         <IconEdit size={18} />
                       </ActionIcon>
                     </Tooltip>
-                    {isKeyEncrypted(key.publicKey) && (
+                    {isKeyEncrypted({ publicKey: key.publicKey }) && (
                       <Tooltip label="Change Password">
                         <ActionIcon
                           variant="light"
@@ -782,7 +782,7 @@ export function KeyManagementPage() {
                           <IconEdit size={18} />
                         </ActionIcon>
                       </Tooltip>
-                      {isKeyEncrypted(key.publicKey) && (
+                      {isKeyEncrypted({ publicKey: key.publicKey }) && (
                         <Tooltip label="Change Password">
                           <ActionIcon
                             variant="subtle"

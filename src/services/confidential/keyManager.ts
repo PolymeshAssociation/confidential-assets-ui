@@ -10,7 +10,6 @@ import type {
 } from '@/types/confidential';
 import { ConfidentialError, ConfidentialErrorType } from '@/types/confidential';
 import { u8aToHex } from '@polkadot/util';
-import { base64Decode, base64Encode } from '@polkadot/util-crypto';
 import {
   AccountKeys,
   generateRandomSeed,
@@ -48,7 +47,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
   }
 
   async generateKeys(): Promise<{
-    scaleBytes: string;
+    seed: string;
     publicKeys: ConfidentialAccountPublicKeys;
   }> {
     if (!this.initialized) {
@@ -71,11 +70,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       const seed = generateRandomSeed();
 
       // Create account keys from seed
-      const keys = new AccountKeys(seed);
-
-      // Export as SCALE-encoded bytes
-      const scaleBytes = keys.toBytes();
-      const base64Bytes = base64Encode(scaleBytes);
+      const keys = AccountKeys.fromSeed(seed);
 
       // Extract public keys
       const publicKeys = keys.publicKeys();
@@ -83,7 +78,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       const encryptionPubKey = publicKeys.encryptionPublicKey();
 
       return {
-        scaleBytes: base64Bytes,
+        seed,
         publicKeys: {
           accountPublicKey: {
             hex: u8aToHex(accountPubKey.toBytes()),
@@ -108,7 +103,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
   }
 
   async generateKeysFromSeed(seed: string): Promise<{
-    scaleBytes: string;
+    seed: string;
     publicKeys: ConfidentialAccountPublicKeys;
   }> {
     if (!this.initialized) {
@@ -137,11 +132,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       this.operationInProgress = true;
 
       // Create account keys from seed
-      const keys = new AccountKeys(seed);
-
-      // Export as SCALE-encoded bytes
-      const scaleBytes = keys.toBytes();
-      const base64Bytes = base64Encode(scaleBytes);
+      const keys = AccountKeys.fromSeed(seed);
 
       // Extract public keys
       const publicKeys = keys.publicKeys();
@@ -149,7 +140,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       const encryptionPubKey = publicKeys.encryptionPublicKey();
 
       return {
-        scaleBytes: base64Bytes,
+        seed,
         publicKeys: {
           accountPublicKey: {
             hex: u8aToHex(accountPubKey.toBytes()),
@@ -176,7 +167,7 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
     }
   }
 
-  async loadKeys(scaleBase64: string): Promise<void> {
+  async loadKeys(seed: string): Promise<void> {
     if (!this.initialized) {
       throw new ConfidentialError(
         ConfidentialErrorType.NOT_INITIALIZED,
@@ -194,17 +185,14 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
     try {
       this.operationInProgress = true;
 
-      // Decode base64 to bytes
-      const scaleBytes = base64Decode(scaleBase64);
-
-      // Import AccountKeys from SCALE bytes
-      const keys = AccountKeys.fromBytes(scaleBytes);
+      // Recreate AccountKeys from seed
+      const keys = AccountKeys.fromSeed(seed);
       this.currentKeys = keys;
     } catch (error) {
       console.error('[Confidential Key Manager] Failed to load keys:', error);
       throw new ConfidentialError(
-        ConfidentialErrorType.INVALID_BYTES,
-        'Failed to load keys. The stored data may be corrupted.',
+        ConfidentialErrorType.INVALID_SEED,
+        'Failed to load keys from seed. The seed may be invalid.',
         error,
       );
     } finally {

@@ -901,6 +901,9 @@ var ConfidentialAssetsTx;
     ConfidentialAssetsTx["SubmitBatchedProofs"] = "confidentialAssets.submitBatchedProofs";
     ConfidentialAssetsTx["RelayerSubmitBatchedProofs"] = "confidentialAssets.relayerSubmitBatchedProofs";
     ConfidentialAssetsTx["RegisterEncryptionKeys"] = "confidentialAssets.registerEncryptionKeys";
+    ConfidentialAssetsTx["ExecuteInstantSettlement"] = "confidentialAssets.executeInstantSettlement";
+    ConfidentialAssetsTx["InstantSenderAffirmation"] = "confidentialAssets.instantSenderAffirmation";
+    ConfidentialAssetsTx["InstantReceiverAffirmation"] = "confidentialAssets.instantReceiverAffirmation";
 })(ConfidentialAssetsTx = exports.ConfidentialAssetsTx || (exports.ConfidentialAssetsTx = {}));
 var ModuleName;
 (function (ModuleName) {

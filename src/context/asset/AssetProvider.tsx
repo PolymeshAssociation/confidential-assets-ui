@@ -70,14 +70,35 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const details =
-          await polkadotApi.query.confidentialAssets.dartAssetDetails(assetId);
+        // Query all asset details in parallel
+        const [details, nameOption, symbolOption, decimalsOption] =
+          await Promise.all([
+            polkadotApi.query.confidentialAssets.dartAssetDetails(assetId),
+            polkadotApi.query.confidentialAssets.confidentialAssetNames(
+              assetId,
+            ),
+            polkadotApi.query.confidentialAssets.confidentialAssetSymbols(
+              assetId,
+            ),
+            polkadotApi.query.confidentialAssets.confidentialAssetDecimals(
+              assetId,
+            ),
+          ]);
 
         if (details.isSome) {
           const assetDetail = details.unwrap();
           const totalSupply = assetDetail.totalSupply.toString();
           const ownerDid = assetDetail.ownerDid.toString();
           const dataBytes = assetDetail.data;
+
+          // Extract name, symbol, and decimals from separate storage queries
+          const name = nameOption.isSome ? nameOption.unwrap().toString() : '';
+          const symbol = symbolOption.isSome
+            ? symbolOption.unwrap().toString()
+            : '';
+          const decimals = decimalsOption.isSome
+            ? decimalsOption.unwrap().toNumber()
+            : 0;
 
           // Extract mediators
           const mediators: string[] = [];
@@ -109,6 +130,9 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           // Update the asset details map
           const assetDetails: AssetDetails = {
             assetId,
+            name,
+            symbol,
+            decimals,
             totalSupply,
             ownerDid,
             metadata,
@@ -292,6 +316,9 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await createConfidentialAsset({
+          name: params.name,
+          symbol: params.symbol,
+          decimals: params.decimals,
           metadata: params.metadata,
           mediators: params.mediators,
           auditors: params.auditors,
@@ -306,7 +333,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Asset Created',
-          message: `Asset ${params.metadata.name} created successfully!`,
+          message: `Asset ${params.name} created successfully!`,
           color: 'green',
           autoClose: 5000,
         });
@@ -349,7 +376,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey(async (accountKeys) => {
+        await executeWithKey({ operation: async (accountKeys) => {
           const result = await registerConfidentialAsset({
             assetId: parseInt(params.assetId, 10),
             did,
@@ -374,7 +401,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
           // Save account asset state
           saveAccountAssetState(result.accountAssetState);
-        });
+        }});
 
         // Refresh registered assets
         await refreshRegisteredAssets();
@@ -429,7 +456,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        const result = await executeWithKey(async (accountKeys) => {
+        const result = await executeWithKey({ operation: async (accountKeys) => {
           if (!selectedKey) {
             throw new Error('No key selected');
           }
@@ -478,7 +505,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           });
 
           return mintResult;
-        });
+        }});
 
         // Update the balance for this specific asset
         try {
@@ -503,7 +530,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
         // Fetch asset details to get decimals
         const assetDetails = assetDetailsMapRef.current.get(params.assetId);
-        const decimals = assetDetails?.metadata?.decimals ?? 0;
+        const decimals = assetDetails?.decimals ?? 0;
         const displayAmount =
           decimals > 0
             ? (parseInt(params.amount, 10) / Math.pow(10, decimals)).toString()

@@ -14,9 +14,21 @@ import { hexToU8a } from '@polkadot/util';
 
 export interface CreateAssetParams {
   /**
-   * Asset metadata
+   * Full name of the asset
    */
-  metadata: AssetMetadata;
+  name: string;
+
+  /**
+   * Short identifier (e.g., BTC, AAPL, GOLD, USDC)
+   */
+  symbol: string;
+
+  /**
+   * Number of decimal places for divisibility - 0 to 8 (max)
+   * Note: This should be set as low as possible to keep
+   * decryption time low and prevent low, decimal adjusted, maximum total supply.
+   */
+  decimals: number;
 
   /**
    * Array of mediator encryption public keys (hex strings)
@@ -27,6 +39,11 @@ export interface CreateAssetParams {
    * Array of auditor encryption public keys (hex strings)
    */
   auditors: string[];
+
+  /**
+   * Asset metadata
+   */
+  metadata: AssetMetadata;
 
   /**
    * Polkadot API instance from SDK
@@ -84,8 +101,16 @@ export interface CreateAssetResult {
 export async function createConfidentialAsset(
   params: CreateAssetParams,
 ): Promise<CreateAssetResult> {
-  const { metadata, mediators, auditors, polkadotApi, submitTransaction } =
-    params;
+  const {
+    name,
+    symbol,
+    decimals,
+    metadata,
+    mediators,
+    auditors,
+    polkadotApi,
+    submitTransaction,
+  } = params;
 
   // Encode metadata to compact JSON
   const encodedMetadata = encodeMetadata(metadata);
@@ -102,6 +127,9 @@ export async function createConfidentialAsset(
 
   // Build and submit transaction
   const tx = polkadotApi.tx.confidentialAssets.createAsset(
+    name,
+    symbol,
+    decimals,
     mediatorKeys,
     auditorKeys,
     encodedMetadata,

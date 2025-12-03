@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 interface ExportKeyModalProps {
   keyToExport: ConfidentialKey;
-  exportKey: (publicKey: string) => string;
+  exportKey: (params: { publicKey: string }) => string;
   onSuccess: () => void;
   onCancel: () => void;
   onError: (error: string) => void;
@@ -42,13 +42,13 @@ export function ExportKeyModal({
       }
 
       // Verify password by attempting to decrypt
-      await decryptKey(
-        storedKey.private as import('@/types/storage').EncryptedConfidentialKeyRecord['private'],
+      await decryptKey({
+        encryptedKey: storedKey.private,
         password,
-      );
+      });
 
       // Password is correct, export the key
-      const keyJson = exportKey(keyToExport.publicKey);
+      const keyJson = exportKey({ publicKey: keyToExport.publicKey });
       const blob = new Blob([keyJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

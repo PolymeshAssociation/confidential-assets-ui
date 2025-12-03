@@ -96,7 +96,7 @@ export function ImportKeyModal({
     setPasswordError(null);
 
     try {
-      await importKey(keyPreview.jsonContent, password);
+      await importKey({ jsonData: keyPreview.jsonContent, password });
       onClose();
       if (onKeyImported) {
         onKeyImported();

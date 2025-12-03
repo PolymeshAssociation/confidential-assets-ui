@@ -845,7 +845,10 @@ export declare enum ConfidentialAssetsTx {
     TopupFeeAccounts = "confidentialAssets.topupFeeAccounts",
     SubmitBatchedProofs = "confidentialAssets.submitBatchedProofs",
     RelayerSubmitBatchedProofs = "confidentialAssets.relayerSubmitBatchedProofs",
-    RegisterEncryptionKeys = "confidentialAssets.registerEncryptionKeys"
+    RegisterEncryptionKeys = "confidentialAssets.registerEncryptionKeys",
+    ExecuteInstantSettlement = "confidentialAssets.executeInstantSettlement",
+    InstantSenderAffirmation = "confidentialAssets.instantSenderAffirmation",
+    InstantReceiverAffirmation = "confidentialAssets.instantReceiverAffirmation"
 }
 export declare enum ModuleName {
     System = "system",

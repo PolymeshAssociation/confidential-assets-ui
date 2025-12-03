@@ -186,17 +186,17 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
 }
 
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_externrefs.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
+}
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
-}
-
-function takeFromExternrefTable0(idx) {
-    const value = wasm.__wbindgen_externrefs.get(idx);
-    wasm.__externref_table_dealloc(idx);
-    return value;
 }
 
 function _assertClass(instance, klass) {
@@ -270,6 +270,14 @@ function getArrayJsValueFromWasm0(ptr, len) {
     return result;
 }
 /**
+ * Initialize the WASM module. This should be called once when loading the module.
+ * It sets up panic hooks for better error messages in the browser console.
+ */
+export function init() {
+    wasm.init();
+}
+
+/**
  * Get the version of the polymesh-dart-wasm library
  * @returns {string}
  */
@@ -284,14 +292,6 @@ export function version() {
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
-}
-
-/**
- * Initialize the WASM module. This should be called once when loading the module.
- * It sets up panic hooks for better error messages in the browser console.
- */
-export function init() {
-    wasm.init();
 }
 
 const AccountAssetRegistrationFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -1245,37 +1245,6 @@ export class AccountKeys {
         wasm.__wbg_accountkeys_free(ptr, 0);
     }
     /**
-     * Deserializes account keys from a SCALE-encoded byte array.
-     *
-     * **Security Warning:** Only use this with bytes from a trusted, secure source.
-     *
-     * # Arguments
-     * * `bytes` - A `Uint8Array` containing SCALE-encoded account keys.
-     *
-     * # Returns
-     * The deserialized `AccountKeys` object.
-     *
-     * # Errors
-     * * Throws an error if the byte array is invalid or corrupted.
-     *
-     * # Example
-     * ```javascript
-     * const decrypted = decryptData(encryptedKeys);
-     * const keys = AccountKeys.fromBytes(decrypted);
-     * ```
-     * @param {Uint8Array} bytes
-     * @returns {AccountKeys}
-     */
-    static fromBytes(bytes) {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.accountkeys_fromBytes(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountKeys.__wrap(ret[0]);
-    }
-    /**
      * Extracts the public keys from these account keys.
      *
      * Public keys can be safely shared and are used for account registration,
@@ -1423,28 +1392,13 @@ export class AccountKeys {
         return this;
     }
     /**
-     * Serializes the account keys to a SCALE-encoded byte array.
+     * Clears the secret keys from memory by zeroing them out.
      *
-     * **Security Warning:** This exports the secret keys. The resulting bytes should
-     * be encrypted before storage and never transmitted over insecure channels.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded secret keys.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = keys.toBytes();
-     * // Encrypt bytes before storing!
-     * const encrypted = encryptData(bytes);
-     * localStorage.setItem('encryptedKeys', encrypted);
-     * ```
-     * @returns {Uint8Array}
+     * The `AccountKeys` instance can't be used after calling this method.
      */
-    toBytes() {
-        const ret = wasm.accountkeys_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
+    clear() {
+        const ptr = this.__destroy_into_raw();
+        wasm.accountkeys_clear(ptr);
     }
     /**
      * Creates account keys from any seed string using deterministic hashing.
@@ -3866,6 +3820,15 @@ export class EncryptionKeyPair {
         }
         return MediatorAffirmationProof.__wrap(ret[0]);
     }
+    /**
+     * Clears the encryption secret key from memory by zeroing it out.
+     *
+     * The `EncryptionKeyPair` instance can't be used after calling this method.
+     */
+    clear() {
+        const ptr = this.__destroy_into_raw();
+        wasm.encryptionkeypair_clear(ptr);
+    }
 }
 if (Symbol.dispose) EncryptionKeyPair.prototype[Symbol.dispose] = EncryptionKeyPair.prototype.free;
 
@@ -4303,6 +4266,74 @@ export class LegBuilder {
     }
 }
 if (Symbol.dispose) LegBuilder.prototype[Symbol.dispose] = LegBuilder.prototype.free;
+
+const MasterSeedFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_masterseed_free(ptr >>> 0, 1));
+/**
+ * MasterSeed for deriving account keys.
+ */
+export class MasterSeed {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        MasterSeedFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_masterseed_free(ptr, 0);
+    }
+    /**
+     * Derive a new AccountKeys from this MasterSeed.
+     *
+     * # Arguments
+     * * `path` - The derivation path string (e.g., "m/44'/595'/0'/0/0").
+     *
+     * # Returns
+     * A new `AccountKeys` object derived from the master seed.
+     * @param {string} path
+     * @returns {AccountKeys}
+     */
+    deriveAccountKeys(path) {
+        const ptr0 = passStringToWasm0(path, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.masterseed_deriveAccountKeys(this.__wbg_ptr, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountKeys.__wrap(ret[0]);
+    }
+    /**
+     * Creates a new MasterSeed from a hexadecimal seed string.
+     *
+     * # Arguments
+     * * `seed` - A seed phrase or "0x"-prefixed hexadecimal string used to derive the master seed.
+     *
+     * # Returns
+     * A new `MasterSeed` object containing the generated seed.
+     *
+     * # Example
+     * ```javascript
+     * const masterSeed = new MasterSeed("my-secure-seed-phrase");
+     * ```
+     * @param {string} seed
+     */
+    constructor(seed) {
+        const ptr0 = passStringToWasm0(seed, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.masterseed_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0] >>> 0;
+        MasterSeedFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) MasterSeed.prototype[Symbol.dispose] = MasterSeed.prototype.free;
 
 const MediatorAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }

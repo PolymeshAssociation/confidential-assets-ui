@@ -434,15 +434,15 @@ declare module '@polkadot/api-base/types/errors' {
         };
         confidentialAssets: {
             /**
-             * Dart account already exists.
+             * Confidential account already exists.
              **/
             AccountAlreadyCreated: AugmentedError<ApiType>;
             /**
-             * Dart account has already registered that asset.
+             * Confidential account has already registered that asset.
              **/
             AccountAssetAlreadyRegistered: AugmentedError<ApiType>;
             /**
-             * Dart account hasn't been registered yet.
+             * Confidential account hasn't been registered yet.
              **/
             AccountMissing: AugmentedError<ApiType>;
             /**
@@ -454,7 +454,7 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             AmountOverflow: AugmentedError<ApiType>;
             /**
-             * Dart asset hasn't been registered yet.
+             * Confidential asset hasn't been registered yet.
              **/
             AssetMissing: AugmentedError<ApiType>;
             /**
@@ -506,21 +506,25 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             EncryptionKeyAlreadyRegistered: AugmentedError<ApiType>;
             /**
-             * Encryption key for the DART account is missing.
+             * Encryption key for the Confidential account is missing.
              **/
             EncryptionKeyMissing: AugmentedError<ApiType>;
             /**
-             * Dart fee account already registered.
+             * Confidential fee account already registered.
              **/
             FeeAccountAlreadyRegistered: AugmentedError<ApiType>;
             /**
-             * Dart fee account hasn't been registered yet.
+             * Confidential fee account hasn't been registered yet.
              **/
             FeeAccountMissing: AugmentedError<ApiType>;
             /**
              * Insufficient fee payment amount.
              **/
             InsufficientFeePaymentAmount: AugmentedError<ApiType>;
+            /**
+             * Invalid asset name.
+             **/
+            InvalidAssetName: AugmentedError<ApiType>;
             /**
              * Invalid fee asset id.
              **/
@@ -554,6 +558,10 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             MaxTotalSupplyExceeded: AugmentedError<ApiType>;
             /**
+             * Name too long for the asset.
+             **/
+            NameTooLong: AugmentedError<ApiType>;
+            /**
              * Confidential assets require at least one mediator or auditor.
              **/
             NoAuditorsOrMediators: AugmentedError<ApiType>;
@@ -570,13 +578,17 @@ declare module '@polkadot/api-base/types/errors' {
              **/
             NoPendingAffirmations: AugmentedError<ApiType>;
             /**
-             * The caller is not the owner of the DART account.
+             * The caller is not the owner of the Confidential account.
              **/
             NotAccountOwner: AugmentedError<ApiType>;
             /**
-             * The caller is not the owner of the DART asset.
+             * The caller is not the owner of the Confidential asset.
              **/
             NotAssetOwner: AugmentedError<ApiType>;
+            /**
+             * Not the last pending affirmation for the settlement.
+             **/
+            NotLastPendingAffirmation: AugmentedError<ApiType>;
             /**
              * The nullifier for the account state commitment has already been used.
              **/
@@ -617,6 +629,14 @@ declare module '@polkadot/api-base/types/errors' {
              * Settlement has too many legs.
              **/
             SettlementTooManyLegs: AugmentedError<ApiType>;
+            /**
+             * Symbol too long for the asset.
+             **/
+            SymbolTooLong: AugmentedError<ApiType>;
+            /**
+             * Too many decimals for the asset.
+             **/
+            TooManyDecimals: AugmentedError<ApiType>;
             /**
              * Too many mediators for this leg.
              **/

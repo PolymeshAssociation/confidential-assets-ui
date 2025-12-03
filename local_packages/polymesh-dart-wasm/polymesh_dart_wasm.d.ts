@@ -23,14 +23,14 @@
  */
 export function generateRandomSeed(): string;
 /**
- * Get the version of the polymesh-dart-wasm library
- */
-export function version(): string;
-/**
  * Initialize the WASM module. This should be called once when loading the module.
  * It sets up panic hooks for better error messages in the browser console.
  */
 export function init(): void;
+/**
+ * Get the version of the polymesh-dart-wasm library
+ */
+export function version(): string;
 /**
  * Contains both the registration proof and the resulting account asset state when
  * registering an account for a specific confidential asset.
@@ -683,27 +683,6 @@ export class AccountKeys {
   free(): void;
   [Symbol.dispose](): void;
   /**
-   * Deserializes account keys from a SCALE-encoded byte array.
-   *
-   * **Security Warning:** Only use this with bytes from a trusted, secure source.
-   *
-   * # Arguments
-   * * `bytes` - A `Uint8Array` containing SCALE-encoded account keys.
-   *
-   * # Returns
-   * The deserialized `AccountKeys` object.
-   *
-   * # Errors
-   * * Throws an error if the byte array is invalid or corrupted.
-   *
-   * # Example
-   * ```javascript
-   * const decrypted = decryptData(encryptedKeys);
-   * const keys = AccountKeys.fromBytes(decrypted);
-   * ```
-   */
-  static fromBytes(bytes: Uint8Array): AccountKeys;
-  /**
    * Extracts the public keys from these account keys.
    *
    * Public keys can be safely shared and are used for account registration,
@@ -815,23 +794,11 @@ export class AccountKeys {
    */
   constructor(seed_hex: string);
   /**
-   * Serializes the account keys to a SCALE-encoded byte array.
+   * Clears the secret keys from memory by zeroing them out.
    *
-   * **Security Warning:** This exports the secret keys. The resulting bytes should
-   * be encrypted before storage and never transmitted over insecure channels.
-   *
-   * # Returns
-   * A `Uint8Array` containing the SCALE-encoded secret keys.
-   *
-   * # Example
-   * ```javascript
-   * const bytes = keys.toBytes();
-   * // Encrypt bytes before storing!
-   * const encrypted = encryptData(bytes);
-   * localStorage.setItem('encryptedKeys', encrypted);
-   * ```
+   * The `AccountKeys` instance can't be used after calling this method.
    */
-  toBytes(): Uint8Array;
+  clear(): void;
   /**
    * Creates account keys from any seed string using deterministic hashing.
    *
@@ -2414,6 +2381,12 @@ export class EncryptionKeyPair {
    * * Throws an error if the account is not a mediator for the leg.
    */
   mediatorAffirmationProof(settlement_ref: any, leg_id: number, leg_enc: SettlementLegEncrypted, accept: boolean, asset_id: number, amount: any): MediatorAffirmationProof;
+  /**
+   * Clears the encryption secret key from memory by zeroing it out.
+   *
+   * The `EncryptionKeyPair` instance can't be used after calling this method.
+   */
+  clear(): void;
 }
 /**
  * The public key used for encrypting confidential transaction data.
@@ -2641,6 +2614,38 @@ export class LegBuilder {
   receiver: AccountPublicKeys;
   asset: AssetState;
   amount: bigint;
+}
+/**
+ * MasterSeed for deriving account keys.
+ */
+export class MasterSeed {
+  free(): void;
+  [Symbol.dispose](): void;
+  /**
+   * Derive a new AccountKeys from this MasterSeed.
+   *
+   * # Arguments
+   * * `path` - The derivation path string (e.g., "m/44'/595'/0'/0/0").
+   *
+   * # Returns
+   * A new `AccountKeys` object derived from the master seed.
+   */
+  deriveAccountKeys(path: string): AccountKeys;
+  /**
+   * Creates a new MasterSeed from a hexadecimal seed string.
+   *
+   * # Arguments
+   * * `seed` - A seed phrase or "0x"-prefixed hexadecimal string used to derive the master seed.
+   *
+   * # Returns
+   * A new `MasterSeed` object containing the generated seed.
+   *
+   * # Example
+   * ```javascript
+   * const masterSeed = new MasterSeed("my-secure-seed-phrase");
+   * ```
+   */
+  constructor(seed: string);
 }
 /**
  * Zero-knowledge proof for mediator affirmation of a settlement.

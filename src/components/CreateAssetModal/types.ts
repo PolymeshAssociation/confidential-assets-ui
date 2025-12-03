@@ -1,4 +1,7 @@
-import type { AssetMetadataKnownFields, AssetTemplateType } from '@/types/asset';
+import type {
+  AssetMetadataKnownFields,
+  AssetTemplateType,
+} from '@/types/asset';
 
 export interface CustomField {
   key: string;
@@ -9,7 +12,11 @@ export interface FormValues extends AssetMetadataKnownFields {
   // Template selection
   template: AssetTemplateType;
 
-  // Override decimals to be required (it is optional in AssetMetadataKnownFields)
+  // Asset name
+  name: string;
+  // Asset symbol
+  symbol: string;
+  // Number of decimal places for divisibility - 0 to 8 (max)
   decimals: number;
 
   // Custom fields

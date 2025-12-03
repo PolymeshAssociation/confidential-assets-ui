@@ -8,10 +8,7 @@ import {
 import { confidentialKeyManager } from '@/services/confidential/keyManager';
 import * as keyStorage from '@/services/storage/keyStorage';
 import { ConfidentialError } from '@/types/confidential';
-import type {
-  AnyConfidentialKeyRecord,
-  EncryptedConfidentialKeyRecord,
-} from '@/types/storage';
+import type { EncryptedConfidentialKeyRecord } from '@/types/storage';
 import type { ApiPromise } from '@polkadot/api';
 import type { AccountKeys } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -99,7 +96,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   }, [loadKeys]);
 
   const selectKey = useCallback(
-    (publicKey: string) => {
+    ({ publicKey }: { publicKey: string }) => {
       const key = keys.find((k) => k.publicKey === publicKey);
       if (!key) {
         throw new Error(`Key not found: ${publicKey}`);
@@ -127,7 +124,15 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   );
 
   const generateKey = useCallback(
-    async (alias: string, seed?: string, password?: string) => {
+    async ({
+      alias,
+      seed,
+      password,
+    }: {
+      alias: string;
+      seed?: string;
+      password: string;
+    }) => {
       if (!isInitialized) {
         throw new Error('Confidential WASM module not initialized');
       }
@@ -140,33 +145,24 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       try {
         setIsGenerating(true);
 
-        // Generate Confidential keys - now returns both scaleBytes and public keys
+        // Generate Confidential keys - now returns both seed and public keys
         const result = seed
           ? await confidentialKeyManager.generateKeysFromSeed(seed)
           : await confidentialKeyManager.generateKeys();
 
-        // Prepare private key data
-        let privateData: AnyConfidentialKeyRecord['private'];
-
-        if (password) {
-          // Encrypt if password provided
-          const encryptedData = await encryptKey(result.scaleBytes, password);
-          privateData = {
-            ...encryptedData,
-            format: 'scale-base64',
-          };
-        } else {
-          // Store unencrypted
-          privateData = {
-            format: 'scale-base64',
-            encryption: 'none',
-            data: result.scaleBytes,
-          };
-        }
+        // Encrypt with password (required)
+        const encryptedData = await encryptKey({
+          seedHex: result.seed,
+          password,
+        });
+        const privateData: EncryptedConfidentialKeyRecord['private'] = {
+          ...encryptedData,
+          format: 'seed-hex',
+        };
 
         // Create storage record with public keys cached
-        const keyRecord: AnyConfidentialKeyRecord = {
-          version: password ? 2 : 1,
+        const keyRecord: EncryptedConfidentialKeyRecord = {
+          version: 1,
           name: alias,
           public: {
             account: result.publicKeys.accountPublicKey.hex,
@@ -176,7 +172,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
           metadata: {
             created: Date.now(),
           },
-        } as AnyConfidentialKeyRecord;
+        };
 
         // Save to storage
         keyStorage.saveKey(keyRecord);
@@ -219,7 +215,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
       // Verify password by attempting to decrypt
       // We don't need the result, just to know it works
-      await decryptKey(encryptedKeyToUnlock, password);
+      await decryptKey({ encryptedKey: encryptedKeyToUnlock, password });
 
       // If successful, update keepUnlocked state if requested
       if (shouldKeepUnlocked) {
@@ -277,7 +273,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   }, [isInitialized, unlockTimeout]);
 
   const deleteKey = useCallback(
-    async (publicKey: string) => {
+    async ({ publicKey }: { publicKey: string }) => {
       const storedKey = keyStorage.getKey(publicKey);
       if (!storedKey) {
         throw new Error(`Key with public key "${publicKey}" not found`);
@@ -302,7 +298,13 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   );
 
   const renameKey = useCallback(
-    async (publicKey: string, newAlias: string) => {
+    async ({
+      publicKey,
+      newAlias,
+    }: {
+      publicKey: string;
+      newAlias: string;
+    }) => {
       const storedKey = keyStorage.getKey(publicKey);
       if (!storedKey) {
         throw new Error(`Key with public key "${publicKey}" not found`);
@@ -325,21 +327,24 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     [loadKeys, selectedKey],
   );
 
-  const changeKeyPassword = useCallback(async (publicKey: string) => {
-    const storedKey = keyStorage.getKey(publicKey);
-    if (!storedKey) {
-      throw new Error(`Key with public key "${publicKey}" not found`);
-    }
+  const changeKeyPassword = useCallback(
+    async ({ publicKey }: { publicKey: string }) => {
+      const storedKey = keyStorage.getKey(publicKey);
+      if (!storedKey) {
+        throw new Error(`Key with public key "${publicKey}" not found`);
+      }
 
-    // Only support changing password for encrypted keys
-    if (storedKey.private.encryption !== 'scrypt-xsalsa20-poly1305') {
-      throw new Error('Key is not encrypted');
-    }
+      // Only support changing password for encrypted keys
+      if (storedKey.private.encryption !== 'scrypt-xsalsa20-poly1305') {
+        throw new Error('Key is not encrypted');
+      }
 
-    // Open the change password modal with the public key
-    setChangePasswordKeyPublicKey(publicKey);
-    setChangePasswordModalOpen(true);
-  }, []);
+      // Open the change password modal with the public key
+      setChangePasswordKeyPublicKey(publicKey);
+      setChangePasswordModalOpen(true);
+    },
+    [],
+  );
 
   const handleChangePasswordSubmit = useCallback(
     async (oldPassword: string, newPassword: string) => {
@@ -354,17 +359,18 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       }
 
       // Verify old password by trying to decrypt
-      await decryptKey(
-        storedKey.private as EncryptedConfidentialKeyRecord['private'],
-        oldPassword,
-      );
+      await decryptKey({
+        encryptedKey:
+          storedKey.private as EncryptedConfidentialKeyRecord['private'],
+        password: oldPassword,
+      });
 
       // Change password
-      const updatedRecord = await changePassword(
-        storedKey as EncryptedConfidentialKeyRecord,
+      const updatedRecord = await changePassword({
+        record: storedKey as EncryptedConfidentialKeyRecord,
         oldPassword,
         newPassword,
-      );
+      });
 
       keyStorage.updateKey(updatedRecord);
 
@@ -380,10 +386,13 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     setChangePasswordKeyPublicKey(null);
   }, []);
 
-  const isKeyEncrypted = useCallback((publicKey: string): boolean => {
-    const key = keyStorage.getKey(publicKey);
-    return key?.private.encryption === 'scrypt-xsalsa20-poly1305';
-  }, []);
+  const isKeyEncrypted = useCallback(
+    ({ publicKey }: { publicKey: string }): boolean => {
+      const key = keyStorage.getKey(publicKey);
+      return key?.private.encryption === 'scrypt-xsalsa20-poly1305';
+    },
+    [],
+  );
 
   const scheduleKeyClear = useCallback(
     (timeoutMs: number) => {
@@ -405,9 +414,11 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   );
 
   const executeWithKey = useCallback(
-    async <T,>(
-      operation: (accountKeys: AccountKeys) => Promise<T>,
-    ): Promise<T> => {
+    async <T,>({
+      operation,
+    }: {
+      operation: (accountKeys: AccountKeys) => Promise<T>;
+    }): Promise<T> => {
       if (!selectedKey) {
         throw new Error('No key selected');
       }
@@ -433,7 +444,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
             throw new Error(`Key not found: ${selectedKey.publicKey}`);
           }
 
-          let scaleBytes = storedKey.private.data;
+          let seed = storedKey.private.data;
 
           // Decrypt if encrypted
           if (storedKey.private.encryption === 'scrypt-xsalsa20-poly1305') {
@@ -446,14 +457,15 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
             // Note: setKeepUnlocked(true) is called in handlePasswordSubmit if userWantsToKeepUnlocked is true
             // but we need this local variable for the finally block below because state updates are async
 
-            scaleBytes = await decryptKey(
-              storedKey.private as EncryptedConfidentialKeyRecord['private'],
+            seed = await decryptKey({
+              encryptedKey:
+                storedKey.private as EncryptedConfidentialKeyRecord['private'],
               password,
-            );
+            });
           }
 
-          // Load into WASM
-          await confidentialKeyManager.loadKeys(scaleBytes);
+          // Load into WASM (recreates AccountKeys from seed)
+          await confidentialKeyManager.loadKeys(seed);
           accountKeys = confidentialKeyManager.getCurrentKeys();
         }
 
@@ -481,7 +493,13 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
   }, [loadKeys]);
 
   const updateRegistrationStatus = useCallback(
-    (publicKey: string, registeredDid: string | null) => {
+    ({
+      publicKey,
+      registeredDid,
+    }: {
+      publicKey: string;
+      registeredDid: string | null;
+    }) => {
       // Update selected key if it matches
       setSelectedKey((prev) =>
         prev && prev.publicKey === publicKey
@@ -499,53 +517,60 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const checkAllRegistrations = useCallback(async (polkadotApi: ApiPromise) => {
-    if (!polkadotApi) return;
+  const checkAllRegistrations = useCallback(
+    async ({ polkadotApi }: { polkadotApi: ApiPromise }) => {
+      if (!polkadotApi) return;
 
-    try {
-      // Get current keys to avoid dependency on keys state
-      const currentKeys = keyStorage.listKeys().map((stored) => ({
-        alias: stored.name,
-        publicKey: stored.public.account,
-      }));
+      try {
+        // Get current keys to avoid dependency on keys state
+        const currentKeys = keyStorage.listKeys().map((stored) => ({
+          alias: stored.name,
+          publicKey: stored.public.account,
+        }));
 
-      // Check registration for all keys in parallel
-      const registrationChecks = currentKeys.map(async (key) => {
-        try {
-          const registeredDid = await checkAccountRegistration({
-            accountPublicKey: key.publicKey,
-            polkadotApi,
-          });
-          return { alias: key.alias, registeredDid };
-        } catch (error) {
-          console.error(
-            `Failed to check registration for ${key.alias}:`,
-            error,
-          );
-          return { alias: key.alias, registeredDid: null };
-        }
-      });
+        // Check registration for all keys in parallel
+        const registrationChecks = currentKeys.map(async (key) => {
+          try {
+            const registeredDid = await checkAccountRegistration({
+              accountPublicKey: key.publicKey,
+              polkadotApi,
+            });
+            return { alias: key.alias, registeredDid };
+          } catch (error) {
+            console.error(
+              `Failed to check registration for ${key.alias}:`,
+              error,
+            );
+            return { alias: key.alias, registeredDid: null };
+          }
+        });
 
-      const results = await Promise.all(registrationChecks);
+        const results = await Promise.all(registrationChecks);
 
-      // Update all registration statuses
-      setKeys((prevKeys) =>
-        prevKeys.map((key) => {
-          const result = results.find((r) => r.alias === key.alias);
-          return result ? { ...key, registeredDid: result.registeredDid } : key;
-        }),
-      );
+        // Update all registration statuses
+        setKeys((prevKeys) =>
+          prevKeys.map((key) => {
+            const result = results.find((r) => r.alias === key.alias);
+            return result
+              ? { ...key, registeredDid: result.registeredDid }
+              : key;
+          }),
+        );
 
-      // Also update selected key if present
-      setSelectedKey((prev) => {
-        if (!prev) return prev;
-        const result = results.find((r) => r.alias === prev.alias);
-        return result ? { ...prev, registeredDid: result.registeredDid } : prev;
-      });
-    } catch (error) {
-      console.error('Failed to check registrations:', error);
-    }
-  }, []);
+        // Also update selected key if present
+        setSelectedKey((prev) => {
+          if (!prev) return prev;
+          const result = results.find((r) => r.alias === prev.alias);
+          return result
+            ? { ...prev, registeredDid: result.registeredDid }
+            : prev;
+        });
+      } catch (error) {
+        console.error('Failed to check registrations:', error);
+      }
+    },
+    [],
+  );
 
   // Auto-restore selected key on page load
   useEffect(() => {
@@ -593,16 +618,19 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
     };
   }, [selectedKey]);
 
-  const exportKey = useCallback((publicKey: string): string => {
-    const storedKey = keyStorage.getKey(publicKey);
-    if (!storedKey) {
-      throw new Error(`Key with public key "${publicKey}" not found`);
-    }
-    return JSON.stringify(storedKey, null, 2);
-  }, []);
+  const exportKey = useCallback(
+    ({ publicKey }: { publicKey: string }): string => {
+      const storedKey = keyStorage.getKey(publicKey);
+      if (!storedKey) {
+        throw new Error(`Key with public key "${publicKey}" not found`);
+      }
+      return JSON.stringify(storedKey, null, 2);
+    },
+    [],
+  );
 
   const importKey = useCallback(
-    async (jsonData: string, password: string) => {
+    async ({ jsonData, password }: { jsonData: string; password: string }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let keyRecord: any;
       try {
@@ -629,19 +657,19 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       }
 
       // Verify password / Decrypt
-      if (keyRecord.private.encryption === 'scrypt-xsalsa20-poly1305') {
-        try {
-          await decryptKey(
-            keyRecord.private as EncryptedConfidentialKeyRecord['private'],
-            password,
-          );
-        } catch {
-          throw new Error('Incorrect password');
-        }
-      } else if (keyRecord.private.encryption !== 'none') {
+      if (keyRecord.private.encryption !== 'scrypt-xsalsa20-poly1305') {
         throw new Error(
           `Unsupported encryption type: ${keyRecord.private.encryption}`,
         );
+      }
+
+      try {
+        await decryptKey({
+          encryptedKey: keyRecord.private,
+          password,
+        });
+      } catch {
+        throw new Error('Incorrect password');
       }
 
       // Check if name exists and append suffix if needed
@@ -654,7 +682,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
       keyRecord.name = name;
 
       // Save
-      keyStorage.saveKey(keyRecord as AnyConfidentialKeyRecord);
+      keyStorage.saveKey(keyRecord);
       loadKeys();
     },
     [loadKeys],

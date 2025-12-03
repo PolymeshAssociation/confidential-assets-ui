@@ -23,29 +23,29 @@ export interface ConfidentialKeyContextValue {
   setKeepUnlocked: (value: boolean) => void;
 
   initializeWasm: () => Promise<void>;
-  generateKey: (
-    alias: string,
-    seed?: string,
-    password?: string,
-  ) => Promise<void>;
+  generateKey: (params: {
+    alias: string;
+    seed?: string;
+    password: string;
+  }) => Promise<void>;
 
-  selectKey: (publicKey: string) => void;
+  selectKey: (params: { publicKey: string }) => void;
 
-  executeWithKey: <T>(
-    operation: (accountKeys: AccountKeys) => Promise<T>,
-  ) => Promise<T>;
+  executeWithKey: <T>(params: {
+    operation: (accountKeys: AccountKeys) => Promise<T>;
+  }) => Promise<T>;
 
   lockKey: () => Promise<void>;
-  deleteKey: (publicKey: string) => Promise<void>;
-  renameKey: (publicKey: string, newAlias: string) => Promise<void>;
+  deleteKey: (params: { publicKey: string }) => Promise<void>;
+  renameKey: (params: { publicKey: string; newAlias: string }) => Promise<void>;
   refreshKeys: () => void;
-  updateRegistrationStatus: (
-    publicKey: string,
-    registeredDid: string | null,
-  ) => void;
-  checkAllRegistrations: (polkadotApi: ApiPromise) => Promise<void>;
-  changeKeyPassword: (publicKey: string) => Promise<void>;
-  isKeyEncrypted: (publicKey: string) => boolean;
-  exportKey: (publicKey: string) => string;
-  importKey: (jsonData: string, password: string) => Promise<void>;
+  updateRegistrationStatus: (params: {
+    publicKey: string;
+    registeredDid: string | null;
+  }) => void;
+  checkAllRegistrations: (params: { polkadotApi: ApiPromise }) => Promise<void>;
+  changeKeyPassword: (params: { publicKey: string }) => Promise<void>;
+  isKeyEncrypted: (params: { publicKey: string }) => boolean;
+  exportKey: (params: { publicKey: string }) => string;
+  importKey: (params: { jsonData: string; password: string }) => Promise<void>;
 }

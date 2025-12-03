@@ -11,27 +11,29 @@ import {
  * Encrypt key data using Scrypt (KDF) and XSalsa20-Poly1305 (AEAD)
  * Follows Polkadot keyring encryption standard
  */
-export async function encryptKey(
-  dataBase64: string,
-  password: string,
-): Promise<EncryptedConfidentialKeyRecord['private']> {
-  const dataBytes = base64Decode(dataBase64);
+export async function encryptKey(params: {
+  seedHex: string;
+  password: string;
+}): Promise<EncryptedConfidentialKeyRecord['private']> {
+  const { seedHex, password } = params;
+  // Convert hex seed to bytes for encryption
+  const seedBytes = new TextEncoder().encode(seedHex);
 
   // Derive encryption key using Scrypt (generates salt automatically)
-  const { params, password: derivedKey, salt } = scryptEncode(password);
+  const { params: scryptParams, password: derivedKey, salt } = scryptEncode(password);
 
   // Encrypt data using XSalsa20-Poly1305 (generates nonce automatically)
   const { encrypted, nonce } = naclEncrypt(
-    dataBytes,
+    seedBytes,
     derivedKey.subarray(0, 32),
   );
 
   return {
-    format: 'scale-base64' as const,
+    format: 'seed-hex' as const,
     encryption: 'scrypt-xsalsa20-poly1305' as const,
     kdf: {
       function: 'scrypt' as const,
-      params,
+      params: scryptParams,
       salt: base64Encode(salt),
     },
     cipher: {
@@ -44,11 +46,13 @@ export async function encryptKey(
 
 /**
  * Decrypt key data using Scrypt and XSalsa20-Poly1305
+ * Returns the decrypted hex seed string
  */
-export async function decryptKey(
-  encryptedKey: EncryptedConfidentialKeyRecord['private'],
-  password: string,
-): Promise<string> {
+export async function decryptKey(params: {
+  encryptedKey: EncryptedConfidentialKeyRecord['private'];
+  password: string;
+}): Promise<string> {
+  const { encryptedKey, password } = params;
   const { kdf, cipher, data } = encryptedKey;
 
   if (kdf.function !== 'scrypt') {
@@ -73,22 +77,30 @@ export async function decryptKey(
     throw new Error('Decryption failed: Invalid password or corrupted data');
   }
 
-  return base64Encode(decrypted);
+  // Convert decrypted bytes back to hex seed string
+  return new TextDecoder().decode(decrypted);
 }
 
 /**
  * Change password for an encrypted key
  */
-export async function changePassword(
-  record: EncryptedConfidentialKeyRecord,
-  oldPassword: string,
-  newPassword: string,
-): Promise<EncryptedConfidentialKeyRecord> {
+export async function changePassword(params: {
+  record: EncryptedConfidentialKeyRecord;
+  oldPassword: string;
+  newPassword: string;
+}): Promise<EncryptedConfidentialKeyRecord> {
+  const { record, oldPassword, newPassword } = params;
   // Decrypt with old password
-  const decryptedData = await decryptKey(record.private, oldPassword);
+  const decryptedData = await decryptKey({
+    encryptedKey: record.private,
+    password: oldPassword,
+  });
 
   // Encrypt with new password
-  const newPrivateData = await encryptKey(decryptedData, newPassword);
+  const newPrivateData = await encryptKey({
+    seedHex: decryptedData,
+    password: newPassword,
+  });
 
   // Return updated record
   return {

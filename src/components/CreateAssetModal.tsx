@@ -52,13 +52,16 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
       if (active === 0) {
         const errors: Record<string, string | null> = {
           name: !values.name ? 'Name is required' : null,
+          symbol: !values.symbol ? 'Symbol is required' : null,
           assetType: !values.assetType ? 'Asset Type is required' : null,
           decimals:
             values.decimals < 0
               ? 'Decimals must be non-negative'
-              : !Number.isInteger(values.decimals)
-                ? 'Decimals must be a whole number'
-                : null,
+              : values.decimals > 8
+                ? 'Decimals cannot exceed 8'
+                : !Number.isInteger(values.decimals)
+                  ? 'Decimals must be a whole number'
+                  : null,
         };
 
         // Validate custom fields for duplicates
@@ -154,13 +157,12 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
       // Build metadata object
       const metadata: AssetMetadata = {
         assetType: values.assetType,
-        name: values.name,
-        decimals: values.decimals,
+        // Note: name, symbol, and decimals are NOT included in metadata
+        // They are passed as separate parameters to createAsset
       };
 
       // Add optional fields
       if (values.assetSubType) metadata.assetSubType = values.assetSubType;
-      if (values.symbol) metadata.symbol = values.symbol;
       if (values.description) metadata.description = values.description;
 
       // Universal fields
@@ -212,6 +214,9 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
 
       // Create asset
       await createAsset({
+        name: values.name,
+        symbol: values.symbol,
+        decimals: values.decimals,
         metadata,
         mediators,
         auditors,

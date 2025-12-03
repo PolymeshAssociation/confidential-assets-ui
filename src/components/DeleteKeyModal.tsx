@@ -40,10 +40,10 @@ export function DeleteKeyModal({
       }
 
       // Verify password by attempting to decrypt
-      await decryptKey(
-        storedKey.private as import('@/types/storage').EncryptedConfidentialKeyRecord['private'],
+      await decryptKey({
+        encryptedKey: storedKey.private,
         password,
-      );
+      });
 
       // Password is correct, proceed with deletion
       await onDelete();

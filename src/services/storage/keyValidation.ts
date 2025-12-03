@@ -27,7 +27,7 @@ export function isValidKeyRecord(
   }
 
   // Validate version
-  if (record.version !== 1 && record.version !== 2) {
+  if (record.version !== 1) {
     return false;
   }
 
@@ -43,35 +43,30 @@ export function isValidKeyRecord(
 
   // Validate private key structure
   if (
-    record.private.format !== 'scale-base64' ||
+    record.private.format !== 'seed-hex' ||
     typeof record.private.data !== 'string'
   ) {
     return false;
   }
 
   // Validate encryption type
-  if (
-    record.private.encryption !== 'none' &&
-    record.private.encryption !== 'scrypt-xsalsa20-poly1305'
-  ) {
+  if (record.private.encryption !== 'scrypt-xsalsa20-poly1305') {
     return false;
   }
 
-  // For encrypted keys, validate additional fields
-  if (record.private.encryption === 'scrypt-xsalsa20-poly1305') {
-    const encPrivate = record.private as {
-      encryption: 'scrypt-xsalsa20-poly1305';
-      kdf?: { function?: string };
-      cipher?: { algorithm?: string };
-    };
-    if (
-      !encPrivate.kdf ||
-      !encPrivate.cipher ||
-      encPrivate.kdf.function !== 'scrypt' ||
-      encPrivate.cipher.algorithm !== 'xsalsa20-poly1305'
-    ) {
-      return false;
-    }
+  // Validate encryption fields
+  const encPrivate = record.private as {
+    encryption: 'scrypt-xsalsa20-poly1305';
+    kdf?: { function?: string };
+    cipher?: { algorithm?: string };
+  };
+  if (
+    !encPrivate.kdf ||
+    !encPrivate.cipher ||
+    encPrivate.kdf.function !== 'scrypt' ||
+    encPrivate.cipher.algorithm !== 'xsalsa20-poly1305'
+  ) {
+    return false;
   }
 
   // Validate metadata
