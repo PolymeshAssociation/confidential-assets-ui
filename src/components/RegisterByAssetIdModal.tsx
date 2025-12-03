@@ -179,8 +179,8 @@ export function RegisterByAssetIdModal({
                 color="red"
                 variant="light"
               >
-                No confidential key selected. Please select a key in the Keys
-                page first.
+                No confidential account selected. Please select an account in
+                the Confidential Accounts page first.
               </Alert>
             ) : (
               <Paper p="md" withBorder>
@@ -336,8 +336,7 @@ export function RegisterByAssetIdModal({
                     Registered Asset
                   </Text>
                   <Text size="sm" fw={500}>
-                    {assetDetails.name ||
-                      `Asset ${normalizedAssetId}`}
+                    {assetDetails.name || `Asset ${normalizedAssetId}`}
                   </Text>
                   {assetDetails.symbol && (
                     <Text size="sm" c="dimmed">

@@ -359,7 +359,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
   const registerAsset = useCallback(
     async (params: RegisterAssetParams): Promise<void> => {
       if (!polkadotApi) throw new Error('Not connected to Polymesh');
-      if (!selectedKey) throw new Error('No confidential key selected');
+      if (!selectedKey) throw new Error('No confidential account selected');
       if (!sdk) throw new Error('SDK not initialized');
 
       const identity = await sdk.getSigningIdentity();
@@ -376,32 +376,34 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          const result = await registerConfidentialAsset({
-            assetId: parseInt(params.assetId, 10),
-            did,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onProofGenerating: () => {
-              params.onProgress?.('Generating proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
-            },
-            onProofGenerated: () => {
-              params.onProgress?.('Submitting transaction...');
-              notifications.update({
-                id: notificationId,
-                message: 'Proof generated, submitting transaction...',
-              });
-            },
-          });
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            const result = await registerConfidentialAsset({
+              assetId: parseInt(params.assetId, 10),
+              did,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onProofGenerating: () => {
+                params.onProgress?.('Generating proof...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              },
+              onProofGenerated: () => {
+                params.onProgress?.('Submitting transaction...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Proof generated, submitting transaction...',
+                });
+              },
+            });
 
-          // Save account asset state
-          saveAccountAssetState(result.accountAssetState);
-        }});
+            // Save account asset state
+            saveAccountAssetState(result.accountAssetState);
+          },
+        });
 
         // Refresh registered assets
         await refreshRegisteredAssets();
@@ -456,56 +458,58 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        const result = await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) {
-            throw new Error('No key selected');
-          }
+        const result = await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) {
+              throw new Error('No key selected');
+            }
 
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-
-          if (!storedState) {
-            throw new Error(
-              'Account not registered with this asset. Please register first.',
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
 
-          const mintResult = await mintConfidentialAsset({
-            amount: parseInt(params.amount, 10),
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onGeneratingProof: () => {
-              params.onProgress?.('Generating proof...');
-              notifications.update({
-                id: notificationId,
-                message:
-                  'Generating zero-knowledge proof (including curve tree leaf path construction)...',
-              });
-            },
-            onSubmittingTransaction: () => {
-              params.onProgress?.('Submitting transaction...');
-              notifications.update({
-                id: notificationId,
-                message:
-                  'Broadcasting transaction and awaiting confirmation...',
-              });
-            },
-          });
+            if (!storedState) {
+              throw new Error(
+                'Account not registered with this asset. Please register first.',
+              );
+            }
 
-          // Update stored state
-          saveAccountAssetState({
-            ...storedState,
-            stateBytes: mintResult.updatedStateBytes,
-            leafIndex: mintResult.newLeafIndex,
-            updatedAt: Date.now(),
-          });
+            const mintResult = await mintConfidentialAsset({
+              amount: parseInt(params.amount, 10),
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onGeneratingProof: () => {
+                params.onProgress?.('Generating proof...');
+                notifications.update({
+                  id: notificationId,
+                  message:
+                    'Generating zero-knowledge proof (including curve tree leaf path construction)...',
+                });
+              },
+              onSubmittingTransaction: () => {
+                params.onProgress?.('Submitting transaction...');
+                notifications.update({
+                  id: notificationId,
+                  message:
+                    'Broadcasting transaction and awaiting confirmation...',
+                });
+              },
+            });
 
-          return mintResult;
-        }});
+            // Update stored state
+            saveAccountAssetState({
+              ...storedState,
+              stateBytes: mintResult.updatedStateBytes,
+              leafIndex: mintResult.newLeafIndex,
+              updatedAt: Date.now(),
+            });
+
+            return mintResult;
+          },
+        });
 
         // Update the balance for this specific asset
         try {

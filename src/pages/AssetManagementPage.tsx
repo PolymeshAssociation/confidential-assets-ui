@@ -326,8 +326,7 @@ export function AssetManagementPage() {
                                 setSelectedAssetForRegistration({
                                   assetId: asset.assetId,
                                   assetName:
-                                  asset.name ||
-                                    `Asset ${asset.assetId}`,
+                                    asset.name || `Asset ${asset.assetId}`,
                                 });
                                 setRegisterModalOpened(true);
                               }}
@@ -344,9 +343,8 @@ export function AssetManagementPage() {
                                 setSelectedAssetForMinting({
                                   assetId: asset.assetId,
                                   assetName:
-                                  asset.name ||
-                                  `Asset ${asset.assetId}`,
-                                decimals: asset.decimals,
+                                    asset.name || `Asset ${asset.assetId}`,
+                                  decimals: asset.decimals,
                                 });
                                 setMintModalOpened(true);
                               }}
@@ -412,10 +410,10 @@ export function AssetManagementPage() {
                     <IconAlertCircle size={48} stroke={1.5} opacity={0.3} />
                     <div>
                       <Text ta="center" fw={500}>
-                        No confidential key selected
+                        No confidential account selected
                       </Text>
                       <Text ta="center" size="sm" c="dimmed">
-                        Please select a confidential key to view registered
+                        Please select a confidential account to view registered
                         assets
                       </Text>
                     </div>

@@ -109,7 +109,7 @@ export function GenerateKeyModal({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title={<Title order={4}>Generate New Confidential Key</Title>}
+      title={<Title order={4}>Generate New Confidential Keys</Title>}
       size="md"
       closeOnClickOutside={false}
     >
@@ -188,13 +188,14 @@ export function GenerateKeyModal({
             color="yellow"
             variant="light"
           >
-            Your confidential key is stored locally. If you clear your browser
-            data or lose access to this device, you will lose access to your
-            assets forever unless you have a backup.
+            Your confidential account keys are stored locally. If you clear your
+            browser data or lose access to this device, you will lose access to
+            your assets forever unless you have a backup.
           </Alert>
 
           <Text size="sm">
-            Please download a backup of your key immediately. Store it safely.
+            Please download a backup of your confidential account keys
+            immediately. Store it safely.
           </Text>
 
           <Button

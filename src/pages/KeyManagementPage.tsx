@@ -164,7 +164,9 @@ export function KeyManagementPage() {
 
               // Clear selection if this was the selected key
               if (selectedKey?.publicKey === key.publicKey) {
-                const nextKey = keys.find((k) => k.publicKey !== key.publicKey)?.publicKey || '';
+                const nextKey =
+                  keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
+                  '';
                 if (nextKey) {
                   selectKey({ publicKey: nextKey });
                 }
@@ -200,7 +202,9 @@ export function KeyManagementPage() {
 
             // Clear selection if this was the selected key
             if (selectedKey?.publicKey === key.publicKey) {
-              const nextKey = keys.find((k) => k.publicKey !== key.publicKey)?.publicKey || '';
+              const nextKey =
+                keys.find((k) => k.publicKey !== key.publicKey)?.publicKey ||
+                '';
               if (nextKey) {
                 selectKey({ publicKey: nextKey });
               }
@@ -253,22 +257,27 @@ export function KeyManagementPage() {
 
       const did = identity.did;
 
-      await executeWithKey({ operation: async (accountKeys) => {
-        await registerConfidentialAccount({
-          did,
-          polkadotApi,
-          accountKeys,
-          submitTransaction,
-          onProofGenerating: () => {
-            showSuccess('Generating proof... This may take a moment');
-          },
-          onProofGenerated: () => {
-            showSuccess('Proof generated, submitting transaction');
-          },
-        });
-      }});
+      await executeWithKey({
+        operation: async (accountKeys) => {
+          await registerConfidentialAccount({
+            did,
+            polkadotApi,
+            accountKeys,
+            submitTransaction,
+            onProofGenerating: () => {
+              showSuccess('Generating proof... This may take a moment');
+            },
+            onProofGenerated: () => {
+              showSuccess('Proof generated, submitting transaction');
+            },
+          });
+        },
+      });
 
-      updateRegistrationStatus({ publicKey: selectedKey.publicKey, registeredDid: did });
+      updateRegistrationStatus({
+        publicKey: selectedKey.publicKey,
+        registeredDid: did,
+      });
       showSuccess(`Confidential account registered successfully to ${did}`);
     } catch (error) {
       console.error('Registration failed:', error);
@@ -440,7 +449,7 @@ export function KeyManagementPage() {
         >
           <Group justify="space-between" align="center">
             <Text size="sm">
-              Key "{selectedKey.alias}" needs to be registered to an identity
+              Account "{selectedKey.alias}" need to be registered to an identity
               on-chain before it can be used for confidential transactions.
             </Text>
             <Button
@@ -461,14 +470,14 @@ export function KeyManagementPage() {
           icon={<IconUserShield size={32} />}
           title={
             keys.length === 0
-              ? 'No confidential keys yet'
-              : 'No keys match your search'
+              ? 'No confidential accounts yet'
+              : 'No accounts match your search'
           }
           color="gray"
         >
           <Text size="sm" mb="md">
             {keys.length === 0
-              ? 'Generate your first confidential key to get started'
+              ? 'Generate your first confidential accounts to get started'
               : 'Try adjusting your search query'}
           </Text>
           {keys.length === 0 && (

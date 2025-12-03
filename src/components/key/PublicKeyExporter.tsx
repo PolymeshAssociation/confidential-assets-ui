@@ -29,10 +29,10 @@ export function PublicKeyExporter() {
     return (
       <Alert
         icon={<IconAlertCircle size={16} />}
-        title="No Key Selected"
+        title="o Confidential Account Selected"
         color="yellow"
       >
-        Please select a confidential key to view the associated public keys.
+        Please select a confidential account to view the associated public keys.
       </Alert>
     );
   }

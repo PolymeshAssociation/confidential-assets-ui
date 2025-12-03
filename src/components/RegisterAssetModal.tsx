@@ -149,11 +149,11 @@ export function RegisterAssetModal({
                 variant="light"
               >
                 <Text size="sm">
-                  No key selected. Please go to the{' '}
+                  No confidential account selected. Please go to the{' '}
                   <Text span fw={600}>
                     Keys page
                   </Text>{' '}
-                  to select a confidential key first.
+                  to select a confidential account first.
                 </Text>
               </Alert>
             )}
@@ -164,8 +164,8 @@ export function RegisterAssetModal({
                 color="red"
                 variant="light"
               >
-                No confidential accounts found. Please create one in the Keys
-                page first.
+                No confidential accounts found. Please create one in the
+                Confidential AAccounts page first.
               </Alert>
             )}
 

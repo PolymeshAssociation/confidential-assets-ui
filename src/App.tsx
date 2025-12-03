@@ -228,7 +228,7 @@ function AppLayout() {
               </Text>
               <NavLink
                 label={selectedKey.alias}
-                description="Active confidential key"
+                description="Active Confidential Account"
                 leftSection={<IconUserShield size={20} />}
                 onClick={() => {
                   openConfidentialAccountModal();

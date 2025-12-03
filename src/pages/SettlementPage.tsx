@@ -271,10 +271,10 @@ export function SettlementPage() {
         {!selectedKey && (
           <Alert
             icon={<IconAlertCircle size={16} />}
-            title="No Key Selected"
+            title="No Confidential Account Selected"
             color="yellow"
           >
-            Please select a confidential key to create or view transfers.
+            Please select a confidential account to create or view transfers.
           </Alert>
         )}
 
@@ -1104,11 +1104,11 @@ export function SettlementPage() {
                 {!selectedKey ? (
                   <Alert
                     icon={<IconAlertCircle size={16} />}
-                    title="Confidential Key Required"
+                    title="Confidential Account Required"
                     color="yellow"
                     mt="md"
                   >
-                    Please select a confidential key to create transfers.
+                    Please select a confidential account to create transfers.
                   </Alert>
                 ) : registeredAssets.length === 0 ? (
                   <Alert

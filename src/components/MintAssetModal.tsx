@@ -186,7 +186,8 @@ export function MintAssetModal({
                 color="red"
                 variant="light"
               >
-                No confidential key selected. Please select a key first.
+                No confidential account selected. Please select an account
+                first.
               </Alert>
             )}
 
