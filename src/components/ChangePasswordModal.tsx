@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from '@/config/passwordConfig';
 import { useNotification } from '@/hooks/useNotification';
 import { validatePassword } from '@/utils/passwordValidation';
 import { Button, Modal, PasswordInput, Stack, Text } from '@mantine/core';
@@ -29,21 +30,39 @@ export function ChangePasswordModal({
     },
     validate: {
       oldPassword: (value) => (!value ? 'Current password is required' : null),
-      newPassword: (value, values) => {
+      newPassword: async (value, values) => {
         if (!value) return 'New password is required';
-        const validationError = validatePassword(value);
-        if (validationError) return validationError;
+
+        // Use async validation
+        const result = await validatePassword(value);
+        if (!result.isValid) return result.error;
+
         if (value === values.oldPassword) {
           return 'New password must be different from current password';
         }
+
+        // Note: breach warnings are shown in PasswordStrengthInput component
+        // We don't block the user here, just inform them
         return null;
       },
-      confirmPassword: (value, values) =>
-        value !== values.newPassword ? 'Passwords do not match' : null,
+      confirmPassword: (value, values) => {
+        // Only show error if confirm password has content
+        if (!value) return null;
+        return value !== values.newPassword ? 'Passwords do not match' : null;
+      },
     },
   });
 
   const { reset } = form;
+
+  // Computed validation state
+  const isFormValid =
+    form.values.oldPassword !== '' &&
+    form.values.newPassword.length >= MIN_PASSWORD_LENGTH &&
+    form.values.newPassword !== form.values.oldPassword &&
+    form.values.confirmPassword !== '' &&
+    form.values.newPassword === form.values.confirmPassword &&
+    !form.errors.newPassword;
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -114,7 +133,12 @@ export function ChangePasswordModal({
           />
 
           <Stack gap="xs" mt="md">
-            <Button type="submit" fullWidth loading={isSubmitting}>
+            <Button
+              type="submit"
+              fullWidth
+              loading={isSubmitting}
+              disabled={!isFormValid}
+            >
               Change Password
             </Button>
             <Button

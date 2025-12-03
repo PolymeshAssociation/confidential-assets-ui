@@ -1,7 +1,7 @@
 import { PasswordStrengthInput } from '@/components';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import { downloadJsonFile } from '@/utils/fileUtils';
-import { validatePassword } from '@/utils/passwordValidation';
+import { validatePasswordSync } from '@/utils/passwordValidation';
 import {
   Alert,
   Button,
@@ -39,6 +39,16 @@ export function GenerateKeyModal({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hasBackedUp, setHasBackedUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aliasTouched, setAliasTouched] = useState(false);
+
+  // Computed validation state
+  const passwordError = password ? validatePasswordSync(password) : null;
+  const passwordsMatch =
+    password && confirmPassword && password === confirmPassword;
+  const passwordsDontMatch = confirmPassword && password !== confirmPassword;
+  const aliasError =
+    aliasTouched && alias.trim() === '' ? 'Account name is required' : null;
+  const isFormValid = alias.trim() !== '' && !passwordError && passwordsMatch;
 
   const handleClose = () => {
     // Reset state on close
@@ -48,31 +58,13 @@ export function GenerateKeyModal({
     setConfirmPassword('');
     setHasBackedUp(false);
     setError(null);
+    setAliasTouched(false);
     onClose();
   };
 
   const handleGenerate = async () => {
-    if (!alias) {
-      setError('Please enter a confidential account name');
-      return;
-    }
-
-    if (!password) {
-      setError('Please enter a password');
-      return;
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
+    // All validation is handled by isFormValid and individual field errors
+    // Button is disabled if form is invalid, so we can proceed directly
     try {
       setError(null);
       await generateKey({ alias, password });
@@ -139,10 +131,12 @@ export function GenerateKeyModal({
             placeholder="My Key Name"
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
+            onBlur={() => setAliasTouched(true)}
             description="A friendly name to identify these keys"
             maxLength={50}
             required
             data-autofocus
+            error={aliasError}
           />
 
           <PasswordStrengthInput
@@ -151,9 +145,7 @@ export function GenerateKeyModal({
             label="Password"
             placeholder="Enter password"
             required
-            error={
-              password ? validatePassword(password) || undefined : undefined
-            }
+            error={passwordError || undefined}
           />
           <TextInput
             type="password"
@@ -161,11 +153,7 @@ export function GenerateKeyModal({
             placeholder="Confirm password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            error={
-              confirmPassword && password !== confirmPassword
-                ? 'Passwords do not match'
-                : null
-            }
+            error={passwordsDontMatch ? 'Passwords do not match' : null}
             required
           />
 
@@ -173,7 +161,11 @@ export function GenerateKeyModal({
             <Button variant="default" onClick={handleClose}>
               Cancel
             </Button>
-            <Button onClick={handleGenerate} loading={isGenerating}>
+            <Button
+              onClick={handleGenerate}
+              loading={isGenerating}
+              disabled={!isFormValid}
+            >
               Generate Key
             </Button>
           </Group>
