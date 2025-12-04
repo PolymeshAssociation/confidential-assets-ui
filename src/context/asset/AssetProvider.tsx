@@ -32,7 +32,7 @@ import type {
 } from './types';
 
 export function AssetProvider({ children }: { children: ReactNode }) {
-  const { polkadotApi, selectedAccount, sdk } = usePolymesh();
+  const { polkadotApi, selectedAccount, accountIdentity, sdk } = usePolymesh();
   const { selectedKey, executeWithKey } = useConfidentialKey();
   const { submitTransaction } = useTransaction();
 
@@ -170,25 +170,20 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
   // Load owned assets - query chain for asset IDs owned by current DID
   const refreshOwnedAssets = useCallback(async () => {
-    if (!polkadotApi || !sdk) {
+    if (!polkadotApi || !sdk || !accountIdentity) {
       setOwnedAssetIds([]);
+      setOwnedAssets([]);
       return;
     }
 
     try {
       setIsLoading(true);
 
-      // Get current DID
-      const identity = await sdk.getSigningIdentity();
-      if (!identity) {
-        setOwnedAssetIds([]);
-        return;
-      }
-      const did = identity.did;
-
       // Query assets owned by this DID
       const ownedAssetsKeys =
-        await polkadotApi.query.confidentialAssets.ownerAssets.keys(did);
+        await polkadotApi.query.confidentialAssets.ownerAssets.keys(
+          accountIdentity,
+        );
       const assetIds = ownedAssetsKeys.map(({ args: [, id] }) => id.toString());
 
       // Update owned asset IDs
@@ -212,7 +207,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [polkadotApi, sdk, fetchAssetDetails]);
+  }, [polkadotApi, sdk, accountIdentity, fetchAssetDetails]);
 
   // Load registered assets - query chain for registered assets and their balances
   const refreshRegisteredAssets = useCallback(async () => {
@@ -286,12 +281,12 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     }
   }, [polkadotApi, selectedKey, fetchAssetDetails]);
 
-  // Refresh owned assets when selected account changes
+  // Refresh owned assets when selected account identity changes
   useEffect(() => {
-    if (selectedAccount && polkadotApi && sdk) {
+    if (polkadotApi && sdk) {
       refreshOwnedAssets();
     }
-  }, [selectedAccount, polkadotApi, sdk, refreshOwnedAssets]);
+  }, [polkadotApi, sdk, refreshOwnedAssets]);
 
   // Refresh registered assets when selected key changes
   useEffect(() => {

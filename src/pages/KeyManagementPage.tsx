@@ -341,11 +341,16 @@ export function KeyManagementPage() {
 
   return (
     <Container size="xl" py="xl">
-      <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
-        <Title order={2} style={{ flex: 1, minWidth: 'fit-content' }}>
-          Confidential Account Management
-        </Title>
-        <Group>
+      <Stack gap="lg">
+        {/* Header */}
+        <Group justify="space-between">
+          <div>
+            <Title order={2}>Confidential Account Management</Title>
+            <Text size="sm" c="dimmed" mt={4}>
+              Manage your confidential accounts and encryption keys
+            </Text>
+          </div>
+          <Group>
           <FileButton
             resetRef={importFileResetRef}
             onChange={(file) => {
@@ -371,31 +376,10 @@ export function KeyManagementPage() {
           >
             Generate New Keys
           </Button>
+          </Group>
         </Group>
-      </Group>
 
-      {/* Import Key Modal */}
-      <ImportKeyModal
-        opened={importDialogOpen}
-        onClose={() => {
-          setImportDialogOpen(false);
-          setSelectedImportFile(null);
-          importFileResetRef.current?.();
-        }}
-        initialFile={selectedImportFile}
-        onKeyImported={() => {
-          if (polkadotApi) {
-            checkAllRegistrations({ polkadotApi }).catch((error) => {
-              console.error(
-                'Failed to check registrations after import:',
-                error,
-              );
-            });
-          }
-        }}
-      />
-
-      <Group justify="space-between" mb="xl">
+        <Group justify="space-between">
         <TextInput
           placeholder="Search keys..."
           leftSection={<IconSearch size={16} />}
@@ -825,6 +809,28 @@ export function KeyManagementPage() {
           </Table>
         </Box>
       )}
+      </Stack>
+
+      {/* Import Key Modal */}
+      <ImportKeyModal
+        opened={importDialogOpen}
+        onClose={() => {
+          setImportDialogOpen(false);
+          setSelectedImportFile(null);
+          importFileResetRef.current?.();
+        }}
+        initialFile={selectedImportFile}
+        onKeyImported={() => {
+          if (polkadotApi) {
+            checkAllRegistrations({ polkadotApi }).catch((error) => {
+              console.error(
+                'Failed to check registrations after import:',
+                error,
+              );
+            });
+          }
+        }}
+      />
 
       {/* Generate Key Modal */}
       <GenerateKeyModal

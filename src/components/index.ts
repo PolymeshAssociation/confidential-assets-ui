@@ -1,3 +1,6 @@
+export { AssetCard } from './AssetCard';
+export { AssetDetailsDrawer } from './AssetDetailsDrawer';
+export { AssetTable } from './AssetTable';
 export { ChangePasswordModal } from './ChangePasswordModal';
 export { ConfidentialAccountSelectionModal } from './ConfidentialAccountSelectionModal';
 export { CreateAssetModal } from './CreateAssetModal';

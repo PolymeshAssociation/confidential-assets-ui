@@ -261,3 +261,28 @@ export interface AccountAssetStateRecord {
   /** Last update timestamp */
   updatedAt: number;
 }
+
+/**
+ * Display-ready asset data with formatted amounts
+ * Used for rendering assets in tables and cards
+ */
+export interface DisplayAsset {
+  /** Asset name */
+  name: string;
+  /** Asset symbol/ticker */
+  symbol: string;
+  /** Formatted balance (if available) */
+  balance?: string;
+  /** Formatted total supply */
+  totalSupply?: string;
+  /** Asset ID */
+  id: string;
+  /** Whether user is registered for this asset */
+  isRegistered: boolean;
+  /** Number of decimal places */
+  decimals?: number;
+  /** Asset type from metadata */
+  assetType?: string;
+  /** Asset subtype from metadata */
+  assetSubType?: string;
+}
