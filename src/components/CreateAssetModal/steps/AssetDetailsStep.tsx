@@ -148,7 +148,7 @@ export function AssetDetailsStep({ form }: AssetDetailsStepProps) {
                 })}
               />
               <TextInput
-                description="Optional short identifier for your asset"
+                description="Short identifier for your asset"
                 {...textInputProps({
                   key: 'symbol',
                   label: 'Symbol',

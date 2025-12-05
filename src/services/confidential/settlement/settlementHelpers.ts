@@ -7,14 +7,6 @@
 import type { ApiPromise } from '@polkadot/api';
 import { SettlementLegEncrypted } from '@polymesh/polymesh-dart-wasm';
 
-// // Re-export shared helpers
-// export {
-//   validateAndGetAccountKeys,
-//   restoreAccountAssetState,
-//   commitAndExportState,
-//   extractAndValidateLeafIndex,
-// } from '../helpers';
-
 // ============================================================================
 // Leg Queries
 // ============================================================================

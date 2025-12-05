@@ -1,243 +1,245 @@
-# Polymesh Confidential Assets UI - MVP
+# Polymesh Confidential Assets UI
 
-A frontend-only application for experiencing new confidential asset features on Polymesh blockchain.
+A frontend application for managing **confidential assets** on the Polymesh blockchain. This application enables users to create, manage, and transfer confidential assets using zero-knowledge proofs for privacy-preserving transactions.
+
+## Features
+
+- **Wallet Integration**: Connect via Polymesh Wallet other Polkadot compatible wallet extensions
+- **Identity Management**: DID creation and testnet onboarding
+- **Confidential Account Keys**: Generate, import, export, and manage encrypted confidential account keys
+- **On-Chain Registration**: Register confidential accounts and register for assets on the blockchain
+- **Asset Operations**: Create confidential assets with metadata, mediators, and auditors
+- **Minting**: Mint tokens to registered confidential accounts
+- **Privacy-Preserving Transfers**: Multi-leg settlement instructions with sender, receiver, and mediator affirmations
+- **Zero-Knowledge Proofs**: All sensitive operations generate ZK proofs via WASM cryptography in browser
+
+> 📖 For detailed workflow diagrams and sequence charts, see [Workflow Documentation](docs/WORKFLOWS.md)
+
+---
 
 ## Tech Stack
 
-- **Framework**: React 18 + TypeScript + Vite
-- **UI Library**: Material-UI (MUI) with light/dark theme support
-- **Blockchain**: Polymesh SDK + Polkadot.js API
-- **Wallet Integration**: Polymesh Wallet & Polkadot.js extension (prioritized)
-- **GraphQL**: Apollo Client for SubQuery middleware
-- **Routing**: React Router v7
-- **Cryptography**: WASM-based prover (stub implementation ready)
+| Category             | Technology                                              |
+| -------------------- | ------------------------------------------------------- |
+| **Framework**        | React 19 + TypeScript + Vite 7                          |
+| **UI Library**       | Mantine v8 with light/dark theme support                |
+| **Blockchain**       | Polymesh SDK v29 + Polkadot.js API                      |
+| **Wallet**           | Polymesh Browser Extension Signing Manager              |
+| **GraphQL**          | Apollo Client v4 for SubQuery middleware                |
+| **Routing**          | React Router v7                                         |
+| **Cryptography**     | Rust/WASM-based prover (`@polymesh/polymesh-dart-wasm`) |
+| **State Management** | React Context API                                       |
+
+---
 
 ## Project Structure
 
 ```
 src/
-├── components/       # Reusable React components
-├── context/          # React Context providers
-│   ├── ThemeContext.tsx
-│   ├── NotificationContext.tsx
-│   ├── PolymeshContext.tsx
-│   └── ConfidentialKeyContext.tsx
-├── hooks/            # Custom React hooks
-├── pages/            # Page components
-│   ├── HomePage.tsx
-│   └── KeyManagementPage.tsx
-├── services/         # Business logic services
-│   ├── apollo.ts     # Apollo Client configuration
-│   ├── prover/       # WASM prover integration (stub)
-│   └── storage/      # localStorage key management
-├── styles/           # Theme configuration
-├── types/            # TypeScript type definitions
-└── utils/            # Utility functions
+├── components/           # Reusable React components
+│   ├── CreateAssetModal/ # Multi-step asset creation wizard
+│   ├── settlement/       # Settlement-related modals and components
+│   └── ...               # Other UI components
+├── context/              # React Context providers
+│   ├── asset/            # Asset state management
+│   ├── confidential-key/ # Confidential key lifecycle
+│   ├── modal/            # Modal state management
+│   ├── notification/     # Notification system
+│   ├── polymesh/         # SDK connection, wallet accounts
+│   ├── settlement/       # Settlement state management
+│   ├── theme/            # Light/dark theme
+│   └── transaction/      # Transaction submission
+├── hooks/                # Custom React hooks
+├── pages/                # Page components
+│   ├── HomePage.tsx      # Dashboard with onboarding
+│   ├── KeyManagementPage.tsx     # Confidential account management
+│   ├── AssetManagementPage.tsx   # Asset creation and viewing
+│   └── SettlementPage.tsx        # Transfer settlements
+├── services/             # Business logic services
+│   ├── confidential/     # Core confidential operations
+│   │   ├── keyManager.ts       # WASM key management
+│   │   ├── registerAccount.ts  # Account registration
+│   │   ├── createAsset.ts      # Asset creation
+│   │   ├── registerAsset.ts    # Asset registration
+│   │   ├── mintAsset.ts        # Token minting
+│   │   └── settlement/         # Settlement services
+│   ├── storage/          # localStorage key management
+│   └── onboarding.ts     # DID and test token provisioning
+├── types/                # TypeScript type definitions
+└── utils/                # Utility functions
 ```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22.12+ or 20.19+
+- pnpm (recommended package manager)
+- A Polymesh-compatible wallet (Polymesh Wallet or Polkadot.js extension)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd confidential-assets-ui
+
+# Install dependencies
+pnpm install
+
+# Copy environment configuration
+cp .env.example .env
+```
+
+### Development
+
+```bash
+# Start development server
+pnpm dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Production Build
+
+```bash
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+```
+
+---
+
+## User Journeys
+
+### 1. Onboarding
+
+1. **Connect Wallet**: Select and authorize a wallet (Polymesh Wallet, Subwallet, Polkadot.js etc.)
+2. **Select Signing Key**: Choose an account/key from the connected wallet
+3. **Create Identity** (if needed): Request a DID and test POLYX from the devnet faucet
+
+### 2. Confidential Account Management
+
+Confidential accounts consist of an **account key** (for sender/receiver operations) and an **encryption key** (for encrypting amounts, also used by mediators/auditors).
+
+- **Generate**: Create new encrypted confidential accounts
+- **Import/Export**: Portable encrypted account files compatible across devices
+- **Unlock/Lock**: Load keys into WASM memory for operations
+- **Register Account**: Link confidential account to your DID on-chain
+
+### 3. Asset Management
+
+- **Create Asset**: Multi-step wizard for asset creation with metadata and roles
+- **Register for Asset**: Register your confidential account to hold a specific asset
+- **Mint Tokens**: Mint tokens to your registered confidential account (issuer only)
+
+### 4. Settlements (Transfers)
+
+- **Create Settlement**: Define multi-leg transfers with sender, receiver, asset, and amount
+- **Affirm Settlement**: All parties (sender, receiver, mediators) must affirm
+- **Claim/Finalize**: Receiver claims assets, sender updates counter after execution
+
+---
+
+## Security Considerations
+
+> ⚠️ This application is intended for **development and testing** on devnet/testnet environments.
+
+### Key Security Features
+
+| Feature                | Implementation                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| **Encrypted Storage**  | Seeds encrypted with Scrypt KDF + XSalsa20-Poly1305                                       |
+| **Memory Protection**  | Private keys exist only in WASM memory when unlocked                                      |
+| **Auto-Lock**          | Keys automatically cleared on page refresh/close and when switching confidential accounts |
+| **No Key Export**      | Raw private keys never exposed to JavaScript                                              |
+| **Password Protected** | All key operations require password authentication                                        |
+
+### ⚠️ Important Warnings
+
+> [!CAUTION]
+> **Unencrypted Asset State Storage**
+>
+> Account asset state (including your confidential asset balances) is stored **unencrypted** in browser localStorage. Anyone with access to your browser's developer tools can view this data.
+
+> [!CAUTION]
+> **Data Loss Risk - Do Not Clear Browser Storage**
+>
+> Clearing your browser's localStorage will **permanently delete**:
+>
+> - All confidential account keys (encrypted seeds)
+> - All account asset states (balances and counters)
+>
+> **The UI does not currently support rebuilding state from the chain.** If you lose this data, you will need to wait for future development to restore access to your confidential accounts and balances.
+
+---
 
 ## Environment Variables
 
 Copy `.env.example` to `.env` and configure:
 
 ```bash
-VITE_NETWORK=testnet
-VITE_POLYMESH_NODE_URL=wss://testnet-rpc.polymesh.network
-VITE_SUBQUERY_URL=https://squid.subsquid.io/polymesh-testnet/graphql
+# Polymesh Node RPC URL
+# Testnet: wss://testnet-rpc.polymesh.live
+# Mainnet: wss://mainnet-rpc.polymesh.network
+VITE_POLYMESH_NODE_URL=wss://testnet-rpc.polymesh.live
+
+# SubQuery GraphQL Endpoint
+# Testnet: https://testnet-graphql.polymesh.live
+# Mainnet: https://mainnet-graphql.polymesh.network
+VITE_SUBQUERY_URL=https://testnet-graphql.polymesh.live
+
+# Onboarding Service URL (for requesting test DIDs and tokens)
+VITE_ONBOARDING_URL=
+
+# Blockchain Explorer URL Template
+# Supports variables: {blockNumber}, {blockHash}, {extrinsicHash}, {extrinsicId}
+# Examples:
+# - https://staging-app.polymesh.dev/#/explorer/query/{blockNumber}
+# - https://polymesh.subscan.io/block/{blockNumber}
+VITE_EXPLORER_URL=
+
+# Password Validation Configuration
+# Minimum password length (default: 12)
+VITE_MIN_PASSWORD_LENGTH=12
+
+# Enable breach checking via Have I Been Pwned API (default: true)
+VITE_ENABLE_BREACH_CHECK=true
 ```
-
-## Development
-
-### Prerequisites
-
-- Node.js 22.12+ or 20.19+
-- pnpm (recommended package manager)
-
-### Install Dependencies
-
-```bash
-pnpm install
-```
-
-### Run Development Server
-
-```bash
-pnpm dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### Build for Production
-
-```bash
-pnpm build
-```
-
-### Preview Production Build
-
-```bash
-pnpm preview
-```
-
-## Features
-
-### Current (MVP)
-
-- ✅ Wallet connection (Polymesh Wallet, Polkadot.js)
-- ✅ Confidential key generation with password encryption
-- ✅ Multiple confidential key management with aliases
-- ✅ Key unlock/lock functionality (auto-locks on page refresh)
-- ✅ Local encrypted key storage (browser localStorage)
-- ✅ Light/dark theme toggle
-- ✅ Material-UI components
-- ✅ Apollo Client for SubQuery integration
-- ✅ WASM prover stub implementation ready for integration
-
-### WASM Prover Integration (Ready)
-
-The application includes a complete TypeScript interface for the WASM prover:
-
-```typescript
-interface WasmProofManager {
-  initWasm(): Promise<void>;
-  generateKey(password: string): Promise<EncryptedKeyBlob>;
-  unlockKey(password: string, encryptedBlob: EncryptedKeyBlob): Promise<void>;
-  lockKey(): Promise<void>;
-  getPublicKey(): Promise<string>;
-  generateProof(inputData: Uint8Array): Promise<Uint8Array>;
-  verifyProof(proof: Uint8Array, publicInput: Uint8Array): Promise<boolean>;
-}
-```
-
-The stub implementation in `src/services/prover/index.ts` can be replaced with the real Rust/WASM module when available.
-
-### Key Storage
-
-Confidential keys are stored encrypted in browser localStorage:
-
-- Multiple keys supported with user-defined aliases
-- Keys are encrypted with user password (handled by WASM prover)
-- Unlocked keys exist only in WASM memory, never exposed to JavaScript
-- Auto-lock on page refresh/close for security
-
-## Architecture
-
-### Context Providers Hierarchy
-
-```
-ThemeProvider (MUI theme + mode switching)
-  └─ NotificationProvider (Snackbar notifications)
-      └─ PolymeshProvider (SDK + Apollo Client)
-          └─ ConfidentialKeyProvider (WASM prover + key management)
-              └─ BrowserRouter
-                  └─ App Routes
-```
-
-### State Management
-
-Uses React Context API for global state:
-
-- `ThemeContext`: Light/dark mode
-- `NotificationContext`: User notifications
-- `PolymeshContext`: SDK connection, wallet accounts
-- `ConfidentialKeyContext`: Confidential key lifecycle
-
-## Wallet Support
-
-Prioritized wallets (others supported but lower priority):
-
-- Polymesh Wallet
-- Polkadot.js extension
-
-## Security Notes
-
-⚠️ **This is an MVP for development/testing**:
-
-- Confidential keys stored in browser localStorage (encrypted)
-- Private keys never leave WASM memory when unlocked
-- Keys auto-lock on page refresh/close
-- Production use requires additional security measures
-
-## Future Enhancements
-
-- Key export/import functionality
-- Multi-signature support
-- Asset creation and management
-- Confidential transfers UI
-- Transaction history
-- Portfolio view
-- Enhanced error handling and recovery
-- Key backup to secure storage
 
 ---
 
-## Vite + React + TypeScript Notes
+## Wallet Support
 
-Currently, two official plugins are available:
+**Supported wallets:**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Polymesh Wallet (recommended)
+- Subwallet
+- Polkadot.js extension
+- Other Polkadot-compatible wallets
 
-## React Compiler
+> [!NOTE]
+> **Custom Network Configuration**
+>
+> When connecting to testnet or custom networks, you may need to:
+>
+> 1. Add a custom network in your wallet using the target chain's RPC endpoint
+> 2. Upload chain metadata to your wallet to enable clear signing of transactions
+>
+> Refer to your wallet's documentation for specific instructions.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Documentation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- [Workflow Documentation](docs/WORKFLOWS.md) - Detailed flowcharts and sequence diagrams for all user journeys
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## License
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+See [LICENSE](LICENSE) for details.
