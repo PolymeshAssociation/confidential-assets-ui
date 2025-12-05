@@ -349,11 +349,12 @@ export function AssetManagementPage() {
               </Card.Section>
 
               {/* Filters and Actions */}
-              {registeredAssets.length > 0 && (
-                <Card.Section inheritPadding py="sm" withBorder>
-                  <Group gap="sm" wrap="wrap">
-                    {/* Filter Menu */}
-                    <Menu shadow="md" width={300} position="bottom-start">
+              <Card.Section inheritPadding py="sm" withBorder>
+                <Group gap="sm" wrap="wrap">
+                  {registeredAssets.length > 0 && (
+                    <>
+                      {/* Filter Menu */}
+                      <Menu shadow="md" width={300} position="bottom-start">
                       <Menu.Target>
                         <Button
                           variant="default"
@@ -474,19 +475,20 @@ export function AssetManagementPage() {
                         </ActionIcon>
                       </>
                     )}
+                  </>
+                  )}
 
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconPlus size={14} />}
-                      onClick={() => setRegisterByIdModalOpened(true)}
-                      disabled={!selectedKey}
-                    >
-                      Register for Asset
-                    </Button>
-                  </Group>
-                </Card.Section>
-              )}
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => setRegisterByIdModalOpened(true)}
+                    disabled={!selectedKey}
+                  >
+                    Register for Asset
+                  </Button>
+                </Group>
+              </Card.Section>
 
               <Card.Section inheritPadding py="md">
                 <LoadingOverlay visible={isLoading} />

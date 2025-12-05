@@ -24,9 +24,11 @@ import {
 import {
   IconAlertCircle,
   IconCheck,
+  IconEye,
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { AssetDetailsDrawer } from './AssetDetailsDrawer';
 import { TruncatedKey } from './TruncatedKey';
 
 interface RegisterByAssetIdModalProps {
@@ -45,6 +47,7 @@ export function RegisterByAssetIdModal({
   const [isFetchingAsset, setIsFetchingAsset] = useState(false);
   const [assetDetails, setAssetDetails] = useState<AssetDetails | null>(null);
   const [assetNotFound, setAssetNotFound] = useState(false);
+  const [detailsDrawerOpened, setDetailsDrawerOpened] = useState(false);
   const { registerAsset, getAssetDetails, registeredAssets } = useAsset();
   const { selectedKey } = useConfidentialKey();
 
@@ -230,16 +233,14 @@ export function RegisterByAssetIdModal({
                       </Badge>
                     )}
                   </Group>
-                  {assetDetails.metadata?.description && (
-                    <Text size="sm" c="dimmed">
-                      {assetDetails.metadata.description}
-                    </Text>
-                  )}
-                  <Group gap="xs">
-                    <Text size="xs" c="dimmed">
-                      Decimals: {assetDetails.decimals ?? 0}
-                    </Text>
-                  </Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconEye size={14} />}
+                    onClick={() => setDetailsDrawerOpened(true)}
+                  >
+                    View Details
+                  </Button>
                 </Stack>
               </Paper>
             )}
@@ -370,6 +371,12 @@ export function RegisterByAssetIdModal({
           </Stack>
         </Stepper.Step>
       </Stepper>
+
+      <AssetDetailsDrawer
+        opened={detailsDrawerOpened}
+        onClose={() => setDetailsDrawerOpened(false)}
+        assetId={normalizedAssetId}
+      />
     </Modal>
   );
 }
