@@ -28,6 +28,7 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { AssetDetailsDrawer } from '@/components';
 import { TruncatedKey } from '@/components/TruncatedKey';
 import { useAsset } from '@/hooks/useAsset';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
@@ -101,6 +102,7 @@ export function SettlementDetailsModal({
   >(new Map());
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [viewAssetId, setViewAssetId] = useState<string | null>(null);
 
   // Load settlement details from chain
   const loadSettlementDetails = useCallback(async () => {
@@ -430,563 +432,605 @@ export function SettlementDetailsModal({
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={
-        <Group>
-          <Text fw={700} size="lg">
-            Transfer Details
-          </Text>
-          {settlementStatus && (
-            <Badge
-              variant="filled"
-              color={
-                settlementStatus.status === 'Executed'
-                  ? 'green'
-                  : settlementStatus.status === 'Pending'
-                    ? 'yellow'
-                    : 'gray'
-              }
-            >
-              {settlementStatus.status}
-            </Badge>
-          )}
-        </Group>
-      }
-      size="lg"
-      padding="lg"
-    >
-      <Stack gap="md">
-        {/* Error Alert for No Key */}
-        {!selectedKey && (
-          <Alert
-            icon={<IconAlertCircle size={16} />}
-            title="No Confidential Account Selected"
-            color="red"
-            variant="filled"
-          >
-            Please select a confidential account to view transfer details.
-          </Alert>
-        )}
-
-        {/* Header Section */}
-        <Paper withBorder p="sm">
-          <Stack gap="xs">
-            <Group justify="space-between">
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">
-                  ID:
-                </Text>
-                <Text size="sm">
-                  {settlementId.substring(0, 8)}...
-                  {settlementId.substring(settlementId.length - 8)}
-                </Text>
-                <CopyButton value={settlementId}>
-                  {({ copied, copy }) => (
-                    <ActionIcon
-                      variant="subtle"
-                      color={copied ? 'teal' : 'gray'}
-                      onClick={copy}
-                      size="xs"
-                    >
-                      {copied ? (
-                        <IconCheck size={14} />
-                      ) : (
-                        <IconCopy size={14} />
-                      )}
-                    </ActionIcon>
-                  )}
-                </CopyButton>
-              </Group>
-
-              <Group gap="xs">
-                {settlementStatus &&
-                  settlementStatus.pendingAffirmations > 0 && (
-                    <Badge size="sm" color="orange" variant="light">
-                      {settlementStatus.pendingAffirmations} Pending Affirmation
-                    </Badge>
-                  )}
-                {settlementStatus &&
-                  settlementStatus.pendingFinalizations > 0 && (
-                    <Badge size="sm" color="yellow" variant="light">
-                      {settlementStatus.pendingFinalizations} Pending
-                      Finalization
-                    </Badge>
-                  )}
-                <Tooltip label="Refresh status">
-                  <ActionIcon
-                    variant="light"
-                    onClick={() => refreshAffirmationStatus()}
-                    loading={isLoadingDetails}
-                    size="sm"
-                  >
-                    <IconRefresh size={14} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            </Group>
-
-            {settlementMemo && (
-              <Text size="xs" c="dimmed">
-                Memo: {settlementMemo}
-              </Text>
-            )}
-          </Stack>
-        </Paper>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            icon={<IconAlertCircle size={16} />}
-            title="Error"
-            color="red"
-            variant="light"
-            withCloseButton
-            onClose={() => setError(null)}
-          >
-            {error}
-          </Alert>
-        )}
-
-        {/* Legs List */}
-        <Stack gap="xs">
-          <Group justify="space-between">
-            <Text size="sm" fw={500} c="dimmed">
-              Legs ({availableLegIds.length})
+    <>
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        title={
+          <Group>
+            <Text fw={700} size="lg">
+              Transfer Details
             </Text>
-            {isDecrypting && (
-              <Group gap="xs">
-                <Loader size="xs" />
-                <Text size="xs" c="dimmed">
-                  Decrypting...
-                </Text>
-              </Group>
+            {settlementStatus && (
+              <Badge
+                variant="filled"
+                color={
+                  settlementStatus.status === 'Executed'
+                    ? 'green'
+                    : settlementStatus.status === 'Pending'
+                      ? 'yellow'
+                      : 'gray'
+                }
+              >
+                {settlementStatus.status}
+              </Badge>
             )}
           </Group>
+        }
+        size="lg"
+        padding="lg"
+      >
+        <Stack gap="md">
+          {/* Error Alert for No Key */}
+          {!selectedKey && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              title="No Confidential Account Selected"
+              color="red"
+              variant="filled"
+            >
+              Please select a confidential account to view transfer details.
+            </Alert>
+          )}
 
-          <Accordion
-            variant="separated"
-            radius="md"
-            defaultValue={initialLegId.toString()}
-          >
-            {availableLegIds.map((legId) => {
-              const decryptedLeg = decryptedLegs.get(legId);
-              const isFailed = failedLegs.has(legId);
-              const isNotInvolved = notInvolvedLegs.has(legId);
-              const affirmStatus = legAffirmationStatus.get(legId);
-              const asset = decryptedLeg
-                ? assetDetailsMap.get(decryptedLeg.details.assetId)
-                : null;
+          {/* Header Section */}
+          <Paper withBorder p="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed">
+                    ID:
+                  </Text>
+                  <Text size="sm">
+                    {settlementId.substring(0, 8)}...
+                    {settlementId.substring(settlementId.length - 8)}
+                  </Text>
+                  <CopyButton value={settlementId}>
+                    {({ copied, copy }) => (
+                      <ActionIcon
+                        variant="subtle"
+                        color={copied ? 'teal' : 'gray'}
+                        onClick={copy}
+                        size="xs"
+                      >
+                        {copied ? (
+                          <IconCheck size={14} />
+                        ) : (
+                          <IconCopy size={14} />
+                        )}
+                      </ActionIcon>
+                    )}
+                  </CopyButton>
+                </Group>
 
-              // Find user's mediator index if they are a mediator
-              const userMediatorIndex =
-                selectedKey && asset?.mediators
-                  ? asset.mediators.findIndex(
-                      (mediator) =>
-                        mediator === selectedKey.encryptionPublicKey,
-                    )
-                  : -1;
+                <Group gap="xs">
+                  {settlementStatus &&
+                    settlementStatus.pendingAffirmations > 0 && (
+                      <Badge size="sm" color="orange" variant="light">
+                        {settlementStatus.pendingAffirmations} Pending
+                        Affirmation
+                      </Badge>
+                    )}
+                  {settlementStatus &&
+                    settlementStatus.pendingFinalizations > 0 && (
+                      <Badge size="sm" color="yellow" variant="light">
+                        {settlementStatus.pendingFinalizations} Pending
+                        Finalization
+                      </Badge>
+                    )}
+                  <Tooltip label="Refresh status">
+                    <ActionIcon
+                      variant="light"
+                      onClick={() => refreshAffirmationStatus()}
+                      loading={isLoadingDetails}
+                      size="sm"
+                    >
+                      <IconRefresh size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+              </Group>
 
-              return (
-                <Accordion.Item key={legId} value={legId.toString()}>
-                  <Accordion.Control>
-                    {renderLegHeader(legId)}
-                  </Accordion.Control>
+              {settlementMemo && (
+                <Text size="xs" c="dimmed">
+                  Memo: {settlementMemo}
+                </Text>
+              )}
+            </Stack>
+          </Paper>
 
-                  <Accordion.Panel>
-                    {decryptedLeg && (
-                      <Stack gap="md">
-                        {/* Asset & Amount */}
-                        <Paper withBorder p="sm">
-                          <Grid align="center">
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              title="Error"
+              color="red"
+              variant="light"
+              withCloseButton
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
+          {/* Legs List */}
+          <Stack gap="xs">
+            <Group justify="space-between">
+              <Text size="sm" fw={500} c="dimmed">
+                Legs ({availableLegIds.length})
+              </Text>
+              {isDecrypting && (
+                <Group gap="xs">
+                  <Loader size="xs" />
+                  <Text size="xs" c="dimmed">
+                    Decrypting...
+                  </Text>
+                </Group>
+              )}
+            </Group>
+
+            <Accordion
+              variant="separated"
+              radius="md"
+              defaultValue={initialLegId.toString()}
+            >
+              {availableLegIds.map((legId) => {
+                const decryptedLeg = decryptedLegs.get(legId);
+                const isFailed = failedLegs.has(legId);
+                const isNotInvolved = notInvolvedLegs.has(legId);
+                const affirmStatus = legAffirmationStatus.get(legId);
+                const asset = decryptedLeg
+                  ? assetDetailsMap.get(decryptedLeg.details.assetId)
+                  : null;
+
+                // Find user's mediator index if they are a mediator
+                const userMediatorIndex =
+                  selectedKey && asset?.mediators
+                    ? asset.mediators.findIndex(
+                        (mediator) =>
+                          mediator === selectedKey.encryptionPublicKey,
+                      )
+                    : -1;
+
+                return (
+                  <Accordion.Item key={legId} value={legId.toString()}>
+                    <Accordion.Control>
+                      {renderLegHeader(legId)}
+                    </Accordion.Control>
+
+                    <Accordion.Panel>
+                      {decryptedLeg && (
+                        <Stack gap="md">
+                          {/* Asset & Amount */}
+                          <Paper withBorder p="sm">
+                            <Grid align="center">
+                              <Grid.Col span={6}>
+                                <Stack gap={2}>
+                                  <Group gap={4}>
+                                    <Text size="xs" c="dimmed">
+                                      Asset
+                                    </Text>
+                                    <Tooltip label="View Details">
+                                      <ActionIcon
+                                        size={16}
+                                        variant="transparent"
+                                        c="dimmed"
+                                        onClick={() =>
+                                          setViewAssetId(
+                                            decryptedLeg.details.assetId,
+                                          )
+                                        }
+                                        style={{ verticalAlign: 'middle' }}
+                                      >
+                                        <IconInfoCircle size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  </Group>
+                                  <Text fw={600}>
+                                    {asset?.name || 'Unknown Asset'}
+                                  </Text>
+                                  <Text size="sm" c="dimmed">
+                                    ID: {decryptedLeg.details.assetId}
+                                  </Text>
+                                </Stack>
+                              </Grid.Col>
+                              <Grid.Col span={6}>
+                                <Stack gap={2} align="flex-end">
+                                  <Text size="xs" c="dimmed">
+                                    Amount
+                                  </Text>
+                                  <Text fw={600} size="md">
+                                    {fromSmallestUnit(
+                                      decryptedLeg.details.amount,
+                                      asset?.decimals ?? 0,
+                                    )}
+                                    <Text span c="dimmed" size="sm" ml={4}>
+                                      {asset?.symbol}
+                                    </Text>
+                                  </Text>
+                                </Stack>
+                              </Grid.Col>
+                            </Grid>
+                          </Paper>
+
+                          {/* Parties */}
+                          <Grid>
                             <Grid.Col span={6}>
-                              <Stack gap={2}>
-                                <Text size="xs" c="dimmed">
-                                  Asset
-                                </Text>
-                                <Text fw={600}>
-                                  {asset?.symbol ||
-                                    asset?.name ||
-                                    'Unknown Asset'}
-                                </Text>
-                                <Text size="sm" c="dimmed">
-                                  ID: {decryptedLeg.details.assetId}
-                                </Text>
-                              </Stack>
+                              <Paper withBorder p="xs">
+                                <Stack gap={4}>
+                                  <Group justify="space-between">
+                                    <Text size="xs" c="dimmed">
+                                      Sender
+                                    </Text>
+                                    {decryptedLeg.roles.includes('sender') && (
+                                      <Badge size="xs" color="blue">
+                                        You
+                                      </Badge>
+                                    )}
+                                  </Group>
+                                  <TruncatedKey
+                                    value={decryptedLeg.details.senderPublicKey}
+                                    showCopy
+                                  />
+                                </Stack>
+                              </Paper>
                             </Grid.Col>
                             <Grid.Col span={6}>
-                              <Stack gap={2} align="flex-end">
-                                <Text size="xs" c="dimmed">
-                                  Amount
-                                </Text>
-                                <Text fw={500} size="lg">
-                                  {fromSmallestUnit(
-                                    decryptedLeg.details.amount,
-                                    asset?.decimals ?? 0,
-                                  )}
-                                </Text>
-                              </Stack>
+                              <Paper withBorder p="xs">
+                                <Stack gap={4}>
+                                  <Group justify="space-between">
+                                    <Text size="xs" c="dimmed">
+                                      Receiver
+                                    </Text>
+                                    {decryptedLeg.roles.includes(
+                                      'receiver',
+                                    ) && (
+                                      <Badge size="xs" color="green">
+                                        You
+                                      </Badge>
+                                    )}
+                                  </Group>
+                                  <TruncatedKey
+                                    value={
+                                      decryptedLeg.details.receiverPublicKey
+                                    }
+                                    showCopy
+                                  />
+                                </Stack>
+                              </Paper>
                             </Grid.Col>
                           </Grid>
-                        </Paper>
 
-                        {/* Parties */}
-                        <Grid>
-                          <Grid.Col span={6}>
-                            <Paper withBorder p="xs">
-                              <Stack gap={4}>
-                                <Group justify="space-between">
-                                  <Text size="xs" c="dimmed">
-                                    Sender
-                                  </Text>
-                                  {decryptedLeg.roles.includes('sender') && (
-                                    <Badge size="xs" color="blue">
-                                      You
-                                    </Badge>
-                                  )}
-                                </Group>
-                                <TruncatedKey
-                                  value={decryptedLeg.details.senderPublicKey}
-                                  showCopy
-                                />
-                              </Stack>
-                            </Paper>
-                          </Grid.Col>
-                          <Grid.Col span={6}>
-                            <Paper withBorder p="xs">
-                              <Stack gap={4}>
-                                <Group justify="space-between">
-                                  <Text size="xs" c="dimmed">
-                                    Receiver
-                                  </Text>
-                                  {decryptedLeg.roles.includes('receiver') && (
-                                    <Badge size="xs" color="green">
-                                      You
-                                    </Badge>
-                                  )}
-                                </Group>
-                                <TruncatedKey
-                                  value={decryptedLeg.details.receiverPublicKey}
-                                  showCopy
-                                />
-                              </Stack>
-                            </Paper>
-                          </Grid.Col>
-                        </Grid>
+                          {/* Auditor indicator - only show if auditor is the ONLY role */}
+                          {decryptedLeg.roles.includes('auditor') &&
+                            decryptedLeg.roles.length === 1 && (
+                              <Alert
+                                icon={<IconInfoCircle size={16} />}
+                                color="violet"
+                                variant="light"
+                              >
+                                <Text size="sm">
+                                  You have auditor access to this leg (view
+                                  only).
+                                </Text>
+                              </Alert>
+                            )}
 
-                        {/* Auditor indicator - only show if auditor is the ONLY role */}
-                        {decryptedLeg.roles.includes('auditor') &&
-                          decryptedLeg.roles.length === 1 && (
-                            <Alert
-                              icon={<IconInfoCircle size={16} />}
-                              color="violet"
-                              variant="light"
-                            >
-                              <Text size="sm">
-                                You have auditor access to this leg (view only).
-                              </Text>
-                            </Alert>
-                          )}
+                          {/* Actions */}
+                          <Stack gap="xs">
+                            {(() => {
+                              // Helper to render action buttons based on role and status
+                              const isSender =
+                                decryptedLeg.roles.includes('sender');
+                              const isReceiver =
+                                decryptedLeg.roles.includes('receiver');
+                              const isMediator =
+                                decryptedLeg.roles.includes('mediator');
+                              const settlementIsPending =
+                                settlementStatus?.status === 'Pending';
+                              const settlementIsRejected =
+                                settlementStatus?.status === 'Rejected';
+                              const settlementIsExecuted =
+                                settlementStatus?.status === 'Executed';
 
-                        {/* Actions */}
-                        <Stack gap="xs">
-                          {(() => {
-                            // Helper to render action buttons based on role and status
-                            const isSender =
-                              decryptedLeg.roles.includes('sender');
-                            const isReceiver =
-                              decryptedLeg.roles.includes('receiver');
-                            const isMediator =
-                              decryptedLeg.roles.includes('mediator');
-                            const settlementIsPending =
-                              settlementStatus?.status === 'Pending';
-                            const settlementIsRejected =
-                              settlementStatus?.status === 'Rejected';
-                            const settlementIsExecuted =
-                              settlementStatus?.status === 'Executed';
-
-                            const senderStatus = affirmStatus?.sender;
-                            const receiverStatus = affirmStatus?.receiver;
-                            const mediatorStatus =
-                              userMediatorIndex !== -1 && affirmStatus
-                                ? affirmStatus.mediators.get(userMediatorIndex)
-                                : undefined;
-
-                            const actions = [];
-
-                            // Sender: Affirm when pending
-                            if (
-                              isSender &&
-                              senderStatus === 'Pending' &&
-                              settlementIsPending
-                            ) {
-                              actions.push(
-                                <Button
-                                  key="sender-affirm"
-                                  color="blue"
-                                  loading={actionLoading === `sender-${legId}`}
-                                  onClick={() =>
-                                    handleAction(
-                                      affirmAsSender,
-                                      {
-                                        settlementId,
-                                        legId,
-                                        assetId: decryptedLeg.details.assetId,
-                                        amount: decryptedLeg.details.amount,
-                                      },
-                                      `sender-${legId}`,
+                              const senderStatus = affirmStatus?.sender;
+                              const receiverStatus = affirmStatus?.receiver;
+                              const mediatorStatus =
+                                userMediatorIndex !== -1 && affirmStatus
+                                  ? affirmStatus.mediators.get(
+                                      userMediatorIndex,
                                     )
-                                  }
-                                  fullWidth
-                                >
-                                  Affirm as Sender
-                                </Button>,
-                              );
-                            }
+                                  : undefined;
 
-                            // Sender: Revert when affirmed and settlement rejected
-                            if (
-                              isSender &&
-                              senderStatus === 'Affirmed' &&
-                              settlementIsRejected
-                            ) {
-                              actions.push(
-                                <Button
-                                  key="sender-revert"
-                                  color="orange"
-                                  variant="light"
-                                  loading={actionLoading === `revert-${legId}`}
-                                  onClick={() =>
-                                    handleAction(
-                                      revertSenderAffirmation,
-                                      {
-                                        settlementId,
-                                        legId,
-                                        assetId: decryptedLeg.details.assetId,
-                                        amount: decryptedLeg.details.amount,
-                                      },
-                                      `revert-${legId}`,
-                                    )
-                                  }
-                                  fullWidth
-                                >
-                                  Revert Affirmation
-                                </Button>,
-                              );
-                            }
+                              const actions = [];
 
-                            // Sender: Update counter when affirmed and settlement executed
-                            if (
-                              isSender &&
-                              senderStatus === 'Affirmed' &&
-                              settlementIsExecuted
-                            ) {
-                              actions.push(
-                                <Button
-                                  key="sender-update"
-                                  color="blue"
-                                  variant="light"
-                                  loading={actionLoading === `update-${legId}`}
-                                  onClick={() =>
-                                    handleAction(
-                                      updateSenderCounter,
-                                      {
-                                        settlementId,
-                                        legId,
-                                        assetId: decryptedLeg.details.assetId,
-                                        amount: decryptedLeg.details.amount,
-                                      },
-                                      `update-${legId}`,
-                                    )
-                                  }
-                                  fullWidth
-                                >
-                                  Update Transaction Counter
-                                </Button>,
-                              );
-                            }
-
-                            // Receiver: Affirm when pending and sender not rejected
-                            if (
-                              isReceiver &&
-                              receiverStatus === 'Pending' &&
-                              settlementIsPending &&
-                              senderStatus !== 'Rejected'
-                            ) {
-                              actions.push(
-                                <Button
-                                  key="receiver-affirm"
-                                  color="green"
-                                  loading={
-                                    actionLoading === `receiver-${legId}`
-                                  }
-                                  onClick={() =>
-                                    handleAction(
-                                      affirmAsReceiver,
-                                      {
-                                        settlementId,
-                                        legId,
-                                        assetId: decryptedLeg.details.assetId,
-                                        amount: decryptedLeg.details.amount,
-                                      },
-                                      `receiver-${legId}`,
-                                    )
-                                  }
-                                  fullWidth
-                                >
-                                  Affirm as Receiver
-                                </Button>,
-                              );
-                            }
-
-                            // Receiver: Claim when affirmed and settlement executed
-                            if (
-                              isReceiver &&
-                              receiverStatus === 'Affirmed' &&
-                              settlementIsExecuted
-                            ) {
-                              actions.push(
-                                <Button
-                                  key="receiver-claim"
-                                  color="teal"
-                                  loading={actionLoading === `claim-${legId}`}
-                                  onClick={() =>
-                                    handleAction(
-                                      claimAssets,
-                                      {
-                                        settlementId,
-                                        legId,
-                                        assetId: decryptedLeg.details.assetId,
-                                        amount: decryptedLeg.details.amount,
-                                      },
-                                      `claim-${legId}`,
-                                    )
-                                  }
-                                  fullWidth
-                                >
-                                  Claim Assets
-                                </Button>,
-                              );
-                            }
-
-                            // Mediator: Affirm/Reject when pending
-                            if (
-                              isMediator &&
-                              settlementIsPending &&
-                              mediatorStatus === 'Pending'
-                            ) {
-                              actions.push(
-                                <Group key="mediator-actions" grow>
+                              // Sender: Affirm when pending
+                              if (
+                                isSender &&
+                                senderStatus === 'Pending' &&
+                                settlementIsPending
+                              ) {
+                                actions.push(
                                   <Button
-                                    color="red"
-                                    variant="light"
-                                    loading={
-                                      actionLoading ===
-                                      `mediator-reject-${legId}`
-                                    }
-                                    onClick={() =>
-                                      handleAction(
-                                        affirmAsMediator,
-                                        {
-                                          settlementId,
-                                          legId,
-                                          assetId: decryptedLeg.details.assetId,
-                                          amount: decryptedLeg.details.amount,
-                                          accept: false,
-                                        },
-                                        `mediator-reject-${legId}`,
-                                      )
-                                    }
-                                  >
-                                    Reject
-                                  </Button>
-                                  <Button
+                                    key="sender-affirm"
                                     color="blue"
                                     loading={
-                                      actionLoading ===
-                                      `mediator-affirm-${legId}`
+                                      actionLoading === `sender-${legId}`
                                     }
                                     onClick={() =>
                                       handleAction(
-                                        affirmAsMediator,
+                                        affirmAsSender,
                                         {
                                           settlementId,
                                           legId,
                                           assetId: decryptedLeg.details.assetId,
                                           amount: decryptedLeg.details.amount,
-                                          accept: true,
                                         },
-                                        `mediator-affirm-${legId}`,
+                                        `sender-${legId}`,
                                       )
                                     }
+                                    fullWidth
                                   >
-                                    Affirm as Mediator
-                                  </Button>
-                                </Group>,
-                              );
-                            }
+                                    Affirm as Sender
+                                  </Button>,
+                                );
+                              }
 
-                            return actions;
-                          })()}
+                              // Sender: Revert when affirmed and settlement rejected
+                              if (
+                                isSender &&
+                                senderStatus === 'Affirmed' &&
+                                settlementIsRejected
+                              ) {
+                                actions.push(
+                                  <Button
+                                    key="sender-revert"
+                                    color="orange"
+                                    variant="light"
+                                    loading={
+                                      actionLoading === `revert-${legId}`
+                                    }
+                                    onClick={() =>
+                                      handleAction(
+                                        revertSenderAffirmation,
+                                        {
+                                          settlementId,
+                                          legId,
+                                          assetId: decryptedLeg.details.assetId,
+                                          amount: decryptedLeg.details.amount,
+                                        },
+                                        `revert-${legId}`,
+                                      )
+                                    }
+                                    fullWidth
+                                  >
+                                    Revert Affirmation
+                                  </Button>,
+                                );
+                              }
+
+                              // Sender: Update counter when affirmed and settlement executed
+                              if (
+                                isSender &&
+                                senderStatus === 'Affirmed' &&
+                                settlementIsExecuted
+                              ) {
+                                actions.push(
+                                  <Button
+                                    key="sender-update"
+                                    color="blue"
+                                    variant="light"
+                                    loading={
+                                      actionLoading === `update-${legId}`
+                                    }
+                                    onClick={() =>
+                                      handleAction(
+                                        updateSenderCounter,
+                                        {
+                                          settlementId,
+                                          legId,
+                                          assetId: decryptedLeg.details.assetId,
+                                          amount: decryptedLeg.details.amount,
+                                        },
+                                        `update-${legId}`,
+                                      )
+                                    }
+                                    fullWidth
+                                  >
+                                    Update Transaction Counter
+                                  </Button>,
+                                );
+                              }
+
+                              // Receiver: Affirm when pending and sender not rejected
+                              if (
+                                isReceiver &&
+                                receiverStatus === 'Pending' &&
+                                settlementIsPending &&
+                                senderStatus !== 'Rejected'
+                              ) {
+                                actions.push(
+                                  <Button
+                                    key="receiver-affirm"
+                                    color="green"
+                                    loading={
+                                      actionLoading === `receiver-${legId}`
+                                    }
+                                    onClick={() =>
+                                      handleAction(
+                                        affirmAsReceiver,
+                                        {
+                                          settlementId,
+                                          legId,
+                                          assetId: decryptedLeg.details.assetId,
+                                          amount: decryptedLeg.details.amount,
+                                        },
+                                        `receiver-${legId}`,
+                                      )
+                                    }
+                                    fullWidth
+                                  >
+                                    Affirm as Receiver
+                                  </Button>,
+                                );
+                              }
+
+                              // Receiver: Claim when affirmed and settlement executed
+                              if (
+                                isReceiver &&
+                                receiverStatus === 'Affirmed' &&
+                                settlementIsExecuted
+                              ) {
+                                actions.push(
+                                  <Button
+                                    key="receiver-claim"
+                                    color="teal"
+                                    loading={actionLoading === `claim-${legId}`}
+                                    onClick={() =>
+                                      handleAction(
+                                        claimAssets,
+                                        {
+                                          settlementId,
+                                          legId,
+                                          assetId: decryptedLeg.details.assetId,
+                                          amount: decryptedLeg.details.amount,
+                                        },
+                                        `claim-${legId}`,
+                                      )
+                                    }
+                                    fullWidth
+                                  >
+                                    Claim Assets
+                                  </Button>,
+                                );
+                              }
+
+                              // Mediator: Affirm/Reject when pending
+                              if (
+                                isMediator &&
+                                settlementIsPending &&
+                                mediatorStatus === 'Pending'
+                              ) {
+                                actions.push(
+                                  <Group key="mediator-actions" grow>
+                                    <Button
+                                      color="red"
+                                      variant="light"
+                                      loading={
+                                        actionLoading ===
+                                        `mediator-reject-${legId}`
+                                      }
+                                      onClick={() =>
+                                        handleAction(
+                                          affirmAsMediator,
+                                          {
+                                            settlementId,
+                                            legId,
+                                            assetId:
+                                              decryptedLeg.details.assetId,
+                                            amount: decryptedLeg.details.amount,
+                                            accept: false,
+                                          },
+                                          `mediator-reject-${legId}`,
+                                        )
+                                      }
+                                    >
+                                      Reject
+                                    </Button>
+                                    <Button
+                                      color="blue"
+                                      loading={
+                                        actionLoading ===
+                                        `mediator-affirm-${legId}`
+                                      }
+                                      onClick={() =>
+                                        handleAction(
+                                          affirmAsMediator,
+                                          {
+                                            settlementId,
+                                            legId,
+                                            assetId:
+                                              decryptedLeg.details.assetId,
+                                            amount: decryptedLeg.details.amount,
+                                            accept: true,
+                                          },
+                                          `mediator-affirm-${legId}`,
+                                        )
+                                      }
+                                    >
+                                      Affirm as Mediator
+                                    </Button>
+                                  </Group>,
+                                );
+                              }
+
+                              return actions;
+                            })()}
+                          </Stack>
                         </Stack>
-                      </Stack>
-                    )}
+                      )}
 
-                    {isDecrypting && (
-                      <Group justify="center" p="xl">
-                        <Loader size="sm" />
-                        <Text size="sm" c="dimmed">
-                          Decrypting leg details...
-                        </Text>
-                      </Group>
-                    )}
+                      {isDecrypting && (
+                        <Group justify="center" p="xl">
+                          <Loader size="sm" />
+                          <Text size="sm" c="dimmed">
+                            Decrypting leg details...
+                          </Text>
+                        </Group>
+                      )}
 
-                    {isFailed && (
-                      <Alert
-                        icon={<IconLock size={16} />}
-                        title="Decryption Failed"
-                        color="red"
-                        variant="light"
-                      >
-                        Failed to decrypt this leg.
-                        {selectedKey && (
-                          <Button
-                            variant="subtle"
-                            size="xs"
-                            mt="sm"
-                            onClick={() => handleDecryptLeg(legId)}
-                          >
-                            Retry Decryption
-                          </Button>
-                        )}
-                      </Alert>
-                    )}
+                      {isFailed && (
+                        <Alert
+                          icon={<IconLock size={16} />}
+                          title="Decryption Failed"
+                          color="red"
+                          variant="light"
+                        >
+                          Failed to decrypt this leg.
+                          {selectedKey && (
+                            <Button
+                              variant="subtle"
+                              size="xs"
+                              mt="sm"
+                              onClick={() => handleDecryptLeg(legId)}
+                            >
+                              Retry Decryption
+                            </Button>
+                          )}
+                        </Alert>
+                      )}
 
-                    {isNotInvolved && (
-                      <Alert
-                        icon={<IconInfoCircle size={16} />}
-                        title="Not Involved"
-                        color="gray"
-                        variant="light"
-                      >
-                        You are not a party to this leg.
-                      </Alert>
-                    )}
-                  </Accordion.Panel>
-                </Accordion.Item>
-              );
-            })}
-          </Accordion>
+                      {isNotInvolved && (
+                        <Alert
+                          icon={<IconInfoCircle size={16} />}
+                          title="Not Involved"
+                          color="gray"
+                          variant="light"
+                        >
+                          You are not a party to this leg.
+                        </Alert>
+                      )}
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                );
+              })}
+            </Accordion>
+          </Stack>
+
+          {/* Close button */}
+          <Group justify="flex-end" mt="md">
+            <Button variant="light" onClick={onClose}>
+              Close
+            </Button>
+          </Group>
         </Stack>
+      </Modal>
 
-        {/* Close button */}
-        <Group justify="flex-end" mt="md">
-          <Button variant="light" onClick={onClose}>
-            Close
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      <AssetDetailsDrawer
+        opened={!!viewAssetId}
+        onClose={() => setViewAssetId(null)}
+        assetId={viewAssetId}
+      />
+    </>
   );
 }
