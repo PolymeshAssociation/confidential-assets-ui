@@ -38,6 +38,7 @@ import {
   Tabs,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
   Tooltip,
 } from '@mantine/core';
@@ -46,6 +47,7 @@ import {
   IconArrowsExchange,
   IconChevronDown,
   IconChevronUp,
+  IconDownload,
   IconFilter,
   IconLayoutGrid,
   IconList,
@@ -55,6 +57,7 @@ import {
   IconSelector,
   IconSortAscending,
   IconSortDescending,
+  IconUpload,
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,7 +67,7 @@ export function SettlementPage() {
     useSettlement();
   const { selectedKey } = useConfidentialKey();
   const { registeredAssets } = useAsset();
-  const { polkadotApi } = usePolymesh();
+  const { polkadotApi, selectedAccount } = usePolymesh();
 
   const [activeTab, setActiveTab] = useState<string | null>('create');
   const [searchSettlementId, setSearchSettlementId] = useState('');
@@ -275,18 +278,6 @@ export function SettlementPage() {
             color="yellow"
           >
             Please select a confidential account to create or view transfers.
-          </Alert>
-        )}
-
-        {/* Alert if no assets registered */}
-        {selectedKey && registeredAssets.length === 0 && (
-          <Alert
-            icon={<IconAlertCircle size={16} />}
-            title="No Assets Registered"
-            color="blue"
-          >
-            You need to register for at least one asset before creating
-            transfers. Visit the Asset Management page to register.
           </Alert>
         )}
 
@@ -1093,84 +1084,115 @@ export function SettlementPage() {
             </Card>
           </Tabs.Panel>
 
-          {/* Create Settlement Tab */}
+          {/* Create Transfer Tab */}
           <Tabs.Panel value="create" pt="lg">
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Card.Section withBorder inheritPadding py="xs">
-                <Text fw={500}>Create Transfer</Text>
-              </Card.Section>
-
-              <Card.Section inheritPadding py="md">
-                {!selectedKey ? (
-                  <Alert
-                    icon={<IconAlertCircle size={16} />}
-                    title="Confidential Account Required"
-                    color="yellow"
-                    mt="md"
-                  >
-                    Please select a confidential account to create transfers.
-                  </Alert>
-                ) : registeredAssets.length === 0 ? (
-                  <Alert
-                    icon={<IconAlertCircle size={16} />}
-                    title="No Assets Available"
-                    color="yellow"
-                    mt="md"
-                  >
-                    You need to register for at least one asset before creating
-                    a transfer. Visit the Asset Management page to register for
-                    assets.
-                  </Alert>
-                ) : (
-                  <Stack gap="lg" py="md">
-                    {/* Public Key Exporter - needed for receiving settlements */}
-                    <PublicKeyExporter />
-
-                    {/* Send Assets Button */}
-                    <Stack align="center" py={20}>
-                      <IconArrowsExchange
-                        size={64}
-                        stroke={1.5}
-                        opacity={0.3}
-                      />
-                      <Text fw={500} size="lg">
-                        Send Assets to Another Party
+            <Stack gap="md">
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                <Card withBorder padding="lg" radius="md">
+                  <Stack align="center" gap="md">
+                    <ThemeIcon
+                      size={48}
+                      radius="md"
+                      variant="light"
+                      color="polyPink"
+                    >
+                      <IconUpload size={24} />
+                    </ThemeIcon>
+                    <Stack gap={4} align="center">
+                      <Text fw={500}>Send Assets</Text>
+                      <Text size="xs" c="dimmed" ta="center">
+                        Send confidential assets to another party
                       </Text>
-                      <Text c="dimmed" size="sm" ta="center" maw={500}>
-                        Send confidential assets to another party via a transfer
-                        instruction. Both you (sender) and the receiver must
-                        affirm before the transfer is executed.
-                      </Text>
-                      <Group mt="md" wrap="wrap" justify="center">
-                        <Button
-                          leftSection={<IconPlus size={16} />}
-                          size="lg"
-                          onClick={() => setIsCreateModalOpen(true)}
-                        >
-                          Send Assets
-                        </Button>
-                        <Button
-                          leftSection={<IconPlus size={16} />}
-                          size="lg"
-                          variant="light"
-                          onClick={() => setIsReceiveModalOpen(true)}
-                        >
-                          Receive Assets
-                        </Button>
-                        <Button
-                          leftSection={<IconArrowsExchange size={16} />}
-                          size="lg"
-                          variant="outline"
-                          onClick={() => setIsMultiLegModalOpen(true)}
-                        >
-                          Multi-Leg (Atomic Swap)
-                        </Button>
-                      </Group>
                     </Stack>
+                    <Tooltip
+                      label="Register for at least one asset to send"
+                      disabled={registeredAssets.length > 0}
+                    >
+                      <Button
+                        fullWidth
+                        onClick={() => setIsCreateModalOpen(true)}
+                        disabled={registeredAssets.length === 0}
+                      >
+                        Create Transfer
+                      </Button>
+                    </Tooltip>
                   </Stack>
-                )}
-              </Card.Section>
-            </Card>
+                </Card>
+
+                <Card withBorder padding="lg" radius="md">
+                  <Stack align="center" gap="md">
+                    <ThemeIcon
+                      size={48}
+                      radius="md"
+                      variant="light"
+                      color="teal"
+                    >
+                      <IconDownload size={24} />
+                    </ThemeIcon>
+                    <Stack gap={4} align="center">
+                      <Text fw={500}>Receive Assets</Text>
+                      <Text size="xs" c="dimmed" ta="center">
+                        Initiate a request to receive assets
+                      </Text>
+                    </Stack>
+                    <Tooltip
+                      label="Register for at least one asset to receive"
+                      disabled={registeredAssets.length > 0}
+                    >
+                      <Button
+                        fullWidth
+                        variant="light"
+                        onClick={() => setIsReceiveModalOpen(true)}
+                        disabled={registeredAssets.length === 0}
+                      >
+                        Request Transfer
+                      </Button>
+                    </Tooltip>
+                  </Stack>
+                </Card>
+
+                <Card withBorder padding="lg" radius="md">
+                  <Stack align="center" gap="md">
+                    <ThemeIcon
+                      size={48}
+                      radius="md"
+                      variant="light"
+                      color="violet"
+                    >
+                      <IconArrowsExchange size={24} />
+                    </ThemeIcon>
+                    <Stack gap={4} align="center">
+                      <Text fw={500}>Multi-Leg Transfer</Text>
+                      <Text size="xs" c="dimmed" ta="center">
+                        Complex swaps involving multiple parties
+                      </Text>
+                    </Stack>
+                    <Button
+                      fullWidth
+                      variant="outline"
+                      onClick={() => setIsMultiLegModalOpen(true)}
+                      disabled={!selectedAccount}
+                    >
+                      Multi-Leg Builder
+                    </Button>
+                  </Stack>
+                </Card>
+              </SimpleGrid>
+
+              {selectedKey && registeredAssets.length === 0 && (
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="Asset Registration Required"
+                  color="yellow"
+                >
+                  You must register for assets on the Asset Management page
+                  before you can send or receive them.
+                </Alert>
+              )}
+
+              {/* Public Key Exporter */}
+              {selectedKey && <PublicKeyExporter />}
+            </Stack>
           </Tabs.Panel>
 
           {/* View Settlement Tab */}
@@ -1184,14 +1206,24 @@ export function SettlementPage() {
                 <Stack gap="md">
                   <TextInput
                     label="Transfer ID"
-                    placeholder="Enter transfer ID..."
+                    placeholder="Enter transfer ID (0x...)"
                     value={searchSettlementId}
                     onChange={(e) => setSearchSettlementId(e.target.value)}
                     leftSection={<IconSearch size={16} />}
+                    error={
+                      searchSettlementId &&
+                      !/^0x[0-9a-fA-F]{64}$/.test(searchSettlementId)
+                        ? 'Transfer ID must be a 32-byte hex string (0x followed by 64 hex characters)'
+                        : null
+                    }
                   />
 
                   <Button
-                    disabled={!searchSettlementId}
+                    disabled={
+                      !selectedKey ||
+                      !searchSettlementId ||
+                      !/^0x[0-9a-fA-F]{64}$/.test(searchSettlementId)
+                    }
                     leftSection={<IconSearch size={16} />}
                     onClick={handleViewFromSearch}
                   >

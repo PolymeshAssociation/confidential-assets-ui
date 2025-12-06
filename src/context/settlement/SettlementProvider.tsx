@@ -237,18 +237,18 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           memo: params.memo,
           polkadotApi,
           submitTransaction,
-          onBuildingProof: () => {
-            params.onProgress?.('Building proof...');
+          onEncrypting: () => {
+            params.onProgress?.('Building settlement...');
             notifications.update({
               id: notificationId,
-              message: 'Generating zero-knowledge proof...',
+              message: 'Encrypting transfer amounts...',
             });
           },
           onSubmitting: () => {
             params.onProgress?.('Submitting...');
             notifications.update({
               id: notificationId,
-              message: 'Broadcasting transaction...',
+              message: 'Submitting transfer instruction...',
             });
           },
         });

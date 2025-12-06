@@ -1,6 +1,5 @@
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import {
-  ActionIcon,
   Alert,
   Badge,
   Box,
@@ -19,7 +18,6 @@ import {
 import {
   IconAlertCircle,
   IconCheck,
-  IconCopy,
   IconLock,
   IconPlus,
   IconSearch,
@@ -27,6 +25,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './ConfidentialAccountSelectionModal.module.css';
+import { TruncatedWithCopy } from './TruncatedWithCopy';
 
 interface ConfidentialAccountSelectionModalProps {
   opened: boolean;
@@ -37,7 +36,7 @@ export function ConfidentialAccountSelectionModal({
   opened,
   onClose,
 }: ConfidentialAccountSelectionModalProps) {
-  const { keys, selectedKey, selectKey, isInitialized } = useConfidentialKey();
+  const { keys, selectedKey, selectKey, isInitialized, keepUnlocked } = useConfidentialKey();
   const { colorScheme } = useMantineColorScheme();
   const navigate = useNavigate();
 
@@ -151,14 +150,13 @@ export function ConfidentialAccountSelectionModal({
                 <Text fw={600} size="lg" lh={1.2} lineClamp={2}>
                   {selectedKey.alias}
                 </Text>
-                {selectedKey.isUnlocked && (
+                {keepUnlocked ? (
                   <Tooltip label="Account is unlocked">
                     <Badge size="sm" color="green" variant="light">
                       Unlocked
                     </Badge>
                   </Tooltip>
-                )}
-                {!selectedKey.isUnlocked && (
+                ) : (
                   <Tooltip label="Account is locked">
                     <Badge
                       size="sm"
@@ -172,73 +170,21 @@ export function ConfidentialAccountSelectionModal({
                 )}
               </Group>
 
-              <Group gap={6} wrap="nowrap">
-                <Text size="xs" c="dimmed" fw={600}>
-                  Public Key:
-                </Text>
-                <Text size="xs" ff="monospace" c="dimmed" lineClamp={1}>
-                  {`${selectedKey.publicKey.substring(0, 12)}...${selectedKey.publicKey.slice(-12)}`}
-                </Text>
-                <Tooltip label="Copy Public Key">
-                  <ActionIcon
-                    variant="subtle"
-                    size="xs"
-                    color="gray"
-                    onClick={() =>
-                      navigator.clipboard.writeText(selectedKey.publicKey)
-                    }
-                  >
-                    <IconCopy size="0.8rem" />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
+              <TruncatedWithCopy
+                label="Public Key"
+                value={selectedKey.publicKey}
+              />
 
-              <Group gap={6} wrap="nowrap">
-                <Text size="xs" c="dimmed" fw={600}>
-                  Encryption Key:
-                </Text>
-                <Text size="xs" ff="monospace" c="dimmed" lineClamp={1}>
-                  {`${selectedKey.encryptionPublicKey.substring(0, 12)}...${selectedKey.encryptionPublicKey.slice(-12)}`}
-                </Text>
-                <Tooltip label="Copy Encryption Key">
-                  <ActionIcon
-                    variant="subtle"
-                    size="xs"
-                    color="gray"
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        selectedKey.encryptionPublicKey,
-                      )
-                    }
-                  >
-                    <IconCopy size="0.8rem" />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
+              <TruncatedWithCopy
+                label="Encryption Key"
+                value={selectedKey.encryptionPublicKey}
+              />
 
               {selectedKey.registeredDid && (
-                <Group gap={6} mt={4} wrap="nowrap">
-                  <Text size="xs" fw={600} c="dimmed">
-                    DID:
-                  </Text>
-                  <Text size="xs" ff="monospace" c="dimmed" lineClamp={1}>
-                    {selectedKey.registeredDid}
-                  </Text>
-                  <Tooltip label="Copy DID">
-                    <ActionIcon
-                      variant="subtle"
-                      size="xs"
-                      color="gray"
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          selectedKey.registeredDid || '',
-                        )
-                      }
-                    >
-                      <IconCopy size="0.8rem" />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
+                <TruncatedWithCopy
+                  label="DID"
+                  value={selectedKey.registeredDid}
+                />
               )}
             </Stack>
           </Box>

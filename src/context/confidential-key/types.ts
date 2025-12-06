@@ -7,7 +7,6 @@ export interface ConfidentialKey {
   publicKey: string;
   /** Encryption public key (hex) */
   encryptionPublicKey: string;
-  isUnlocked: boolean;
   /** DID this key is registered to on-chain (if any) */
   registeredDid?: string | null;
   createdAt: number;
@@ -19,7 +18,9 @@ export interface ConfidentialKeyContextValue {
   isGenerating: boolean;
 
   selectedKey: ConfidentialKey | null;
+  /** Whether the selected key should be kept unlocked */
   keepUnlocked: boolean;
+  /** Set whether the selected key should be kept unlocked */
   setKeepUnlocked: (value: boolean) => void;
 
   initializeWasm: () => Promise<void>;

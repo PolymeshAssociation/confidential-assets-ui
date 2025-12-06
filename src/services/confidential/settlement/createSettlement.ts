@@ -66,7 +66,7 @@ export interface ICreateSettlementParams {
   /**
    * Progress callbacks
    */
-  onBuildingProof?: () => void;
+  onEncrypting?: () => void;
   onSubmitting?: () => void;
 }
 
@@ -142,7 +142,7 @@ export async function createSettlement(
     memo = '',
     polkadotApi,
     submitTransaction,
-    onBuildingProof,
+    onEncrypting,
     onSubmitting,
   } = params;
 
@@ -150,8 +150,8 @@ export async function createSettlement(
     throw new Error('At least one leg is required');
   }
 
-  // Query asset curve tree for asset leaf path
-  onBuildingProof?.();
+  // Build encrypted leg data for all parties
+  onEncrypting?.();
 
   // Get the current asset curve tree state (root, block, hash)
   // We use the same state for all assets in the settlement
@@ -197,7 +197,7 @@ export async function createSettlement(
     }
   }
 
-  // Build the settlement proof
+  // Build the settlement with encrypted leg data
   const settlementProof = settlementBuilder.build();
   const proofBytes = settlementProof.toBytes();
 

@@ -55,7 +55,6 @@ export function AccountKeyInput({
 
   // Propagate encryption key changes
   useEffect(() => {
-    console.log('effect ran1');
     if (onEncryptionKeyChangeRef.current) {
       if (encryptionKey) {
         onEncryptionKeyChangeRef.current(encryptionKey);

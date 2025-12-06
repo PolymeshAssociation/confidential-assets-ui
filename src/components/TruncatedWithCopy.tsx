@@ -78,7 +78,10 @@ export function TruncatedWithCopy({
       </Text>
       <CopyButton value={value} timeout={1000}>
         {({ copied, copy }) => (
-          <Tooltip label={copied ? 'Copied' : 'Copy'}>
+          <Tooltip
+            label={copied ? 'Copied' : `Copy${label ? ` ${label}` : ''}`}
+            withArrow
+          >
             <ActionIcon
               size={iconSize}
               variant="subtle"

@@ -13,6 +13,7 @@ import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { useTheme } from '@/hooks/useTheme';
 import { AssetManagementPage } from '@/pages/AssetManagementPage';
+import { GuidesPage } from '@/pages/GuidesPage';
 import { HomePage } from '@/pages/HomePage';
 import { KeyManagementPage } from '@/pages/KeyManagementPage';
 import { SettlementPage } from '@/pages/SettlementPage';
@@ -35,6 +36,7 @@ import {
   IconAlertCircle,
   IconArrowsExchange,
   IconChartBar,
+  IconHelp,
   IconMoon,
   IconShieldLock,
   IconSun,
@@ -211,6 +213,14 @@ function AppLayout() {
             active={location.pathname === '/settlements'}
             onClick={() => setOpened(false)}
           />
+          <NavLink
+            label="Guides"
+            leftSection={<IconHelp size={20} />}
+            component={Link}
+            to="/guides"
+            active={location.pathname === '/guides'}
+            onClick={() => setOpened(false)}
+          />
 
           {/* Selected Key Display (Mobile Only) */}
           {selectedKey && (
@@ -357,6 +367,7 @@ function AppLayout() {
               />
               <Route path="/assets" element={<AssetManagementPage />} />
               <Route path="/settlements" element={<SettlementPage />} />
+              <Route path="/guides" element={<GuidesPage />} />
             </Routes>
           </ErrorBoundary>
         )}

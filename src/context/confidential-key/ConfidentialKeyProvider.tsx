@@ -81,7 +81,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
           alias: stored.name,
           publicKey: stored.public.account,
           encryptionPublicKey: stored.public.encryption,
-          isUnlocked: false,
           createdAt: stored.metadata.created,
           registeredDid: existingKey?.registeredDid,
         };
@@ -266,10 +265,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         setUnlockTimeout(null);
       }
 
-      // Update keys list to mark all keys as locked
-      setKeys((prevKeys) =>
-        prevKeys.map((key) => ({ ...key, isUnlocked: false })),
-      );
+
     } catch (error) {
       if (error instanceof ConfidentialError) {
         throw error;

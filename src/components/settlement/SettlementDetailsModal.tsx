@@ -458,6 +458,18 @@ export function SettlementDetailsModal({
       padding="lg"
     >
       <Stack gap="md">
+        {/* Error Alert for No Key */}
+        {!selectedKey && (
+          <Alert
+            icon={<IconAlertCircle size={16} />}
+            title="No Confidential Account Selected"
+            color="red"
+            variant="filled"
+          >
+            Please select a confidential account to view transfer details.
+          </Alert>
+        )}
+
         {/* Header Section */}
         <Paper withBorder p="sm">
           <Stack gap="xs">

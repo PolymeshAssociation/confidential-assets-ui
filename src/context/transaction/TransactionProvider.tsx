@@ -167,7 +167,6 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           { signer: externalSigner },
           (result: SubmittableResult) => {
             const { events, status } = result;
-            console.log('Transaction status:', status.type);
             const txHash = result.txHash.toString();
             const txIndex = result.txIndex;
             const blockNumber = result.blockNumber?.toNumber();
