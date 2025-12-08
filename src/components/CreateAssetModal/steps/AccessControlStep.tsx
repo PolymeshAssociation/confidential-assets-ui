@@ -47,8 +47,11 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
     <Stack gap="md" mt="xl">
       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
         <Text size="sm">
+          At least one <strong>auditor or mediator</strong> is required.
+          <br />
+          <br />
           <strong>Auditors</strong> can view encrypted transaction details for
-          this asset. At least one auditor is required (maximum {MAX_AUDITORS}).
+          this asset (maximum {MAX_AUDITORS}).
           <br />
           <strong>Mediators</strong> can view encrypted transaction details for
           this asset and <strong>must approve transfers</strong> of this asset
@@ -209,7 +212,7 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
       <div>
         <Group gap="xs">
           <Text size="sm" fw={500}>
-            Mediators (Optional)
+            Mediators
           </Text>
           {values.selectedMediatorKeys.length + values.mediators.length > 0 && (
             <Badge size="sm" circle>

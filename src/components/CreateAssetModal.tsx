@@ -74,13 +74,15 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
         return errors;
       }
       if (active === 1) {
-        // Only check minimum auditor requirement here
+        // Check minimum requirement: at least one auditor OR mediator
         // All other validation (format, uniqueness, max count, on-chain) is in validateManualKeys
         const totalAuditors =
           values.selectedAuditorKeys.length + values.auditors.length;
-        if (totalAuditors === 0) {
+        const totalMediators =
+          values.selectedMediatorKeys.length + values.mediators.length;
+        if (totalAuditors === 0 && totalMediators === 0) {
           return {
-            auditors: 'At least one auditor is required',
+            auditors: 'At least one auditor or mediator is required',
           };
         }
       }

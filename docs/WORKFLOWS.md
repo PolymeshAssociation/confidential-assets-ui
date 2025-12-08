@@ -278,8 +278,9 @@ sequenceDiagram
     User->>UI: Configure optional metadata fields
 
     Note over User,UI: Step 2 - Access Control
-    User->>UI: Add Auditors (1-2 required, encryption keys)
-    User->>UI: Add Mediators (0-2 optional, encryption keys)
+    User->>UI: Add Auditors (0-2, encryption keys)
+    User->>UI: Add Mediators (0-2, encryption keys)
+    Note over User,UI: At least 1 auditor OR mediator required
 
     Note over User,UI: Step 3 - Review
     User->>UI: Review details and click "Create Asset"
