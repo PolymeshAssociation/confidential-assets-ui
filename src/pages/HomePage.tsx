@@ -167,7 +167,7 @@ export function HomePage() {
             }
           >
             <List.Item>Create a DID for your account</List.Item>
-            <List.Item>Receive 50,000 test POLYX</List.Item>
+            <List.Item>Receive test POLYX</List.Item>
             <List.Item>Enable confidential asset features</List.Item>
           </List>
 

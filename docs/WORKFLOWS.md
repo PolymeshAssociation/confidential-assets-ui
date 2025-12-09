@@ -37,7 +37,7 @@ flowchart TD
     M --> N[Onboarding Service Request]
     N --> O{Onboarding Success?}
     O -->|No| P[Show Error]
-    O -->|Yes| Q[DID Created + 50k POLYX]
+    O -->|Yes| Q[DID Created + Test POLYX]
     Q --> R[Ready to Use App]
     L -->|Yes| R
 ```
