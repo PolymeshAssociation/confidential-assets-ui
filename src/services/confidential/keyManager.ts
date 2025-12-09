@@ -72,24 +72,29 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       // Create account keys from seed
       const keys = AccountKeys.fromSeed(seed);
 
-      // Extract public keys
-      const publicKeys = keys.publicKeys();
-      const accountPubKey = publicKeys.accountPublicKey();
-      const encryptionPubKey = publicKeys.encryptionPublicKey();
+      try {
+        // Extract public keys
+        const publicKeys = keys.publicKeys();
+        const accountPubKey = publicKeys.accountPublicKey();
+        const encryptionPubKey = publicKeys.encryptionPublicKey();
 
-      return {
-        seed,
-        publicKeys: {
-          accountPublicKey: {
-            hex: u8aToHex(accountPubKey.toBytes()),
-            json: accountPubKey.toJson(),
+        return {
+          seed,
+          publicKeys: {
+            accountPublicKey: {
+              hex: u8aToHex(accountPubKey.toBytes()),
+              json: accountPubKey.toJson(),
+            },
+            encryptionPublicKey: {
+              hex: u8aToHex(encryptionPubKey.toBytes()),
+              json: encryptionPubKey.toJson(),
+            },
           },
-          encryptionPublicKey: {
-            hex: u8aToHex(encryptionPubKey.toBytes()),
-            json: encryptionPubKey.toJson(),
-          },
-        },
-      };
+        };
+      } finally {
+        // SECURITY: Clear temporary keys after extracting public keys
+        keys.clear();
+      }
     } catch (error) {
       console.error('[Confidential Key Manager] Key generation failed:', error);
       throw new ConfidentialError(
@@ -134,24 +139,29 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       // Create account keys from seed
       const keys = AccountKeys.fromSeed(seed);
 
-      // Extract public keys
-      const publicKeys = keys.publicKeys();
-      const accountPubKey = publicKeys.accountPublicKey();
-      const encryptionPubKey = publicKeys.encryptionPublicKey();
+      try {
+        // Extract public keys
+        const publicKeys = keys.publicKeys();
+        const accountPubKey = publicKeys.accountPublicKey();
+        const encryptionPubKey = publicKeys.encryptionPublicKey();
 
-      return {
-        seed,
-        publicKeys: {
-          accountPublicKey: {
-            hex: u8aToHex(accountPubKey.toBytes()),
-            json: accountPubKey.toJson(),
+        return {
+          seed,
+          publicKeys: {
+            accountPublicKey: {
+              hex: u8aToHex(accountPubKey.toBytes()),
+              json: accountPubKey.toJson(),
+            },
+            encryptionPublicKey: {
+              hex: u8aToHex(encryptionPubKey.toBytes()),
+              json: encryptionPubKey.toJson(),
+            },
           },
-          encryptionPublicKey: {
-            hex: u8aToHex(encryptionPubKey.toBytes()),
-            json: encryptionPubKey.toJson(),
-          },
-        },
-      };
+        };
+      } finally {
+        // SECURITY: Clear temporary keys after extracting public keys
+        keys.clear();
+      }
     } catch (error) {
       console.error(
         '[Confidential Key Manager] Key generation from seed failed:',
@@ -280,6 +290,14 @@ class ConfidentialKeyManagerImpl implements ConfidentialKeyManager {
       );
     }
 
+    // SECURITY: Zero out secret key material in WASM memory before releasing reference
+    if (this.currentKeys) {
+      try {
+        this.currentKeys.clear();
+      } catch {
+        // Ignore errors during cleanup (keys may already be cleared)
+      }
+    }
     this.currentKeys = null;
   }
 

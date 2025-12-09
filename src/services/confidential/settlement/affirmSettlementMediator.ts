@@ -123,8 +123,6 @@ export async function affirmSettlementMediator(
     onSubmitting,
   } = params;
 
-  const encryptionKeyPair = accountKeys.encryptionKeyPair();
-
   // Query encrypted leg from chain
   const encryptedLeg = await queryEncryptedLeg(
     polkadotApi,
@@ -138,16 +136,22 @@ export async function affirmSettlementMediator(
   // Default to true if not specified
   const accept = params.accept ?? true;
 
-  const affirmationProof = encryptionKeyPair.mediatorAffirmationProof(
-    settlementId,
-    legId,
-    encryptedLeg,
-    accept,
-    parseInt(assetId, 10),
-    amount ?? null,
-  );
-
-  const proofBytes = affirmationProof.toBytes();
+  const encryptionKeyPair = accountKeys.encryptionKeyPair();
+  let proofBytes: Uint8Array;
+  try {
+    const affirmationProof = encryptionKeyPair.mediatorAffirmationProof(
+      settlementId,
+      legId,
+      encryptedLeg,
+      accept,
+      parseInt(assetId, 10),
+      amount ?? null,
+    );
+    proofBytes = affirmationProof.toBytes();
+  } finally {
+    // SECURITY: Clear encryption key pair after generating proof
+    encryptionKeyPair.clear();
+  }
 
   // Submit transaction
   onSubmitting?.();

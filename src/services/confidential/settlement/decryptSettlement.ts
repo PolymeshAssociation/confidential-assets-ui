@@ -70,8 +70,13 @@ export async function decryptSettlement(
   if (!decryptedLeg) {
     // Try to decrypt as mediator/auditor
     const encryptionKeyPair = accountKeys.encryptionKeyPair();
-    decryptedLeg =
-      encryptedLeg.tryDecryptAsMediatorOrAuditor(encryptionKeyPair);
+    try {
+      decryptedLeg =
+        encryptedLeg.tryDecryptAsMediatorOrAuditor(encryptionKeyPair);
+    } finally {
+      // SECURITY: Clear encryption key pair after use
+      encryptionKeyPair.clear();
+    }
 
     if (!decryptedLeg) {
       throw new Error(
