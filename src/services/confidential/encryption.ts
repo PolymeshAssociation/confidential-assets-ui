@@ -20,7 +20,11 @@ export async function encryptKey(params: {
   const seedBytes = new TextEncoder().encode(seedHex);
 
   // Derive encryption key using Scrypt (generates salt automatically)
-  const { params: scryptParams, password: derivedKey, salt } = scryptEncode(password);
+  const {
+    params: scryptParams,
+    password: derivedKey,
+    salt,
+  } = scryptEncode(password);
 
   // Encrypt data using XSalsa20-Poly1305 (generates nonce automatically)
   const { encrypted, nonce } = naclEncrypt(

@@ -355,127 +355,128 @@ export function AssetManagementPage() {
                     <>
                       {/* Filter Menu */}
                       <Menu shadow="md" width={300} position="bottom-start">
-                      <Menu.Target>
-                        <Button
-                          variant="default"
-                          leftSection={<IconFilter size={16} />}
-                          rightSection={
-                            (hideZeroBalances ||
-                              assetTypeFilter.length > 0) && (
-                              <Badge size="sm" circle>
-                                {(hideZeroBalances ? 1 : 0) +
-                                  assetTypeFilter.length}
-                              </Badge>
-                            )
-                          }
-                        >
-                          Filters
-                        </Button>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Label>Filter Options</Menu.Label>
-                        <Menu.Item
-                          closeMenuOnClick={false}
-                          leftSection={
-                            <Checkbox
-                              radius="sm"
-                              size="xs"
-                              checked={hideZeroBalances}
-                              onChange={() =>
-                                setHideZeroBalances(!hideZeroBalances)
-                              }
-                              tabIndex={-1}
-                            />
-                          }
-                        >
-                          Hide Zero Balances
-                        </Menu.Item>
-                        <Divider my="xs" />
-                        <Menu.Label>Asset Type</Menu.Label>
-                        {getUniqueAssetTypes(registeredAssets).map((type) => (
+                        <Menu.Target>
+                          <Button
+                            variant="default"
+                            leftSection={<IconFilter size={16} />}
+                            rightSection={
+                              (hideZeroBalances ||
+                                assetTypeFilter.length > 0) && (
+                                <Badge size="sm" circle>
+                                  {(hideZeroBalances ? 1 : 0) +
+                                    assetTypeFilter.length}
+                                </Badge>
+                              )
+                            }
+                          >
+                            Filters
+                          </Button>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Label>Filter Options</Menu.Label>
                           <Menu.Item
-                            key={type}
                             closeMenuOnClick={false}
                             leftSection={
                               <Checkbox
                                 radius="sm"
                                 size="xs"
-                                checked={assetTypeFilter.includes(type)}
-                                onChange={() => {
-                                  setAssetTypeFilter((prev) =>
-                                    prev.includes(type)
-                                      ? prev.filter((t) => t !== type)
-                                      : [...prev, type],
-                                  );
-                                }}
+                                checked={hideZeroBalances}
+                                onChange={() =>
+                                  setHideZeroBalances(!hideZeroBalances)
+                                }
                                 tabIndex={-1}
                               />
                             }
                           >
-                            {type}
+                            Hide Zero Balances
                           </Menu.Item>
-                        ))}
-                        {getUniqueAssetTypes(registeredAssets).length === 0 && (
-                          <Menu.Item disabled>No types available</Menu.Item>
-                        )}
-                        {(hideZeroBalances || assetTypeFilter.length > 0) && (
-                          <>
-                            <Divider my="xs" />
+                          <Divider my="xs" />
+                          <Menu.Label>Asset Type</Menu.Label>
+                          {getUniqueAssetTypes(registeredAssets).map((type) => (
                             <Menu.Item
-                              color="red"
-                              leftSection={<IconX size={16} />}
-                              onClick={() => {
-                                setHideZeroBalances(false);
-                                setAssetTypeFilter([]);
-                              }}
+                              key={type}
+                              closeMenuOnClick={false}
+                              leftSection={
+                                <Checkbox
+                                  radius="sm"
+                                  size="xs"
+                                  checked={assetTypeFilter.includes(type)}
+                                  onChange={() => {
+                                    setAssetTypeFilter((prev) =>
+                                      prev.includes(type)
+                                        ? prev.filter((t) => t !== type)
+                                        : [...prev, type],
+                                    );
+                                  }}
+                                  tabIndex={-1}
+                                />
+                              }
                             >
-                              Clear all filters
+                              {type}
                             </Menu.Item>
-                          </>
-                        )}
-                      </Menu.Dropdown>
-                    </Menu>
-
-                    {/* Sort controls for cards view only */}
-                    {viewMode === 'grid' && (
-                      <>
-                        <Text size="sm" c="dimmed">
-                          Sort by:
-                        </Text>
-                        <Select
-                          data={[
-                            { value: 'name', label: 'Name' },
-                            { value: 'symbol', label: 'Symbol' },
-                            { value: 'balance', label: 'Balance' },
-                            { value: 'type', label: 'Type' },
-                          ]}
-                          value={sortField}
-                          onChange={(value) =>
-                            setSortField(
-                              value as 'name' | 'symbol' | 'balance' | 'type',
-                            )
-                          }
-                          size="sm"
-                          w={150}
-                        />
-                        <ActionIcon
-                          variant="light"
-                          onClick={() =>
-                            setSortDirection((prev) =>
-                              prev === 'asc' ? 'desc' : 'asc',
-                            )
-                          }
-                          size="lg"
-                        >
-                          {sortDirection === 'asc' ? (
-                            <IconSortAscending size={18} />
-                          ) : (
-                            <IconSortDescending size={18} />
+                          ))}
+                          {getUniqueAssetTypes(registeredAssets).length ===
+                            0 && (
+                            <Menu.Item disabled>No types available</Menu.Item>
                           )}
-                        </ActionIcon>
-                      </>
-                    )}
-                  </>
+                          {(hideZeroBalances || assetTypeFilter.length > 0) && (
+                            <>
+                              <Divider my="xs" />
+                              <Menu.Item
+                                color="red"
+                                leftSection={<IconX size={16} />}
+                                onClick={() => {
+                                  setHideZeroBalances(false);
+                                  setAssetTypeFilter([]);
+                                }}
+                              >
+                                Clear all filters
+                              </Menu.Item>
+                            </>
+                          )}
+                        </Menu.Dropdown>
+                      </Menu>
+
+                      {/* Sort controls for cards view only */}
+                      {viewMode === 'grid' && (
+                        <>
+                          <Text size="sm" c="dimmed">
+                            Sort by:
+                          </Text>
+                          <Select
+                            data={[
+                              { value: 'name', label: 'Name' },
+                              { value: 'symbol', label: 'Symbol' },
+                              { value: 'balance', label: 'Balance' },
+                              { value: 'type', label: 'Type' },
+                            ]}
+                            value={sortField}
+                            onChange={(value) =>
+                              setSortField(
+                                value as 'name' | 'symbol' | 'balance' | 'type',
+                              )
+                            }
+                            size="sm"
+                            w={150}
+                          />
+                          <ActionIcon
+                            variant="light"
+                            onClick={() =>
+                              setSortDirection((prev) =>
+                                prev === 'asc' ? 'desc' : 'asc',
+                              )
+                            }
+                            size="lg"
+                          >
+                            {sortDirection === 'asc' ? (
+                              <IconSortAscending size={18} />
+                            ) : (
+                              <IconSortDescending size={18} />
+                            )}
+                          </ActionIcon>
+                        </>
+                      )}
+                    </>
                   )}
 
                   <Button

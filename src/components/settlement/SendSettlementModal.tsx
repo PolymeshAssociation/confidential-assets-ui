@@ -305,9 +305,7 @@ export function SendSettlementModal({
                   data={registeredAssets.map((asset) => ({
                     value: asset.assetId,
                     label: asset.name
-                      ? `${asset.name} (${
-                          asset.symbol || asset.assetId
-                        })`
+                      ? `${asset.name} (${asset.symbol || asset.assetId})`
                       : `Asset ${asset.assetId}`,
                   }))}
                   value={selectedAssetId}

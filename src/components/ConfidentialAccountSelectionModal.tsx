@@ -36,7 +36,8 @@ export function ConfidentialAccountSelectionModal({
   opened,
   onClose,
 }: ConfidentialAccountSelectionModalProps) {
-  const { keys, selectedKey, selectKey, isInitialized, keepUnlocked } = useConfidentialKey();
+  const { keys, selectedKey, selectKey, isInitialized, keepUnlocked } =
+    useConfidentialKey();
   const { colorScheme } = useMantineColorScheme();
   const navigate = useNavigate();
 

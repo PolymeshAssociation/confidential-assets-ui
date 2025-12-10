@@ -264,8 +264,6 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
         clearTimeout(unlockTimeout);
         setUnlockTimeout(null);
       }
-
-
     } catch (error) {
       if (error instanceof ConfidentialError) {
         throw error;

@@ -213,14 +213,8 @@ export function MultiLegSettlementModal({
       } else {
         setFieldValue(`legs.${index}.assetExists`, true);
         setFieldValue(`legs.${index}.assetName`, assetDetails.name);
-        setFieldValue(
-          `legs.${index}.assetTicker`,
-          assetDetails.symbol,
-        );
-        setFieldValue(
-          `legs.${index}.assetDecimals`,
-          assetDetails.decimals,
-        );
+        setFieldValue(`legs.${index}.assetTicker`, assetDetails.symbol);
+        setFieldValue(`legs.${index}.assetDecimals`, assetDetails.decimals);
         clearFieldError(`legs.${index}.assetId`);
 
         // Clear amount to avoid decimal mismatch when asset changes

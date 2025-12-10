@@ -324,16 +324,18 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       // Small delay to allow toast to render before heavy computation
       await new Promise((resolve) => setTimeout(resolve, 100));
       try {
-        const result = await executeWithKey({ operation: async (accountKeys) => {
-          const decryptResult = await decryptSettlementService({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            polkadotApi,
-            accountKeys,
-          });
+        const result = await executeWithKey({
+          operation: async (accountKeys) => {
+            const decryptResult = await decryptSettlementService({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              polkadotApi,
+              accountKeys,
+            });
 
-          return decryptResult;
-        }});
+            return decryptResult;
+          },
+        });
 
         // Fetch asset details to calculate roles
         const assetDetails = await getAssetDetails(result.leg.assetId);
@@ -455,57 +457,59 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) throw new Error('No active key found');
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) throw new Error('No active key found');
 
-          // Get account asset state from storage
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-          if (!storedState) {
-            throw new Error(
-              'Account asset state not found. Please register for this asset first.',
+            // Get account asset state from storage
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
+            if (!storedState) {
+              throw new Error(
+                'Account asset state not found. Please register for this asset first.',
+              );
+            }
 
-          const result = await affirmSettlementSender({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Generating zero-knowledge proof...',
-                });
-              }
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Broadcasting transaction...',
-                });
-              }
-            },
-          });
+            const result = await affirmSettlementSender({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Generating zero-knowledge proof...',
+                  });
+                }
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Broadcasting transaction...',
+                  });
+                }
+              },
+            });
 
-          // Update stored state with new leaf index
-          storedState.stateBytes = result.updatedStateBytes;
-          storedState.leafIndex = result.newLeafIndex;
-          storedState.updatedAt = Date.now();
+            // Update stored state with new leaf index
+            storedState.stateBytes = result.updatedStateBytes;
+            storedState.leafIndex = result.newLeafIndex;
+            storedState.updatedAt = Date.now();
 
-          // Save using the asset storage service
-          saveAccountAssetState(storedState);
-        }});
+            // Save using the asset storage service
+            saveAccountAssetState(storedState);
+          },
+        });
 
         // Refresh asset balances
         await refreshRegisteredAssets();
@@ -573,57 +577,59 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) throw new Error('No active key found');
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) throw new Error('No active key found');
 
-          // Get account asset state from storage
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-          if (!storedState) {
-            throw new Error(
-              'Account asset state not found. Please register for this asset first.',
+            // Get account asset state from storage
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
+            if (!storedState) {
+              throw new Error(
+                'Account asset state not found. Please register for this asset first.',
+              );
+            }
 
-          const result = await affirmSettlementReceiver({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Generating zero-knowledge proof...',
-                });
-              }
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Broadcasting transaction...',
-                });
-              }
-            },
-          });
+            const result = await affirmSettlementReceiver({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Generating zero-knowledge proof...',
+                  });
+                }
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Broadcasting transaction...',
+                  });
+                }
+              },
+            });
 
-          // Update stored state with new leaf index
-          storedState.stateBytes = result.updatedStateBytes;
-          storedState.leafIndex = result.newLeafIndex;
-          storedState.updatedAt = Date.now();
+            // Update stored state with new leaf index
+            storedState.stateBytes = result.updatedStateBytes;
+            storedState.leafIndex = result.newLeafIndex;
+            storedState.updatedAt = Date.now();
 
-          // Save using the asset storage service
-          saveAccountAssetState(storedState);
-        }});
+            // Save using the asset storage service
+            saveAccountAssetState(storedState);
+          },
+        });
 
         // Refresh asset balances
         await refreshRegisteredAssets();
@@ -699,36 +705,38 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          await affirmSettlementMediator({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            accept: params.accept,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Generating zero-knowledge proof...',
-                });
-              }
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Broadcasting transaction...',
-                });
-              }
-            },
-          });
-        }});
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            await affirmSettlementMediator({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              accept: params.accept,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Generating zero-knowledge proof...',
+                  });
+                }
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Broadcasting transaction...',
+                  });
+                }
+              },
+            });
+          },
+        });
 
         if (!params.suppressNotifications) {
           notifications.update({
@@ -790,57 +798,59 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) throw new Error('No active key found');
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) throw new Error('No active key found');
 
-          // Get account asset state from storage
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-          if (!storedState) {
-            throw new Error(
-              'Account asset state not found. Please register for this asset first.',
+            // Get account asset state from storage
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
+            if (!storedState) {
+              throw new Error(
+                'Account asset state not found. Please register for this asset first.',
+              );
+            }
 
-          const result = await claimAssetsService({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Generating zero-knowledge proof...',
-                });
-              }
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              if (!params.suppressNotifications) {
-                notifications.update({
-                  id: notificationId,
-                  message: 'Broadcasting transaction...',
-                });
-              }
-            },
-          });
+            const result = await claimAssetsService({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Generating zero-knowledge proof...',
+                  });
+                }
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                if (!params.suppressNotifications) {
+                  notifications.update({
+                    id: notificationId,
+                    message: 'Broadcasting transaction...',
+                  });
+                }
+              },
+            });
 
-          // Update stored state with new leaf index
-          storedState.stateBytes = result.updatedStateBytes;
-          storedState.leafIndex = result.newLeafIndex;
-          storedState.updatedAt = Date.now();
+            // Update stored state with new leaf index
+            storedState.stateBytes = result.updatedStateBytes;
+            storedState.leafIndex = result.newLeafIndex;
+            storedState.updatedAt = Date.now();
 
-          // Save using the asset storage service
-          saveAccountAssetState(storedState);
-        }});
+            // Save using the asset storage service
+            saveAccountAssetState(storedState);
+          },
+        });
 
         // Refresh asset balances to show credited amount
         await refreshRegisteredAssets();
@@ -905,50 +915,52 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) throw new Error('No active key found');
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) throw new Error('No active key found');
 
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-          if (!storedState) {
-            throw new Error(
-              'Account asset state not found. Please register for this asset first.',
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
+            if (!storedState) {
+              throw new Error(
+                'Account asset state not found. Please register for this asset first.',
+              );
+            }
 
-          const result = await updateSenderCounterService({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
-            },
-          });
+            const result = await updateSenderCounterService({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              },
+            });
 
-          storedState.stateBytes = result.updatedStateBytes;
-          storedState.leafIndex = result.newLeafIndex;
-          storedState.updatedAt = Date.now();
+            storedState.stateBytes = result.updatedStateBytes;
+            storedState.leafIndex = result.newLeafIndex;
+            storedState.updatedAt = Date.now();
 
-          saveAccountAssetState(storedState);
-        }});
+            saveAccountAssetState(storedState);
+          },
+        });
 
         await refreshRegisteredAssets();
 
@@ -1008,50 +1020,52 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        await executeWithKey({ operation: async (accountKeys) => {
-          if (!selectedKey) throw new Error('No active key found');
+        await executeWithKey({
+          operation: async (accountKeys) => {
+            if (!selectedKey) throw new Error('No active key found');
 
-          const storedState = getAccountAssetState(
-            selectedKey.publicKey,
-            params.assetId,
-          );
-          if (!storedState) {
-            throw new Error(
-              'Account asset state not found. Please register for this asset first.',
+            const storedState = getAccountAssetState(
+              selectedKey.publicKey,
+              params.assetId,
             );
-          }
+            if (!storedState) {
+              throw new Error(
+                'Account asset state not found. Please register for this asset first.',
+              );
+            }
 
-          const result = await revertSenderAffirmationService({
-            settlementId: params.settlementId,
-            legId: params.legId,
-            assetId: params.assetId,
-            amount: params.amount,
-            stateBytes: storedState.stateBytes,
-            polkadotApi,
-            accountKeys,
-            submitTransaction,
-            onBuildingProof: () => {
-              params.onProgress?.('Building proof...');
-              notifications.update({
-                id: notificationId,
-                message: 'Generating zero-knowledge proof...',
-              });
-            },
-            onSubmitting: () => {
-              params.onProgress?.('Submitting...');
-              notifications.update({
-                id: notificationId,
-                message: 'Broadcasting transaction...',
-              });
-            },
-          });
+            const result = await revertSenderAffirmationService({
+              settlementId: params.settlementId,
+              legId: params.legId,
+              assetId: params.assetId,
+              amount: params.amount,
+              stateBytes: storedState.stateBytes,
+              polkadotApi,
+              accountKeys,
+              submitTransaction,
+              onBuildingProof: () => {
+                params.onProgress?.('Building proof...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Generating zero-knowledge proof...',
+                });
+              },
+              onSubmitting: () => {
+                params.onProgress?.('Submitting...');
+                notifications.update({
+                  id: notificationId,
+                  message: 'Broadcasting transaction...',
+                });
+              },
+            });
 
-          storedState.stateBytes = result.updatedStateBytes;
-          storedState.leafIndex = result.newLeafIndex;
-          storedState.updatedAt = Date.now();
+            storedState.stateBytes = result.updatedStateBytes;
+            storedState.leafIndex = result.newLeafIndex;
+            storedState.updatedAt = Date.now();
 
-          saveAccountAssetState(storedState);
-        }});
+            saveAccountAssetState(storedState);
+          },
+        });
 
         await refreshRegisteredAssets();
 
@@ -1264,145 +1278,147 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         });
 
         // Decrypt all legs within a single executeWithKey call (one password prompt)
-        const results = await executeWithKey({ operation: async (accountKeys) => {
-          const allResults: DecryptedLegResult[] = [];
-          let successCount = 0;
-          let failedCount = 0;
-          let notInvolvedCount = 0;
+        const results = await executeWithKey({
+          operation: async (accountKeys) => {
+            const allResults: DecryptedLegResult[] = [];
+            let successCount = 0;
+            let failedCount = 0;
+            let notInvolvedCount = 0;
 
-          // Process legs in batches with max concurrency
-          for (let i = 0; i < legIds.length; i += maxConcurrency) {
-            const batch = legIds.slice(i, i + maxConcurrency);
+            // Process legs in batches with max concurrency
+            for (let i = 0; i < legIds.length; i += maxConcurrency) {
+              const batch = legIds.slice(i, i + maxConcurrency);
 
-            const batchPromises = batch.map(async (legId) => {
-              try {
-                const decryptResult = await decryptSettlementService({
-                  settlementId: params.settlementId,
-                  legId,
-                  polkadotApi,
-                  accountKeys,
-                });
-
-                // Fetch asset details to calculate roles
-                const assetDetails = await getAssetDetails(
-                  decryptResult.leg.assetId,
-                );
-
-                // Calculate roles using helper
-                const roles = calculateRolesForLeg(
-                  decryptResult.leg.senderPublicKey,
-                  decryptResult.leg.receiverPublicKey,
-                  assetDetails
-                    ? {
-                        mediators: assetDetails.mediators || [],
-                        auditors: assetDetails.auditors || [],
-                      }
-                    : null,
-                  selectedKey.publicKey,
-                  selectedKey.encryptionPublicKey,
-                );
-
-                const result: DecryptedLegResult = {
-                  status: 'success',
-                  legId,
-                  leg: decryptResult.leg,
-                  roles,
-                };
-
-                successCount++;
-                params.onLegDecrypted?.(result);
-                params.onProgress?.(
-                  `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
-                );
-
-                return result;
-              } catch (err) {
-                // Determine if this is a "not involved" case or actual failure
-                const errorMsg =
-                  err instanceof Error ? err.message : String(err);
-                const isNotInvolved = errorMsg.includes(
-                  'You are not involved in this transfer leg',
-                );
-
-                if (isNotInvolved) {
-                  notInvolvedCount++;
-                  const result: DecryptedLegResult = {
-                    status: 'not-involved',
+              const batchPromises = batch.map(async (legId) => {
+                try {
+                  const decryptResult = await decryptSettlementService({
+                    settlementId: params.settlementId,
                     legId,
+                    polkadotApi,
+                    accountKeys,
+                  });
+
+                  // Fetch asset details to calculate roles
+                  const assetDetails = await getAssetDetails(
+                    decryptResult.leg.assetId,
+                  );
+
+                  // Calculate roles using helper
+                  const roles = calculateRolesForLeg(
+                    decryptResult.leg.senderPublicKey,
+                    decryptResult.leg.receiverPublicKey,
+                    assetDetails
+                      ? {
+                          mediators: assetDetails.mediators || [],
+                          auditors: assetDetails.auditors || [],
+                        }
+                      : null,
+                    selectedKey.publicKey,
+                    selectedKey.encryptionPublicKey,
+                  );
+
+                  const result: DecryptedLegResult = {
+                    status: 'success',
+                    legId,
+                    leg: decryptResult.leg,
+                    roles,
                   };
+
+                  successCount++;
                   params.onLegDecrypted?.(result);
                   params.onProgress?.(
                     `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
                   );
+
                   return result;
-                } else {
-                  failedCount++;
-                  const result: DecryptedLegResult = {
-                    status: 'failed',
-                    legId,
-                    error: errorMsg,
-                  };
-                  params.onLegDecrypted?.(result);
-                  params.onProgress?.(
-                    `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                } catch (err) {
+                  // Determine if this is a "not involved" case or actual failure
+                  const errorMsg =
+                    err instanceof Error ? err.message : String(err);
+                  const isNotInvolved = errorMsg.includes(
+                    'You are not involved in this transfer leg',
                   );
-                  return result;
-                }
-              }
-            });
 
-            // Wait for batch to complete
-            const batchResults = await Promise.all(batchPromises);
-            allResults.push(...batchResults);
-          }
-
-          // Save/update settlement record with discovered roles
-          const allRoles = new Set<SettlementRole>();
-          allResults.forEach((result) => {
-            if (result.status === 'success') {
-              result.roles.forEach((role) => allRoles.add(role));
-            }
-          });
-
-          if (allRoles.size > 0) {
-            const existingRecord = settlements.get(params.settlementId);
-
-            if (existingRecord) {
-              // Update existing record if new roles found
-              const existingRoles = new Set(existingRecord.roles);
-              let hasNewRole = false;
-
-              allRoles.forEach((role) => {
-                if (!existingRoles.has(role)) {
-                  existingRoles.add(role);
-                  hasNewRole = true;
+                  if (isNotInvolved) {
+                    notInvolvedCount++;
+                    const result: DecryptedLegResult = {
+                      status: 'not-involved',
+                      legId,
+                    };
+                    params.onLegDecrypted?.(result);
+                    params.onProgress?.(
+                      `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                    );
+                    return result;
+                  } else {
+                    failedCount++;
+                    const result: DecryptedLegResult = {
+                      status: 'failed',
+                      legId,
+                      error: errorMsg,
+                    };
+                    params.onLegDecrypted?.(result);
+                    params.onProgress?.(
+                      `Processed ${successCount + failedCount + notInvolvedCount}/${legIds.length}`,
+                    );
+                    return result;
+                  }
                 }
               });
 
-              if (hasNewRole) {
-                const updatedRecord: SettlementRecord = {
-                  ...existingRecord,
-                  roles: Array.from(existingRoles),
+              // Wait for batch to complete
+              const batchResults = await Promise.all(batchPromises);
+              allResults.push(...batchResults);
+            }
+
+            // Save/update settlement record with discovered roles
+            const allRoles = new Set<SettlementRole>();
+            allResults.forEach((result) => {
+              if (result.status === 'success') {
+                result.roles.forEach((role) => allRoles.add(role));
+              }
+            });
+
+            if (allRoles.size > 0) {
+              const existingRecord = settlements.get(params.settlementId);
+
+              if (existingRecord) {
+                // Update existing record if new roles found
+                const existingRoles = new Set(existingRecord.roles);
+                let hasNewRole = false;
+
+                allRoles.forEach((role) => {
+                  if (!existingRoles.has(role)) {
+                    existingRoles.add(role);
+                    hasNewRole = true;
+                  }
+                });
+
+                if (hasNewRole) {
+                  const updatedRecord: SettlementRecord = {
+                    ...existingRecord,
+                    roles: Array.from(existingRoles),
+                  };
+                  saveSettlement(updatedRecord);
+                  refreshSettlements();
+                }
+              } else {
+                // Create new record
+                const record: SettlementRecord = {
+                  version: 1,
+                  settlementId: params.settlementId,
+                  accountPublicKey: selectedKey.publicKey,
+                  roles: Array.from(allRoles),
+                  createdAt: Date.now(),
                 };
-                saveSettlement(updatedRecord);
+                saveSettlement(record);
                 refreshSettlements();
               }
-            } else {
-              // Create new record
-              const record: SettlementRecord = {
-                version: 1,
-                settlementId: params.settlementId,
-                accountPublicKey: selectedKey.publicKey,
-                roles: Array.from(allRoles),
-                createdAt: Date.now(),
-              };
-              saveSettlement(record);
-              refreshSettlements();
             }
-          }
 
-          return allResults;
-        }});
+            return allResults;
+          },
+        });
 
         // Final notification
         const successCount = results.filter(
