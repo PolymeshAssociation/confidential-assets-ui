@@ -17,6 +17,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_POLYMESH_NODE_URL: ${{ secrets.VITE_POLYMESH_NODE_URL }}
+      VITE_SUBQUERY_URL: ${{ secrets.VITE_SUBQUERY_URL }}
+      VITE_ONBOARDING_URL: ${{ secrets.VITE_ONBOARDING_URL }}
+      VITE_EXPLORER_URL: ${{ secrets.VITE_EXPLORER_URL }}
+      VITE_MIN_PASSWORD_LENGTH: ${{ secrets.VITE_MIN_PASSWORD_LENGTH }}
+      VITE_ENABLE_BREACH_CHECK: ${{ secrets.VITE_ENABLE_BREACH_CHECK }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
