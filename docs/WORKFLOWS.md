@@ -343,7 +343,7 @@ sequenceDiagram
     Chain-->>UI: Curve tree data
     UI->>WASM: Build account leaf path with root
     WASM-->>UI: AccountLeafPathWithRoot
-    UI->>WASM: accountAssetState.assetMintingProof(accountKeys, leafPath, amount)
+    UI->>WASM: accountAssetState.assetMintingProof(accountKeys, leafPath, accountDid, amount)
     WASM->>WASM: Generate minting ZK proof
     WASM-->>UI: MintingProof object
     UI->>WASM: mintingProof.toBytes()
@@ -609,7 +609,7 @@ sequenceDiagram
 
 ### Mediator Affirmation Sequence
 
-Mediators use only the encryption key pair and don't maintain account asset state.
+Mediators use `AccountKeys` directly and don't maintain account asset state.
 
 ```mermaid
 sequenceDiagram
@@ -621,9 +621,7 @@ sequenceDiagram
     User->>UI: Click "Affirm" or "Reject" as Mediator
     UI->>Chain: Query encrypted leg data
     Chain-->>UI: EncryptedLeg object
-    UI->>WASM: accountKeys.encryptionKeyPair()
-    WASM-->>UI: EncryptionKeyPair
-    UI->>WASM: encryptionKeyPair.mediatorAffirmationProof(settlementId, legId, encryptedLeg, accept, assetId, amount)
+    UI->>WASM: accountKeys.mediatorAffirmationProof(settlementId, legId, encryptedLeg, accept, assetId, amount)
     Note over UI,WASM: accept=true for affirm, accept=false for reject
     WASM->>WASM: Generate mediator affirmation proof
     WASM-->>UI: AffirmationProof object

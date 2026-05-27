@@ -136,22 +136,15 @@ export async function affirmSettlementMediator(
   // Default to true if not specified
   const accept = params.accept ?? true;
 
-  const encryptionKeyPair = accountKeys.encryptionKeyPair();
-  let proofBytes: Uint8Array;
-  try {
-    const affirmationProof = encryptionKeyPair.mediatorAffirmationProof(
-      settlementId,
-      legId,
-      encryptedLeg,
-      accept,
-      parseInt(assetId, 10),
-      amount ?? null,
-    );
-    proofBytes = affirmationProof.toBytes();
-  } finally {
-    // SECURITY: Clear encryption key pair after generating proof
-    encryptionKeyPair.clear();
-  }
+  const affirmationProof = accountKeys.mediatorAffirmationProof(
+    settlementId,
+    legId,
+    encryptedLeg,
+    accept,
+    parseInt(assetId, 10),
+    amount ?? null,
+  );
+  const proofBytes = affirmationProof.toBytes();
 
   // Submit transaction
   onSubmitting?.();

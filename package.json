@@ -27,7 +27,7 @@
     "@polkadot/util-crypto": "12.6.2",
     "@polymesh/polymesh-dart-wasm": "file:./local_packages/polymesh-dart-wasm",
     "@polymeshassociation/browser-extension-signing-manager": "^2.3.0",
-    "@polymeshassociation/polymesh-sdk": "^29.0.1",
+    "@polymeshassociation/polymesh-sdk": "^30.0.0-beta.1",
     "@tabler/icons-react": "^3.35.0",
     "@w3ux/react-polkicon": "^3.2.11",
     "dayjs": "^1.11.19",
@@ -38,9 +38,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
-    "@polkadot/api": "11.2.1",
-    "@polkadot/types": "11.2.1",
-    "@polkadot/types-codec": "11.2.1",
+    "@polkadot/api": "16.5.2",
+    "@polkadot/types": "16.5.2",
+    "@polkadot/types-codec": "16.5.2",
+    "@polymeshassociation/polymesh-types": "^7.4.0",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
@@ -60,16 +61,5 @@
     "vite-plugin-wasm": "^3.5.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
-  "resolutions": {
-    "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
-  },
-  "overrides": {
-    "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
-  },
-  "pnpm": {
-    "overrides": {
-      "@polymeshassociation/polymesh-types": "file:./local_packages/polymesh-types"
-    }
-  },
-  "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b"
+  "packageManager": "pnpm@11.4.0"
 }

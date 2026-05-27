@@ -1,9 +1,10 @@
 import { TransactionNotification } from '@/components';
 import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
+import { getErrorMessage } from '@/utils/error';
 import { notifications } from '@mantine/notifications';
 import type { ApiPromise, SubmittableResult } from '@polkadot/api';
-import type { DispatchError } from '@polkadot/types/interfaces';
+import type { SpRuntimeDispatchError } from '@polkadot/types/lookup';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { TransactionContext } from './TransactionContext';
@@ -19,7 +20,7 @@ import { TransactionStatus as Status } from './types';
  * Extract human-readable error message from ExtrinsicFailed event data
  */
 function extractErrorMessage(
-  dispatchError: DispatchError,
+  dispatchError: SpRuntimeDispatchError,
   polkadotApi: ApiPromise,
 ): string {
   if (!dispatchError) {
@@ -307,8 +308,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
                 if (unsub) unsub();
               }
             } catch (err) {
-              const error =
-                err instanceof Error ? err : new Error('Unknown error');
+              const error = new Error(getErrorMessage(err));
               updateStatus(Status.Failed, { error: error.message });
 
               notifications.update({

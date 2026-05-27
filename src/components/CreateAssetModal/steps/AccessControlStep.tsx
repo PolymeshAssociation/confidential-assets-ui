@@ -1,4 +1,4 @@
-import { MAX_AUDITORS, MAX_MEDIATORS } from '@/constants/assetFields';
+import { useChainLimits } from '@/hooks/useChainLimits';
 import { useConfidentialKey } from '@/hooks/useConfidentialKey';
 import {
   ActionIcon,
@@ -25,6 +25,7 @@ interface AccessControlStepProps {
 
 export function AccessControlStep({ form }: AccessControlStepProps) {
   const { selectedKey, keys } = useConfidentialKey();
+  const { maxAuditors, maxMediators, maxEncryptionKeys } = useChainLimits();
   const {
     values,
     setFieldValue,
@@ -35,6 +36,22 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
     insertListItem,
   } = form;
 
+  // Totals
+  const totalAuditors =
+    values.selectedAuditorKeys.length + values.auditors.length;
+  const totalMediators =
+    values.selectedMediatorKeys.length + values.mediators.length;
+
+  // Effective per-role maximums, constrained by the combined encryption key limit
+  const effectiveMaxAuditors = Math.min(
+    maxAuditors,
+    maxEncryptionKeys - totalMediators,
+  );
+  const effectiveMaxMediators = Math.min(
+    maxMediators,
+    maxEncryptionKeys - totalAuditors,
+  );
+
   // Prepare account options for multi-select
   const accountOptions = useMemo(() => {
     return keys.map((key) => ({
@@ -42,6 +59,25 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
       label: key.alias || `${key.publicKey.substring(0, 12)}...`,
     }));
   }, [keys]);
+
+  const auditorLimitReached = totalAuditors >= effectiveMaxAuditors;
+  const mediatorLimitReached = totalMediators >= effectiveMaxMediators;
+
+  const auditorLimitDescription = () => {
+    if (!auditorLimitReached) return undefined;
+    if (totalAuditors + totalMediators >= maxEncryptionKeys) {
+      return `Combined auditor and mediator limit of ${maxEncryptionKeys} reached.`;
+    }
+    return `Maximum ${maxAuditors} auditors reached. Remove a selection to add a different one.`;
+  };
+
+  const mediatorLimitDescription = () => {
+    if (!mediatorLimitReached) return undefined;
+    if (totalAuditors + totalMediators >= maxEncryptionKeys) {
+      return `Combined auditor and mediator limit of ${maxEncryptionKeys} reached.`;
+    }
+    return `Maximum ${maxMediators} mediators reached. Remove a selection to add a different one.`;
+  };
 
   return (
     <Stack gap="md" mt="xl">
@@ -51,11 +87,15 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
           <br />
           <br />
           <strong>Auditors</strong> can view encrypted transaction details for
-          this asset (maximum {MAX_AUDITORS}).
+          this asset (maximum {maxAuditors}).
           <br />
           <strong>Mediators</strong> can view encrypted transaction details for
           this asset and <strong>must approve transfers</strong> of this asset
-          between parties before they can execute (maximum {MAX_MEDIATORS}).
+          between parties before they can execute (maximum {maxMediators}).
+          <br />
+          <br />
+          The combined total of auditors and mediators cannot exceed{' '}
+          <strong>{maxEncryptionKeys}</strong>.
         </Text>
       </Alert>
 
@@ -73,7 +113,7 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
                 selectedKey.encryptionPublicKey,
               )}
               disabled={
-                // Disable if 2 other auditors are already selected (not counting own key)
+                // Disable when adding this key would exceed the effective auditor limit
                 !values.selectedAuditorKeys.includes(
                   selectedKey.encryptionPublicKey,
                 ) &&
@@ -81,7 +121,7 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
                   (key: string) => key !== selectedKey.encryptionPublicKey,
                 ).length +
                   values.auditors.length >=
-                  2
+                  effectiveMaxAuditors
               }
               onChange={(e) => {
                 const isChecked = e.currentTarget.checked;
@@ -116,9 +156,9 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
           <Text size="sm" fw={500}>
             Auditors
           </Text>
-          {values.selectedAuditorKeys.length + values.auditors.length > 0 && (
+          {totalAuditors > 0 && (
             <Badge size="sm" circle>
-              {values.selectedAuditorKeys.length + values.auditors.length}
+              {totalAuditors}
             </Badge>
           )}
         </Group>
@@ -131,12 +171,7 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
           {/* MultiSelect for account selection */}
           <MultiSelect
             label="Select from your accounts"
-            description={
-              values.selectedAuditorKeys.length + values.auditors.length >=
-              MAX_AUDITORS
-                ? `Maximum ${MAX_AUDITORS} auditors reached. Remove a selection to add a different one.`
-                : undefined
-            }
+            description={auditorLimitDescription()}
             placeholder={
               accountOptions.length > 0
                 ? 'Select accounts...'
@@ -146,7 +181,10 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
             searchable
             clearable
             disabled={accountOptions.length === 0}
-            maxValues={MAX_AUDITORS - values.auditors.length}
+            maxValues={Math.max(
+              0,
+              effectiveMaxAuditors - values.auditors.length,
+            )}
             {...getInputProps('selectedAuditorKeys')}
             onChange={(value) => {
               setFieldValue('selectedAuditorKeys', value);
@@ -194,14 +232,10 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
                 variant="light"
                 leftSection={<IconPlus size={16} />}
                 onClick={() => insertListItem('auditors', '')}
-                disabled={
-                  values.selectedAuditorKeys.length + values.auditors.length >=
-                  MAX_AUDITORS
-                }
+                disabled={auditorLimitReached}
               >
                 Add Auditor{' '}
-                {values.selectedAuditorKeys.length + values.auditors.length >=
-                  MAX_AUDITORS && `(Max ${MAX_AUDITORS})`}
+                {auditorLimitReached && `(Max ${effectiveMaxAuditors})`}
               </Button>
             </Stack>
           </div>
@@ -214,9 +248,9 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
           <Text size="sm" fw={500}>
             Mediators
           </Text>
-          {values.selectedMediatorKeys.length + values.mediators.length > 0 && (
+          {totalMediators > 0 && (
             <Badge size="sm" circle>
-              {values.selectedMediatorKeys.length + values.mediators.length}
+              {totalMediators}
             </Badge>
           )}
         </Group>
@@ -229,12 +263,7 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
           {/* MultiSelect for account selection */}
           <MultiSelect
             label="Select from your accounts"
-            description={
-              values.selectedMediatorKeys.length + values.mediators.length >=
-              MAX_MEDIATORS
-                ? `Maximum ${MAX_MEDIATORS} mediators reached. Remove a selection to add a different one.`
-                : undefined
-            }
+            description={mediatorLimitDescription()}
             placeholder={
               accountOptions.length > 0
                 ? 'Select accounts...'
@@ -244,7 +273,10 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
             searchable
             clearable
             disabled={accountOptions.length === 0}
-            maxValues={MAX_MEDIATORS - values.mediators.length}
+            maxValues={Math.max(
+              0,
+              effectiveMaxMediators - values.mediators.length,
+            )}
             {...getInputProps('selectedMediatorKeys')}
             onChange={(value) => {
               setFieldValue('selectedMediatorKeys', value);
@@ -291,15 +323,10 @@ export function AccessControlStep({ form }: AccessControlStepProps) {
                 variant="light"
                 leftSection={<IconPlus size={16} />}
                 onClick={() => insertListItem('mediators', '')}
-                disabled={
-                  values.selectedMediatorKeys.length +
-                    values.mediators.length >=
-                  MAX_MEDIATORS
-                }
+                disabled={mediatorLimitReached}
               >
                 Add Mediator{' '}
-                {values.selectedMediatorKeys.length + values.mediators.length >=
-                  MAX_MEDIATORS && `(Max ${MAX_MEDIATORS})`}
+                {mediatorLimitReached && `(Max ${effectiveMaxMediators})`}
               </Button>
             </Stack>
           </div>

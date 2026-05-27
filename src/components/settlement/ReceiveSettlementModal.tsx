@@ -206,9 +206,7 @@ export function ReceiveSettlementModal({
     senderAccountKey.trim() !== '' &&
     senderEncryptionKey.trim() !== '' &&
     !senderError &&
-    !isValidatingSender &&
-    isSenderRegisteredForAsset &&
-    !isCheckingAssetRegistration;
+    !isValidatingSender;
 
   const handleSubmit = async () => {
     if (!canProceed) return;
@@ -396,12 +394,12 @@ export function ReceiveSettlementModal({
                   !isSenderRegisteredForAsset && (
                     <Alert
                       icon={<IconAlertCircle size={16} />}
-                      color="red"
+                      color="yellow"
                       variant="light"
                     >
                       <Text size="sm">
-                        Sender is not registered for this asset so does not have
-                        a balance to send
+                        Sender is not registered for this asset so does not
+                        currently have a balance to send
                       </Text>
                     </Alert>
                   )}
@@ -529,14 +527,9 @@ export function ReceiveSettlementModal({
             >
               <Stack gap="xs">
                 <Text size="sm">1. Share the Transfer ID with the sender</Text>
+                <Text size="sm">2. All parties can affirm in any order</Text>
                 <Text size="sm">
-                  2. The sender must affirm and send the assets
-                </Text>
-                <Text size="sm">
-                  3. After the sender affirms, you can affirm as receiver
-                </Text>
-                <Text size="sm">
-                  4. Once both affirm, you can claim the assets
+                  3. Once all parties have affirmed, you can claim the assets
                 </Text>
               </Stack>
             </Alert>

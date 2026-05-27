@@ -83,6 +83,11 @@ export function MultiLegSettlementModal({
     Record<number, boolean>
   >({});
 
+  // Registration warnings: key is `${legIndex}-${field}`, value is warning message or null
+  const [registrationWarnings, setRegistrationWarnings] = useState<
+    Record<string, string | null>
+  >({});
+
   const form = useForm<FormValues>({
     initialValues: {
       legs: [
@@ -250,21 +255,19 @@ export function MultiLegSettlementModal({
     assetId: string,
   ) => {
     if (!polkadotApi) return;
+    const warningKey = `${index}-${field}`;
     try {
       const isRegistered =
         await polkadotApi.query.confidentialAssets.accountAssetRegistrations(
           accountKey,
           parseInt(assetId, 10),
         );
-      if (isRegistered.isFalse) {
-        setFieldError(
-          `legs.${index}.${field}AccountKey`,
-          `${field === 'sender' ? 'Sender' : 'Receiver'} not registered for asset ${assetId}`,
-        );
-      } else {
-        // Clear the error if they are registered
-        clearFieldError(`legs.${index}.${field}AccountKey`);
-      }
+      setRegistrationWarnings((prev) => ({
+        ...prev,
+        [warningKey]: isRegistered.isFalse
+          ? `${field === 'sender' ? 'Sender' : 'Receiver'} is not registered for this asset. They will need to register before they can approve the transfer.`
+          : null,
+      }));
     } catch (e) {
       console.error('Failed to check asset registration', e);
     }
@@ -299,6 +302,11 @@ export function MultiLegSettlementModal({
       const isUser = !!(selectedKey && selectedKey.encryptionPublicKey === key);
       setFieldValue(`legs.${index}.${userField}`, isUser);
     } else {
+      // Clear registration warning when key is removed
+      setRegistrationWarnings((prev) => ({
+        ...prev,
+        [`${index}-${field}`]: null,
+      }));
       setFieldValue(`legs.${index}.${userField}`, false);
     }
   };
@@ -404,6 +412,7 @@ export function MultiLegSettlementModal({
     setTxHash('');
     setBlockNumber(0);
     setProgressMessage('');
+    setRegistrationWarnings({});
   });
 
   const handleClose = () => {
@@ -508,6 +517,18 @@ export function MultiLegSettlementModal({
                     }
                     error={errors[`legs.${index}.senderAccountKey`] as string}
                   />
+                  {registrationWarnings[`${index}-sender`] && (
+                    <Alert
+                      icon={<IconAlertCircle size={16} />}
+                      color="yellow"
+                      variant="light"
+                      py="xs"
+                    >
+                      <Text size="sm">
+                        {registrationWarnings[`${index}-sender`]}
+                      </Text>
+                    </Alert>
+                  )}
 
                   {/* Receiver */}
                   <AccountKeyInput
@@ -522,6 +543,18 @@ export function MultiLegSettlementModal({
                     }
                     error={errors[`legs.${index}.receiverAccountKey`] as string}
                   />
+                  {registrationWarnings[`${index}-receiver`] && (
+                    <Alert
+                      icon={<IconAlertCircle size={16} />}
+                      color="yellow"
+                      variant="light"
+                      py="xs"
+                    >
+                      <Text size="sm">
+                        {registrationWarnings[`${index}-receiver`]}
+                      </Text>
+                    </Alert>
+                  )}
                 </Stack>
               </Paper>
             ))}
@@ -625,11 +658,10 @@ export function MultiLegSettlementModal({
                 <Text size="sm">
                   1. Share the Settlement ID with all counterparties
                 </Text>
+                <Text size="sm">2. All parties can affirm in any order</Text>
                 <Text size="sm">
-                  2. Counterparties must affirm the settlement
-                </Text>
-                <Text size="sm">
-                  3. Once all parties affirm, the settlement can be finalized
+                  3. Once all parties have affirmed, the settlement can be
+                  finalized and assets claimed
                 </Text>
               </Stack>
             </Alert>

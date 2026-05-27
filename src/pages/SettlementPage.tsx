@@ -60,7 +60,7 @@ import {
   IconUpload,
   IconX,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export function SettlementPage() {
   const { settlements, isLoading, refreshSettlements, querySettlementDetails } =
@@ -83,6 +83,12 @@ export function SettlementPage() {
   const [loadingChainData, setLoadingChainData] = useState<Set<string>>(
     new Set(),
   );
+  const [failedChainData, setFailedChainData] = useState<Set<string>>(
+    new Set(),
+  );
+  // Ref used as an in-flight guard inside useCallback to avoid recreating the
+  // callback (and re-triggering the load effect) on every loading state change.
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   // View and filter state
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -170,8 +176,9 @@ export function SettlementPage() {
   // Load settlement chain data (status, legs, affirmations)
   const loadSettlementChainData = useCallback(
     async (settlementId: string) => {
-      if (!polkadotApi || loadingChainData.has(settlementId)) return;
+      if (!polkadotApi || inFlightRef.current.has(settlementId)) return;
 
+      inFlightRef.current.add(settlementId);
       setLoadingChainData((prev) => new Set(prev).add(settlementId));
 
       try {
@@ -195,7 +202,9 @@ export function SettlementPage() {
           settlementId,
           err,
         );
+        setFailedChainData((prev) => new Set(prev).add(settlementId));
       } finally {
+        inFlightRef.current.delete(settlementId);
         setLoadingChainData((prev) => {
           const newSet = new Set(prev);
           newSet.delete(settlementId);
@@ -203,7 +212,7 @@ export function SettlementPage() {
         });
       }
     },
-    [polkadotApi, querySettlementDetails, loadingChainData],
+    [polkadotApi, querySettlementDetails],
   );
 
   // Refresh all chain data for existing settlements
@@ -219,7 +228,10 @@ export function SettlementPage() {
   useEffect(() => {
     if (polkadotApi && settlementsList.length > 0) {
       settlementsList.forEach((settlement) => {
-        if (!settlementChainData.has(settlement.settlementId)) {
+        if (
+          !settlementChainData.has(settlement.settlementId) &&
+          !failedChainData.has(settlement.settlementId)
+        ) {
           loadSettlementChainData(settlement.settlementId);
         }
       });
@@ -228,6 +240,7 @@ export function SettlementPage() {
     settlementsList,
     polkadotApi,
     settlementChainData,
+    failedChainData,
     loadSettlementChainData,
   ]);
 

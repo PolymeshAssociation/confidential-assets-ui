@@ -35,6 +35,7 @@ import type {
   SettlementRecord,
   SettlementRole,
 } from '@/types/settlement';
+import { getErrorMessage } from '@/utils/error';
 import { notifications } from '@mantine/notifications';
 import { AccountPublicKeys, AssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -42,7 +43,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SettlementContext } from './SettlementContext';
 
 export function SettlementProvider({ children }: { children: ReactNode }) {
-  const { polkadotApi } = usePolymesh();
+  const { polkadotApi, genesisHash } = usePolymesh();
   const { selectedKey, executeWithKey } = useConfidentialKey();
   const { submitTransaction } = useTransaction();
   const { refreshRegisteredAssets, getAssetDetails } = useAsset();
@@ -60,13 +61,13 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
   // ============================================================================
 
   useEffect(() => {
-    if (!selectedKey) {
+    if (!selectedKey || !genesisHash) {
       setSettlements(new Map());
       return;
     }
 
     const accountPublicKey = selectedKey.publicKey;
-    const records = listSettlementsByAccount(accountPublicKey);
+    const records = listSettlementsByAccount(accountPublicKey, genesisHash);
 
     const newMap = new Map<string, SettlementRecord>();
     records.forEach((record) => {
@@ -74,20 +75,20 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
     });
 
     setSettlements(newMap);
-  }, [selectedKey]);
+  }, [selectedKey, genesisHash]);
 
   // ============================================================================
   // Refresh settlements from localStorage
   // ============================================================================
 
   const refreshSettlements = useCallback(() => {
-    if (!selectedKey) {
+    if (!selectedKey || !genesisHash) {
       setSettlements(new Map());
       return;
     }
 
     const accountPublicKey = selectedKey.publicKey;
-    const records = listSettlementsByAccount(accountPublicKey);
+    const records = listSettlementsByAccount(accountPublicKey, genesisHash);
 
     const newMap = new Map<string, SettlementRecord>();
     records.forEach((record) => {
@@ -95,7 +96,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
     });
 
     setSettlements(newMap);
-  }, [selectedKey]);
+  }, [selectedKey, genesisHash]);
 
   // ============================================================================
   // Helper: Calculate roles for a settlement leg
@@ -103,43 +104,44 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
   /**
    * Calculate all roles for a user in a settlement leg
-   * @param senderPublicKey - Sender's public key
-   * @param receiverPublicKey - Receiver's public key
+   * @param senderEncryptionKey - Sender's encryption public key (from decrypted leg)
+   * @param receiverEncryptionKey - Receiver's encryption public key (from decrypted leg)
    * @param assetDetails - Asset details (mediators and auditors)
-   * @param userPublicKey - User's public key
+   * @param userPublicKey - User's account public key
+   * @param userEncryptionPublicKey - User's encryption public key
    * @returns Array of roles the user has in this leg
    */
   const calculateRolesForLeg = useCallback(
     (
-      senderPublicKey: string,
-      receiverPublicKey: string,
+      senderEncryptionKey: string,
+      receiverEncryptionKey: string,
       assetDetails: { mediators: string[]; auditors: string[] } | null,
       userPublicKey: string,
       userEncryptionPublicKey: string,
     ): SettlementRole[] => {
       const roles: SettlementRole[] = [];
+
       // Check sender role
-      if (senderPublicKey === userPublicKey) {
+      if (senderEncryptionKey === userEncryptionPublicKey) {
         roles.push('sender');
       }
 
       // Check receiver role
-      if (receiverPublicKey === userPublicKey) {
+      if (receiverEncryptionKey === userEncryptionPublicKey) {
         roles.push('receiver');
       }
 
       // Check mediator/auditor roles if asset details available
       if (assetDetails) {
-        // Check mediator
-
+        // Mediators are identified by their account public key
         const isMediator = assetDetails.mediators?.some((mediator) => {
-          return mediator === userEncryptionPublicKey;
+          return mediator === userPublicKey;
         });
         if (isMediator) {
           roles.push('mediator');
         }
 
-        // Check auditor
+        // Auditors are identified by their encryption public key
         const isAuditor = assetDetails.auditors?.some((auditor) => {
           return auditor === userEncryptionPublicKey;
         });
@@ -203,7 +205,10 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           const auditors = assetDetails.auditors || [];
           const assetIdNum = parseInt(leg.assetId, 10);
 
-          const assetState = new AssetState(assetIdNum, mediators, auditors);
+          const assetState = new AssetState(
+            assetIdNum,
+            assetDetails.assetKeysRaw,
+          );
 
           serviceLegs.push({
             amount: leg.amount,
@@ -213,16 +218,16 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           } satisfies ISettlementLeg);
 
           // Calculate roles for this leg using helper
-          const sender = leg.senderPublicKeys
-            .accountPublicKey()
+          const senderEncKey = leg.senderPublicKeys
+            .encryptionPublicKey()
             .toJs() as string;
-          const receiver = leg.receiverPublicKeys
-            .accountPublicKey()
+          const receiverEncKey = leg.receiverPublicKeys
+            .encryptionPublicKey()
             .toJs() as string;
 
           const legRoles = calculateRolesForLeg(
-            sender,
-            receiver,
+            senderEncKey,
+            receiverEncKey,
             { mediators, auditors },
             myPublicKey,
             myEncryptionPublicKey,
@@ -257,12 +262,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           version: 1,
           settlementId: result.settlementId,
           accountPublicKey: selectedKey.publicKey,
+          genesisHash: genesisHash!,
           roles: Array.from(roles),
           createdAt: Date.now(),
         };
         saveSettlement(record);
-
-        // Refresh settlements
         refreshSettlements();
 
         notifications.update({
@@ -287,7 +291,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Create Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -295,12 +299,13 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
     },
     [
+      calculateRolesForLeg,
+      genesisHash,
+      getAssetDetails,
       polkadotApi,
+      refreshSettlements,
       selectedKey,
       submitTransaction,
-      refreshSettlements,
-      getAssetDetails,
-      calculateRolesForLeg,
     ],
   );
 
@@ -344,8 +349,8 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         // Calculate roles using helper
         const roles = calculateRolesForLeg(
-          result.leg.senderPublicKey,
-          result.leg.receiverPublicKey,
+          result.leg.senderEncryptionKey,
+          result.leg.receiverEncryptionKey,
           assetDetails
             ? {
                 mediators: assetDetails.mediators || [],
@@ -385,6 +390,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             version: 1,
             settlementId: params.settlementId,
             accountPublicKey: selectedKey.publicKey,
+            genesisHash: genesisHash!,
             roles,
             createdAt: Date.now(),
           };
@@ -412,7 +418,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Decrypt Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -420,13 +426,14 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
     },
     [
-      polkadotApi,
-      selectedKey,
-      settlements,
-      refreshSettlements,
-      getAssetDetails,
       calculateRolesForLeg,
       executeWithKey,
+      genesisHash,
+      getAssetDetails,
+      polkadotApi,
+      refreshSettlements,
+      selectedKey,
+      settlements,
     ],
   );
 
@@ -533,7 +540,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             id: notificationId,
             loading: false,
             title: 'Affirmation Failed',
-            message: err instanceof Error ? err.message : 'Unknown error',
+            message: getErrorMessage(err),
             color: 'red',
             autoClose: false,
           });
@@ -656,7 +663,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             id: notificationId,
             loading: false,
             title: 'Affirmation Failed',
-            message: err instanceof Error ? err.message : 'Unknown error',
+            message: getErrorMessage(err),
             color: 'red',
             autoClose: false,
           });
@@ -760,7 +767,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             id: notificationId,
             loading: false,
             title: `${actionName} Failed`,
-            message: err instanceof Error ? err.message : 'Unknown error',
+            message: getErrorMessage(err),
             color: 'red',
             autoClose: false,
           });
@@ -874,7 +881,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             id: notificationId,
             loading: false,
             title: 'Claim Failed',
-            message: err instanceof Error ? err.message : 'Unknown error',
+            message: getErrorMessage(err),
             color: 'red',
             autoClose: false,
           });
@@ -980,7 +987,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Update Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -1085,7 +1092,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Revert Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -1305,8 +1312,8 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
                   // Calculate roles using helper
                   const roles = calculateRolesForLeg(
-                    decryptResult.leg.senderPublicKey,
-                    decryptResult.leg.receiverPublicKey,
+                    decryptResult.leg.senderEncryptionKey,
+                    decryptResult.leg.receiverEncryptionKey,
                     assetDetails
                       ? {
                           mediators: assetDetails.mediators || [],
@@ -1408,6 +1415,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
                   version: 1,
                   settlementId: params.settlementId,
                   accountPublicKey: selectedKey.publicKey,
+                  genesisHash: genesisHash!,
                   roles: Array.from(allRoles),
                   createdAt: Date.now(),
                 };
@@ -1447,7 +1455,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Decryption Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -1455,13 +1463,14 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
       }
     },
     [
-      polkadotApi,
-      selectedKey,
-      executeWithKey,
-      getAssetDetails,
       calculateRolesForLeg,
-      settlements,
+      executeWithKey,
+      genesisHash,
+      getAssetDetails,
+      polkadotApi,
       refreshSettlements,
+      selectedKey,
+      settlements,
     ],
   );
 

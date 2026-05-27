@@ -16,13 +16,14 @@ const SETTLEMENT_PREFIX = 'polymesh_settlement_';
 
 /**
  * Generate storage key for settlement record
- * Format: polymesh_settlement_{settlementId}_{accountPublicKey}
+ * Format: polymesh_settlement_{genesisHash}_{accountPublicKey}_{settlementId}
  */
 const getSettlementStorageKey = (
   settlementId: string,
   accountPublicKey: string,
+  genesisHash: string,
 ): string => {
-  return `${SETTLEMENT_PREFIX}${accountPublicKey}_${settlementId}_`;
+  return `${SETTLEMENT_PREFIX}${genesisHash}_${accountPublicKey}_${settlementId}`;
 };
 
 /**
@@ -32,6 +33,7 @@ export const saveSettlement = (record: SettlementRecord): void => {
   const storageKey = getSettlementStorageKey(
     record.settlementId,
     record.accountPublicKey,
+    record.genesisHash,
   );
 
   try {
@@ -48,8 +50,13 @@ export const saveSettlement = (record: SettlementRecord): void => {
 export const getSettlement = (
   settlementId: string,
   accountPublicKey: string,
+  genesisHash: string,
 ): SettlementRecord | null => {
-  const storageKey = getSettlementStorageKey(settlementId, accountPublicKey);
+  const storageKey = getSettlementStorageKey(
+    settlementId,
+    accountPublicKey,
+    genesisHash,
+  );
 
   try {
     const stored = localStorage.getItem(storageKey);
@@ -70,8 +77,13 @@ export const getSettlement = (
 export const deleteSettlement = (
   settlementId: string,
   accountPublicKey: string,
+  genesisHash: string,
 ): boolean => {
-  const storageKey = getSettlementStorageKey(settlementId, accountPublicKey);
+  const storageKey = getSettlementStorageKey(
+    settlementId,
+    accountPublicKey,
+    genesisHash,
+  );
 
   try {
     localStorage.removeItem(storageKey);
@@ -88,16 +100,15 @@ export const deleteSettlement = (
  */
 export const listSettlementsByAccount = (
   accountPublicKey: string,
+  genesisHash: string,
 ): SettlementRecord[] => {
   const settlements: SettlementRecord[] = [];
+  const prefix = `${SETTLEMENT_PREFIX}${genesisHash}_${accountPublicKey}_`;
 
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (
-        key?.startsWith(`${SETTLEMENT_PREFIX}${accountPublicKey}_`) &&
-        key.includes(accountPublicKey)
-      ) {
+      if (key?.startsWith(prefix)) {
         const stored = localStorage.getItem(key);
         if (stored) {
           const settlement = JSON.parse(stored) as SettlementRecord;

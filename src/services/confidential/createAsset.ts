@@ -9,8 +9,12 @@ import type { AssetMetadata } from '@/types/asset';
 import { encodeMetadata } from '@/utils/metadata';
 import type { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import type { BTreeMap, BTreeSet } from '@polkadot/types';
+import type {
+  PolymeshDartBpKeysAccountPublicKey,
+  PolymeshDartBpKeysEncryptionPublicKey,
+} from '@polkadot/types/lookup';
 import type { ISubmittableResult } from '@polkadot/types/types';
-import { hexToU8a } from '@polkadot/util';
 
 export interface CreateAssetParams {
   /**
@@ -116,14 +120,41 @@ export async function createConfidentialAsset(
   const encodedMetadata = encodeMetadata(metadata);
 
   // Convert hex string arrays to proper codec types
+  // Look up the account public key for each mediator encryption key from chain
+  const mediatorMap = new Map<
+    PolymeshDartBpKeysAccountPublicKey,
+    PolymeshDartBpKeysEncryptionPublicKey
+  >();
+  for (const encKeyHex of mediators) {
+    const accountKeyOption =
+      await polkadotApi.query.confidentialAssets.encryptionKeyAccount(
+        encKeyHex,
+      );
+    if (accountKeyOption.isNone) {
+      throw new Error(
+        `Mediator encryption key ${encKeyHex} is not registered on-chain`,
+      );
+    }
+    const mediatorEncKey = polkadotApi.createType(
+      'PolymeshDartBpKeysEncryptionPublicKey',
+      encKeyHex,
+    ) as PolymeshDartBpKeysEncryptionPublicKey;
+
+    mediatorMap.set(accountKeyOption.unwrap(), mediatorEncKey);
+  }
   const mediatorKeys = polkadotApi.createType(
-    'BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>',
-    mediators.map((hex) => hexToU8a(hex)),
-  );
+    'BTreeMap<PolymeshDartBpKeysAccountPublicKey, PolymeshDartBpKeysEncryptionPublicKey>',
+    mediatorMap,
+  ) as BTreeMap<
+    PolymeshDartBpKeysAccountPublicKey,
+    PolymeshDartBpKeysEncryptionPublicKey
+  >;
   const auditorKeys = polkadotApi.createType(
     'BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>',
-    auditors.map((hex) => hexToU8a(hex)),
-  );
+    auditors.map((hex) =>
+      polkadotApi.createType('PolymeshDartBpKeysEncryptionPublicKey', hex),
+    ),
+  ) as BTreeSet<PolymeshDartBpKeysEncryptionPublicKey>;
 
   // Build and submit transaction
   const tx = polkadotApi.tx.confidentialAssets.createAsset(

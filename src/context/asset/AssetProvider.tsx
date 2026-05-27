@@ -17,8 +17,10 @@ import {
   saveAccountAssetState,
 } from '@/services/storage/assetStorage';
 import type { AssetDetails, AssetMetadata } from '@/types/asset';
+import { getErrorMessage } from '@/utils/error';
 import { decodeMetadata } from '@/utils/metadata';
 import { notifications } from '@mantine/notifications';
+import type { PolymeshDartBpAssetAssetKeys } from '@polkadot/types/lookup';
 import { base64Decode } from '@polkadot/util-crypto';
 import { AccountAssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -71,18 +73,13 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
       try {
         // Query all asset details in parallel
-        const [details, nameOption, symbolOption, decimalsOption] =
+        const [details, nameOption, symbolOption, decimalsOption, keysOption] =
           await Promise.all([
-            polkadotApi.query.confidentialAssets.dartAssetDetails(assetId),
-            polkadotApi.query.confidentialAssets.confidentialAssetNames(
-              assetId,
-            ),
-            polkadotApi.query.confidentialAssets.confidentialAssetSymbols(
-              assetId,
-            ),
-            polkadotApi.query.confidentialAssets.confidentialAssetDecimals(
-              assetId,
-            ),
+            polkadotApi.query.confidentialAssets.details(assetId),
+            polkadotApi.query.confidentialAssets.names(assetId),
+            polkadotApi.query.confidentialAssets.symbols(assetId),
+            polkadotApi.query.confidentialAssets.decimals(assetId),
+            polkadotApi.query.confidentialAssets.keys(assetId),
           ]);
 
         if (details.isSome) {
@@ -100,16 +97,18 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             ? decimalsOption.unwrap().toNumber()
             : 0;
 
-          // Extract mediators
+          // Extract mediators and auditors as hex strings (used for role checking)
           const mediators: string[] = [];
-          for (const mediator of assetDetail.mediators) {
-            mediators.push(mediator.toString());
-          }
-
-          // Extract auditors
           const auditors: string[] = [];
-          for (const auditor of assetDetail.auditors) {
-            auditors.push(auditor.toString());
+          let assetKeysRaw: PolymeshDartBpAssetAssetKeys | undefined;
+          if (keysOption.isSome) {
+            assetKeysRaw = keysOption.unwrap();
+            for (const [accountKey] of assetKeysRaw.mediators) {
+              mediators.push(accountKey.toHex());
+            }
+            for (const encKey of assetKeysRaw.encKeys) {
+              auditors.push(encKey.toHex());
+            }
           }
 
           // Try to decode metadata from chain data
@@ -138,6 +137,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             metadata,
             mediators,
             auditors,
+            assetKeysRaw,
             fetchedAt: Date.now(),
           };
 
@@ -340,7 +340,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Asset Creation Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -419,7 +419,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Registration Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -453,6 +453,10 @@ export function AssetProvider({ children }: { children: ReactNode }) {
       });
 
       try {
+        const identity = await sdk?.getSigningIdentity();
+        if (!identity) throw new Error('No signing identity found');
+        const did = identity.did;
+
         const result = await executeWithKey({
           operation: async (accountKeys) => {
             if (!selectedKey) {
@@ -471,6 +475,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             }
 
             const mintResult = await mintConfidentialAsset({
+              did,
               amount: parseInt(params.amount, 10),
               stateBytes: storedState.stateBytes,
               polkadotApi,
@@ -553,7 +558,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           id: notificationId,
           loading: false,
           title: 'Minting Failed',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: getErrorMessage(err),
           color: 'red',
           autoClose: false,
         });
@@ -563,6 +568,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     [
       polkadotApi,
       selectedKey,
+      sdk,
       submitTransaction,
       fetchAssetDetails,
       executeWithKey,

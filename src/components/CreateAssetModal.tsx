@@ -6,6 +6,7 @@
 
 import { TEMPLATE_SPECIFIC_FIELDS } from '@/constants/assetFields';
 import { useAsset } from '@/hooks/useAsset';
+import { useChainLimits } from '@/hooks/useChainLimits';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import type { AssetMetadata } from '@/types/asset';
 import {
@@ -31,6 +32,7 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createAsset } = useAsset();
   const { polkadotApi } = usePolymesh();
+  const { maxAuditors, maxMediators, maxEncryptionKeys } = useChainLimits();
   const [isValidating, setIsValidating] = useState(false);
 
   const form = useForm<FormValues>({
@@ -74,15 +76,35 @@ export function CreateAssetModal({ opened, onClose }: CreateAssetModalProps) {
         return errors;
       }
       if (active === 1) {
-        // Check minimum requirement: at least one auditor OR mediator
-        // All other validation (format, uniqueness, max count, on-chain) is in validateManualKeys
         const totalAuditors =
           values.selectedAuditorKeys.length + values.auditors.length;
         const totalMediators =
           values.selectedMediatorKeys.length + values.mediators.length;
+        const totalEncryptionKeys = totalAuditors + totalMediators;
+
+        // Check minimum requirement: at least one auditor OR mediator
         if (totalAuditors === 0 && totalMediators === 0) {
           return {
             auditors: 'At least one auditor or mediator is required',
+          };
+        }
+
+        // Check individual maximums from chain constants
+        if (totalAuditors > maxAuditors) {
+          return {
+            auditors: `Maximum ${maxAuditors} auditor${maxAuditors === 1 ? '' : 's'} allowed`,
+          };
+        }
+        if (totalMediators > maxMediators) {
+          return {
+            mediators: `Maximum ${maxMediators} mediator${maxMediators === 1 ? '' : 's'} allowed`,
+          };
+        }
+
+        // Check combined encryption key limit
+        if (totalEncryptionKeys > maxEncryptionKeys) {
+          return {
+            auditors: `Combined auditors and mediators cannot exceed ${maxEncryptionKeys} (chain limit)`,
           };
         }
       }

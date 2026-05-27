@@ -2,6 +2,8 @@
  * Confidential Asset Type Definitions
  */
 
+import type { PolymeshDartBpAssetAssetKeys } from '@polkadot/types/lookup';
+
 /**
  * Metadata template types for common asset classes
  */
@@ -238,6 +240,11 @@ export interface AssetDetails {
   mediators: string[];
   /** Array of auditor encryption public keys (hex strings) */
   auditors: string[];
+  /**
+   * Raw asset keys from chain (PolymeshDartBpAssetAssetKeys)
+   * Includes `encKeys` and `mediators`, held in-memory only — never persisted.
+   */
+  assetKeysRaw?: PolymeshDartBpAssetAssetKeys;
   /** Current balance (only present for registered assets with account state) */
   balance?: string;
   /** Timestamp when details were fetched/cached */

@@ -16,6 +16,7 @@ export interface Wallet {
 export interface PolymeshContextValue {
   sdk: PolymeshType | null;
   polkadotApi: ApiPromise | null;
+  genesisHash: string | null;
   signingManager: SigningManagerType | null;
   isConnected: boolean;
   isConnecting: boolean;

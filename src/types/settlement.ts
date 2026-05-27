@@ -43,8 +43,8 @@ export interface SettlementLegDetails {
   legId: number;
   assetId: string;
   amount: string;
-  senderPublicKey: string;
-  receiverPublicKey: string;
+  senderEncryptionKey: string;
+  receiverEncryptionKey: string;
 }
 
 // ============================================================================
@@ -74,6 +74,7 @@ export interface SettlementRecord {
   version: 1;
   settlementId: string; // SettlementRef as string
   accountPublicKey: string; // Account that stored this record
+  genesisHash: string; // Chain genesis hash - scopes record to a specific chain
   roles: SettlementRole[]; // Roles of the account in this settlement
   createdAt: number; // Timestamp when record was created
 }

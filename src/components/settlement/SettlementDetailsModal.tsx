@@ -584,11 +584,11 @@ export function SettlementDetailsModal({
                   : null;
 
                 // Find user's mediator index if they are a mediator
+                // Mediators are identified by their account public key
                 const userMediatorIndex =
                   selectedKey && asset?.mediators
                     ? asset.mediators.findIndex(
-                        (mediator) =>
-                          mediator === selectedKey.encryptionPublicKey,
+                        (mediator) => mediator === selectedKey.publicKey,
                       )
                     : -1;
 
@@ -669,7 +669,9 @@ export function SettlementDetailsModal({
                                     )}
                                   </Group>
                                   <TruncatedKey
-                                    value={decryptedLeg.details.senderPublicKey}
+                                    value={
+                                      decryptedLeg.details.senderEncryptionKey
+                                    }
                                     showCopy
                                   />
                                 </Stack>
@@ -692,7 +694,7 @@ export function SettlementDetailsModal({
                                   </Group>
                                   <TruncatedKey
                                     value={
-                                      decryptedLeg.details.receiverPublicKey
+                                      decryptedLeg.details.receiverEncryptionKey
                                     }
                                     showCopy
                                   />

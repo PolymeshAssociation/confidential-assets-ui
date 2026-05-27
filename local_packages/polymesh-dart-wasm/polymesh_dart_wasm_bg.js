@@ -1,302 +1,3 @@
-let wasm;
-export function __wbg_set_wasm(val) {
-    wasm = val;
-}
-
-
-function addToExternrefTable0(obj) {
-    const idx = wasm.__externref_table_alloc();
-    wasm.__wbindgen_externrefs.set(idx, obj);
-    return idx;
-}
-
-function handleError(f, args) {
-    try {
-        return f.apply(this, args);
-    } catch (e) {
-        const idx = addToExternrefTable0(e);
-        wasm.__wbindgen_exn_store(idx);
-    }
-}
-
-let cachedUint8ArrayMemory0 = null;
-
-function getUint8ArrayMemory0() {
-    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
-        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
-    }
-    return cachedUint8ArrayMemory0;
-}
-
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-
-cachedTextDecoder.decode();
-
-const MAX_SAFARI_DECODE_BYTES = 2146435072;
-let numBytesDecoded = 0;
-function decodeText(ptr, len) {
-    numBytesDecoded += len;
-    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
-        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-        cachedTextDecoder.decode();
-        numBytesDecoded = len;
-    }
-    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
-}
-
-function getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return decodeText(ptr, len);
-}
-
-let WASM_VECTOR_LEN = 0;
-
-const cachedTextEncoder = new TextEncoder();
-
-if (!('encodeInto' in cachedTextEncoder)) {
-    cachedTextEncoder.encodeInto = function (arg, view) {
-        const buf = cachedTextEncoder.encode(arg);
-        view.set(buf);
-        return {
-            read: arg.length,
-            written: buf.length
-        };
-    }
-}
-
-function passStringToWasm0(arg, malloc, realloc) {
-
-    if (realloc === undefined) {
-        const buf = cachedTextEncoder.encode(arg);
-        const ptr = malloc(buf.length, 1) >>> 0;
-        getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
-        WASM_VECTOR_LEN = buf.length;
-        return ptr;
-    }
-
-    let len = arg.length;
-    let ptr = malloc(len, 1) >>> 0;
-
-    const mem = getUint8ArrayMemory0();
-
-    let offset = 0;
-
-    for (; offset < len; offset++) {
-        const code = arg.charCodeAt(offset);
-        if (code > 0x7F) break;
-        mem[ptr + offset] = code;
-    }
-
-    if (offset !== len) {
-        if (offset !== 0) {
-            arg = arg.slice(offset);
-        }
-        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
-        const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
-        const ret = cachedTextEncoder.encodeInto(arg, view);
-
-        offset += ret.written;
-        ptr = realloc(ptr, len, offset, 1) >>> 0;
-    }
-
-    WASM_VECTOR_LEN = offset;
-    return ptr;
-}
-
-let cachedDataViewMemory0 = null;
-
-function getDataViewMemory0() {
-    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
-        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
-    }
-    return cachedDataViewMemory0;
-}
-
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
-
-function debugString(val) {
-    // primitive types
-    const type = typeof val;
-    if (type == 'number' || type == 'boolean' || val == null) {
-        return  `${val}`;
-    }
-    if (type == 'string') {
-        return `"${val}"`;
-    }
-    if (type == 'symbol') {
-        const description = val.description;
-        if (description == null) {
-            return 'Symbol';
-        } else {
-            return `Symbol(${description})`;
-        }
-    }
-    if (type == 'function') {
-        const name = val.name;
-        if (typeof name == 'string' && name.length > 0) {
-            return `Function(${name})`;
-        } else {
-            return 'Function';
-        }
-    }
-    // objects
-    if (Array.isArray(val)) {
-        const length = val.length;
-        let debug = '[';
-        if (length > 0) {
-            debug += debugString(val[0]);
-        }
-        for(let i = 1; i < length; i++) {
-            debug += ', ' + debugString(val[i]);
-        }
-        debug += ']';
-        return debug;
-    }
-    // Test for built-in
-    const builtInMatches = /\[object ([^\]]+)\]/.exec(toString.call(val));
-    let className;
-    if (builtInMatches && builtInMatches.length > 1) {
-        className = builtInMatches[1];
-    } else {
-        // Failed to match the standard '[object ClassName]'
-        return toString.call(val);
-    }
-    if (className == 'Object') {
-        // we're a user defined class or Object
-        // JSON.stringify avoids problems with cycles, and is generally much
-        // easier than looping through ownProperties of `val`.
-        try {
-            return 'Object(' + JSON.stringify(val) + ')';
-        } catch (_) {
-            return 'Object';
-        }
-    }
-    // errors
-    if (val instanceof Error) {
-        return `${val.name}: ${val.message}\n${val.stack}`;
-    }
-    // TODO we could test for more things here, like `Set`s and `Map`s.
-    return className;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
-}
-
-function takeFromExternrefTable0(idx) {
-    const value = wasm.__wbindgen_externrefs.get(idx);
-    wasm.__externref_table_dealloc(idx);
-    return value;
-}
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-}
-/**
- * Generates a cryptographically secure random 32-byte seed for key generation.
- *
- * This function uses the operating system's random number generator to produce
- * a high-quality random seed suitable for generating account keys.
- *
- * # Returns
- * A 64-character hexadecimal string representing the 32-byte seed.
- *
- * # Errors
- * * May throw an error if the OS random number generator is unavailable (rare).
- *
- * # Example
- * ```javascript
- * const seed = generateRandomSeed();
- * console.log('Random seed:', seed); // e.g., "a1b2c3d4..."
- *
- * // Use the seed to create account keys
- * const keys = new AccountKeys(seed);
- * ```
- * @returns {string}
- */
-export function generateRandomSeed() {
-    let deferred2_0;
-    let deferred2_1;
-    try {
-        const ret = wasm.generateRandomSeed();
-        var ptr1 = ret[0];
-        var len1 = ret[1];
-        if (ret[3]) {
-            ptr1 = 0; len1 = 0;
-            throw takeFromExternrefTable0(ret[2]);
-        }
-        deferred2_0 = ptr1;
-        deferred2_1 = len1;
-        return getStringFromWasm0(ptr1, len1);
-    } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
-    }
-}
-
-let cachedBigUint64ArrayMemory0 = null;
-
-function getBigUint64ArrayMemory0() {
-    if (cachedBigUint64ArrayMemory0 === null || cachedBigUint64ArrayMemory0.byteLength === 0) {
-        cachedBigUint64ArrayMemory0 = new BigUint64Array(wasm.memory.buffer);
-    }
-    return cachedBigUint64ArrayMemory0;
-}
-
-function getArrayU64FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getBigUint64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
-}
-
-function getArrayJsValueFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    const mem = getDataViewMemory0();
-    const result = [];
-    for (let i = ptr; i < ptr + 4 * len; i += 4) {
-        result.push(wasm.__wbindgen_externrefs.get(mem.getUint32(i, true)));
-    }
-    wasm.__externref_drop_slice(ptr, len);
-    return result;
-}
-/**
- * Initialize the WASM module. This should be called once when loading the module.
- * It sets up panic hooks for better error messages in the browser console.
- */
-export function init() {
-    wasm.init();
-}
-
-/**
- * Get the version of the polymesh-dart-wasm library
- * @returns {string}
- */
-export function version() {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        const ret = wasm.version();
-        deferred1_0 = ret[0];
-        deferred1_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-const AccountAssetRegistrationFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetregistration_free(ptr >>> 0, 1));
 /**
  * Contains both the registration proof and the resulting account asset state when
  * registering an account for a specific confidential asset.
@@ -318,63 +19,21 @@ const AccountAssetRegistrationFinalization = (typeof FinalizationRegistry === 'u
  * ```
  */
 export class AccountAssetRegistration {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountAssetRegistration.prototype);
         obj.__wbg_ptr = ptr;
         AccountAssetRegistrationFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountAssetRegistrationFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountassetregistration_free(ptr, 0);
-    }
-    /**
-     * Gets the registration proof as SCALE-encoded bytes.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = registration.getProofBytes();
-     * console.log('Proof bytes length:', bytes.length);
-     * ```
-     * @returns {Uint8Array}
-     */
-    getProofBytes() {
-        const ret = wasm.accountassetregistration_getProofBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
-    /**
-     * Gets the registration proof as a batched proof (containing a single proof).
-     *
-     * This is useful if you want to combine multiple registration proofs into a single
-     * batched transaction later.
-     *
-     * # Returns
-     * A `BatchedAccountAssetRegistrationProof` containing this single proof.
-     *
-     * # Example
-     * ```javascript
-     * const batchedProof = registration.getBatchedProof();
-     * ```
-     * @returns {BatchedAccountAssetRegistrationProof}
-     */
-    getBatchedProof() {
-        const ret = wasm.accountassetregistration_getBatchedProof(this.__wbg_ptr);
-        return BatchedAccountAssetRegistrationProof.__wrap(ret);
     }
     /**
      * Gets the resulting account asset state that should be tracked locally.
@@ -402,6 +61,25 @@ export class AccountAssetRegistration {
     getAccountAssetState() {
         const ret = wasm.accountassetregistration_getAccountAssetState(this.__wbg_ptr);
         return AccountAssetState.__wrap(ret);
+    }
+    /**
+     * Gets the registration proof as a batched proof (containing a single proof).
+     *
+     * This is useful if you want to combine multiple registration proofs into a single
+     * batched transaction later.
+     *
+     * # Returns
+     * A `BatchedAccountAssetRegistrationProof` containing this single proof.
+     *
+     * # Example
+     * ```javascript
+     * const batchedProof = registration.getBatchedProof();
+     * ```
+     * @returns {BatchedAccountAssetRegistrationProof}
+     */
+    getBatchedProof() {
+        const ret = wasm.accountassetregistration_getBatchedProof(this.__wbg_ptr);
+        return BatchedAccountAssetRegistrationProof.__wrap(ret);
     }
     /**
      * Gets the batched registration proof as SCALE-encoded bytes.
@@ -438,12 +116,28 @@ export class AccountAssetRegistration {
         const ret = wasm.accountassetregistration_getProof(this.__wbg_ptr);
         return AccountAssetRegistrationProof.__wrap(ret);
     }
+    /**
+     * Gets the registration proof as SCALE-encoded bytes.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = registration.getProofBytes();
+     * console.log('Proof bytes length:', bytes.length);
+     * ```
+     * @returns {Uint8Array}
+     */
+    getProofBytes() {
+        const ret = wasm.accountassetregistration_getProofBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
 }
 if (Symbol.dispose) AccountAssetRegistration.prototype[Symbol.dispose] = AccountAssetRegistration.prototype.free;
 
-const AccountAssetRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetregistrationproof_free(ptr >>> 0, 1));
 /**
  * A zero-knowledge proof that registers an account for a specific confidential asset.
  *
@@ -462,22 +156,18 @@ const AccountAssetRegistrationProofFinalization = (typeof FinalizationRegistry =
  * ```
  */
 export class AccountAssetRegistrationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountAssetRegistrationProof.prototype);
         obj.__wbg_ptr = ptr;
         AccountAssetRegistrationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountAssetRegistrationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountassetregistrationproof_free(ptr, 0);
@@ -509,31 +199,6 @@ export class AccountAssetRegistrationProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return AccountAssetRegistrationProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hexadecimal string.
-     *
-     * # Returns
-     * A hex-encoded string representation of the proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * console.log('Proof:', hexString);
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.accountassetregistrationproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Deserializes a proof from a hexadecimal string.
@@ -582,12 +247,34 @@ export class AccountAssetRegistrationProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hexadecimal string.
+     *
+     * # Returns
+     * A hex-encoded string representation of the proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * console.log('Proof:', hexString);
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.accountassetregistrationproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) AccountAssetRegistrationProof.prototype[Symbol.dispose] = AccountAssetRegistrationProof.prototype.free;
 
-const AccountAssetStateFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetstate_free(ptr >>> 0, 1));
 /**
  * Manages the confidential account state for a specific asset.
  *
@@ -611,25 +298,138 @@ const AccountAssetStateFinalization = (typeof FinalizationRegistry === 'undefine
  * ```
  */
 export class AccountAssetState {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountAssetState.prototype);
         obj.__wbg_ptr = ptr;
         AccountAssetStateFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountAssetStateFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountassetstate_free(ptr, 0);
+    }
+    /**
+     * Gets the asset ID associated with this account state.
+     *
+     * # Returns
+     * The numeric asset ID (as a number).
+     *
+     * # Example
+     * ```javascript
+     * const assetId = accountState.assetId();
+     * console.log('Asset ID:', assetId);
+     * ```
+     * @returns {number}
+     */
+    assetId() {
+        const ret = wasm.accountassetstate_assetId(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Generates a zero-knowledge proof for minting new assets to this account.
+     *
+     * This proof demonstrates that the account holder has the authority to mint
+     * assets without revealing the amount or account details. The proof must be
+     * submitted via `PolymeshSigner.mintAsset()`.
+     *
+     * # Arguments
+     * * `keys` - The account keys proving ownership of this account.
+     * * `path` - The curve tree path from the account leaf to the tree root, obtained
+     *   from `AccountCurveTree.getLeafPathAndRoot()`.
+     * * `did` - The identity ID (DID) of the account holder. Accepts:
+     *   - Hex string with or without "0x" prefix (e.g., "0x1234...")
+     *   - 32-byte `Uint8Array`
+     * * `amount` - The amount to mint. Accepts:
+     *   - JavaScript number (e.g., `1000`)
+     *   - JavaScript BigInt (e.g., `1000n`)
+     *   - Decimal string (e.g., `"1000"`)
+     *   - Hex string with 0x prefix (e.g., `"0x3e8"`)
+     *
+     * # Returns
+     * An `AssetMintingProof` that can be submitted to the blockchain.
+     *
+     * # Errors
+     * * Throws an error if the proof generation fails.
+     * * Throws an error if the amount format is invalid.
+     *
+     * # Example
+     * ```javascript
+     * const leafIndex = issuerAccountState.leafIndex();
+     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
+     * const mintAmount = 1000000n;
+     *
+     * const mintingProof = issuerAccountState.assetMintingProof(
+     *   issuerKeys,
+     *   path,
+     *   issuerDid,
+     *   mintAmount
+     * );
+     *
+     * const results = await issuer.mintAsset(mintingProof);
+     * issuerAccountState.commitPendingState(results.leafIndex());
+     * ```
+     * @param {AccountKeys} keys
+     * @param {AccountLeafPathAndRoot} path
+     * @param {any} did
+     * @param {any} amount
+     * @returns {AssetMintingProof}
+     */
+    assetMintingProof(keys, path, did, amount) {
+        _assertClass(keys, AccountKeys);
+        _assertClass(path, AccountLeafPathAndRoot);
+        const ret = wasm.accountassetstate_assetMintingProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, did, amount);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AssetMintingProof.__wrap(ret[0]);
+    }
+    /**
+     * Gets the current confidential balance for this account asset.
+     *
+     * # Returns
+     * The balance as a `bigint`.
+     *
+     * # Example
+     * ```javascript
+     * const balance = accountState.balance();
+     * console.log('Current balance:', balance);
+     * ```
+     * @returns {any}
+     */
+    balance() {
+        const ret = wasm.accountassetstate_balance(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Commits a pending state change to the current state and updates the leaf index.
+     *
+     * After a successful transaction that modifies the account state (e.g., minting,
+     * affirming a settlement), you must call this method with the new leaf index
+     * from the transaction results. This updates the local state to match the on-chain state.
+     *
+     * # Arguments
+     * * `leaf_index` - The new leaf index from the transaction results. Pass `u64::MAX`
+     *   (JavaScript: `18446744073709551615n`) to discard pending state without committing.
+     *
+     * # Example
+     * ```javascript
+     * // Generate and submit a minting proof
+     * const mintingProof = accountState.assetMintingProof(keys, path, 1000n);
+     * const results = await signer.mintAsset(mintingProof);
+     *
+     * // Commit the pending state with the new leaf index
+     * accountState.commitPendingState(results.leafIndex());
+     * ```
+     * @param {bigint} leaf_index
+     */
+    commitPendingState(leaf_index) {
+        wasm.accountassetstate_commitPendingState(this.__wbg_ptr, leaf_index);
     }
     /**
      * Deserializes account asset state from a SCALE-encoded byte array.
@@ -661,26 +461,6 @@ export class AccountAssetState {
         return AccountAssetState.__wrap(ret[0]);
     }
     /**
-     * Gets the leaf index of this account in the account curve tree.
-     *
-     * The leaf index is assigned when an account is registered for an asset and is
-     * needed to retrieve the account's curve tree path for proof generation.
-     *
-     * # Returns
-     * The leaf index as a `bigint`. Returns `u64::MAX` if not yet set.
-     *
-     * # Example
-     * ```javascript
-     * const leafIndex = accountState.leafIndex();
-     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
-     * ```
-     * @returns {bigint}
-     */
-    leafIndex() {
-        const ret = wasm.accountassetstate_leafIndex(this.__wbg_ptr);
-        return BigInt.asUintN(64, ret);
-    }
-    /**
      * Checks if there is a pending state change that hasn't been committed yet.
      *
      * A pending state exists after generating a proof but before committing the
@@ -703,57 +483,159 @@ export class AccountAssetState {
         return ret !== 0;
     }
     /**
-     * Generates a zero-knowledge proof for minting new assets to this account.
+     * Gets the leaf index of this account in the account curve tree.
      *
-     * This proof demonstrates that the account holder has the authority to mint
-     * assets without revealing the amount or account details. The proof must be
-     * submitted via `PolymeshSigner.mintAsset()`.
-     *
-     * # Arguments
-     * * `keys` - The account keys proving ownership of this account.
-     * * `path` - The curve tree path from the account leaf to the tree root, obtained
-     *   from `AccountCurveTree.getLeafPathAndRoot()`.
-     * * `amount` - The amount to mint. Accepts:
-     *   - JavaScript number (e.g., `1000`)
-     *   - JavaScript BigInt (e.g., `1000n`)
-     *   - Decimal string (e.g., `"1000"`)
-     *   - Hex string with 0x prefix (e.g., `"0x3e8"`)
+     * The leaf index is assigned when an account is registered for an asset and is
+     * needed to retrieve the account's curve tree path for proof generation.
      *
      * # Returns
-     * An `AssetMintingProof` that can be submitted to the blockchain.
-     *
-     * # Errors
-     * * Throws an error if the proof generation fails.
-     * * Throws an error if the amount format is invalid.
+     * The leaf index as a `bigint`. Returns `u64::MAX` if not yet set.
      *
      * # Example
      * ```javascript
-     * const leafIndex = issuerAccountState.leafIndex();
+     * const leafIndex = accountState.leafIndex();
      * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
-     * const mintAmount = 1000000n;
+     * ```
+     * @returns {bigint}
+     */
+    leafIndex() {
+        const ret = wasm.accountassetstate_leafIndex(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+     * Generates a zero-knowledge proof for the receiver to affirm their participation
+     * in a settlement leg.
      *
-     * const mintingProof = issuerAccountState.assetMintingProof(
-     *   issuerKeys,
+     * As the receiver in a confidential asset transfer, you must affirm the settlement leg
+     * by proving you can receive the assets. This doesn't immediately credit your balance;
+     * you must call `receiverClaimProof()` after both parties have affirmed to actually
+     * claim the transferred assets.
+     *
+     * # Arguments
+     * * `keys` - The account keys proving ownership of this account.
+     * * `path` - The curve tree path from the account leaf to the tree root.
+     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
+     * * `leg_id` - The leg ID within the settlement.
+     * * `leg_enc` - The encrypted settlement leg containing transfer details.
+     * * `asset_id` - The asset ID being received (must match the leg's asset).
+     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
+     *
+     * # Returns
+     * A `ReceiverAffirmationProof` that can be submitted via `PolymeshSigner.receiverAffirmation()`.
+     *
+     * # Errors
+     * * Throws an error if the encrypted leg cannot be decrypted with the provided keys.
+     * * Throws an error if the asset ID doesn't match the leg's asset ID.
+     * * Throws an error if the amount is provided and doesn't match the leg amount.
+     * * Throws an error if proof generation fails.
+     *
+     * # Example
+     * ```javascript
+     * const settlementLegs = await client.getSettlementLegs(settlementRef);
+     * const encryptedLeg = settlementLegs.getLeg(0);
+     * const leafIndex = receiverAccountState.leafIndex();
+     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
+     *
+     * const receiverProof = receiverAccountState.receiverAffirmProof(
+     *   receiverKeys,
      *   path,
-     *   mintAmount
+     *   settlementRef,
+     *   0,
+     *   encryptedLeg,
+     *   assetId,
+     *   null
      * );
      *
-     * const results = await issuer.mintAsset(mintingProof);
-     * issuerAccountState.commitPendingState(results.leafIndex());
+     * const results = await receiver.receiverAffirmation(receiverProof);
+     * receiverAccountState.commitPendingState(results.leafIndex());
      * ```
      * @param {AccountKeys} keys
      * @param {AccountLeafPathAndRoot} path
+     * @param {any} settlement_ref
+     * @param {number} leg_id
+     * @param {SettlementLegEncrypted} leg_enc
+     * @param {number} asset_id
      * @param {any} amount
-     * @returns {AssetMintingProof}
+     * @returns {ReceiverAffirmationProof}
      */
-    assetMintingProof(keys, path, amount) {
+    receiverAffirmProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
         _assertClass(keys, AccountKeys);
         _assertClass(path, AccountLeafPathAndRoot);
-        const ret = wasm.accountassetstate_assetMintingProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, amount);
+        _assertClass(leg_enc, SettlementLegEncrypted);
+        const ret = wasm.accountassetstate_receiverAffirmProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        return AssetMintingProof.__wrap(ret[0]);
+        return ReceiverAffirmationProof.__wrap(ret[0]);
+    }
+    /**
+     * Generates a zero-knowledge proof for the receiver to claim assets from an affirmed
+     * settlement leg.
+     *
+     * After both the sender and receiver have affirmed a settlement leg, the receiver must
+     * generate and submit a claim proof to actually receive the transferred assets into their
+     * confidential balance. This is the final step in a confidential asset transfer.
+     *
+     * # Arguments
+     * * `keys` - The account keys proving ownership of this account.
+     * * `path` - The curve tree path from the account leaf to the tree root.
+     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
+     * * `leg_id` - The leg ID within the settlement.
+     * * `leg_enc` - The encrypted settlement leg containing transfer details.
+     * * `asset_id` - The asset ID being claimed (must match the leg's asset).
+     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
+     *
+     * # Returns
+     * A `ReceiverClaimProof` that can be submitted via `PolymeshSigner.receiverClaim()`.
+     *
+     * # Errors
+     * * Throws an error if the encrypted leg cannot be decrypted with the provided keys.
+     * * Throws an error if the asset ID doesn't match the leg's asset ID.
+     * * Throws an error if the amount is provided and doesn't match the leg amount.
+     * * Throws an error if proof generation fails.
+     *
+     * # Example
+     * ```javascript
+     * // After both parties have affirmed, the receiver can claim
+     * const settlementLegs = await client.getSettlementLegs(settlementRef);
+     * const encryptedLeg = settlementLegs.getLeg(0);
+     * const leafIndex = receiverAccountState.leafIndex();
+     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
+     *
+     * const claimProof = receiverAccountState.receiverClaimProof(
+     *   receiverKeys,
+     *   path,
+     *   settlementRef,
+     *   0,
+     *   encryptedLeg,
+     *   assetId,
+     *   null
+     * );
+     *
+     * const results = await receiver.receiverClaim(claimProof);
+     * receiverAccountState.commitPendingState(results.leafIndex());
+     *
+     * // The receiver's balance is now updated with the transferred amount
+     * console.log('New balance:', receiverAccountState.balance());
+     * ```
+     * @param {AccountKeys} keys
+     * @param {AccountLeafPathAndRoot} path
+     * @param {any} settlement_ref
+     * @param {number} leg_id
+     * @param {SettlementLegEncrypted} leg_enc
+     * @param {number} asset_id
+     * @param {any} amount
+     * @returns {ReceiverClaimProof}
+     */
+    receiverClaimProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
+        _assertClass(keys, AccountKeys);
+        _assertClass(path, AccountLeafPathAndRoot);
+        _assertClass(leg_enc, SettlementLegEncrypted);
+        const ret = wasm.accountassetstate_receiverClaimProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ReceiverClaimProof.__wrap(ret[0]);
     }
     /**
      * Generates a zero-knowledge proof for the sender to affirm their participation in a settlement leg.
@@ -827,227 +709,6 @@ export class AccountAssetState {
         return SenderAffirmationProof.__wrap(ret[0]);
     }
     /**
-     * Generates a zero-knowledge proof for the sender to revert (cancel) their affirmation
-     * of a settlement leg.
-     *
-     * If a sender has affirmed a settlement leg but wants to cancel before the receiver
-     * claims the assets, they can generate a revert proof. This unlocks the previously
-     * locked assets and returns them to the sender's available balance.
-     *
-     * # Arguments
-     * * `keys` - The account keys proving ownership of this account.
-     * * `path` - The curve tree path from the account leaf to the tree root.
-     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
-     * * `leg_id` - The leg ID within the settlement.
-     * * `leg_enc` - The encrypted settlement leg.
-     * * `asset_id` - The asset ID being reverted (must match the leg's asset).
-     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
-     *
-     * # Returns
-     * A `SenderReversalProof` that can be submitted to the blockchain.
-     *
-     * # Errors
-     * * Throws an error if the encrypted leg cannot be decrypted.
-     * * Throws an error if the asset ID doesn't match.
-     * * Throws an error if the amount is provided and doesn't match.
-     * * Throws an error if proof generation fails.
-     *
-     * # Example
-     * ```javascript
-     * const revertProof = senderAccountState.senderRevertProof(
-     *   senderKeys,
-     *   path,
-     *   settlementRef,
-     *   0,
-     *   encryptedLeg,
-     *   assetId,
-     *   null
-     * );
-     *
-     * // Submit the revert proof to cancel the sender's affirmation
-     * const results = await sender.senderReversal(revertProof);
-     * senderAccountState.commitPendingState(results.leafIndex());
-     * ```
-     * @param {AccountKeys} keys
-     * @param {AccountLeafPathAndRoot} path
-     * @param {any} settlement_ref
-     * @param {number} leg_id
-     * @param {SettlementLegEncrypted} leg_enc
-     * @param {number} asset_id
-     * @param {any} amount
-     * @returns {SenderReversalProof}
-     */
-    senderRevertProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
-        _assertClass(keys, AccountKeys);
-        _assertClass(path, AccountLeafPathAndRoot);
-        _assertClass(leg_enc, SettlementLegEncrypted);
-        const ret = wasm.accountassetstate_senderRevertProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return SenderReversalProof.__wrap(ret[0]);
-    }
-    /**
-     * Commits a pending state change to the current state and updates the leaf index.
-     *
-     * After a successful transaction that modifies the account state (e.g., minting,
-     * affirming a settlement), you must call this method with the new leaf index
-     * from the transaction results. This updates the local state to match the on-chain state.
-     *
-     * # Arguments
-     * * `leaf_index` - The new leaf index from the transaction results. Pass `u64::MAX`
-     *   (JavaScript: `18446744073709551615n`) to discard pending state without committing.
-     *
-     * # Example
-     * ```javascript
-     * // Generate and submit a minting proof
-     * const mintingProof = accountState.assetMintingProof(keys, path, 1000n);
-     * const results = await signer.mintAsset(mintingProof);
-     *
-     * // Commit the pending state with the new leaf index
-     * accountState.commitPendingState(results.leafIndex());
-     * ```
-     * @param {bigint} leaf_index
-     */
-    commitPendingState(leaf_index) {
-        wasm.accountassetstate_commitPendingState(this.__wbg_ptr, leaf_index);
-    }
-    /**
-     * Generates a zero-knowledge proof for the receiver to claim assets from an affirmed
-     * settlement leg.
-     *
-     * After both the sender and receiver have affirmed a settlement leg, the receiver must
-     * generate and submit a claim proof to actually receive the transferred assets into their
-     * confidential balance. This is the final step in a confidential asset transfer.
-     *
-     * # Arguments
-     * * `keys` - The account keys proving ownership of this account.
-     * * `path` - The curve tree path from the account leaf to the tree root.
-     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
-     * * `leg_id` - The leg ID within the settlement.
-     * * `leg_enc` - The encrypted settlement leg containing transfer details.
-     * * `asset_id` - The asset ID being claimed (must match the leg's asset).
-     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
-     *
-     * # Returns
-     * A `ReceiverClaimProof` that can be submitted via `PolymeshSigner.receiverClaim()`.
-     *
-     * # Errors
-     * * Throws an error if the encrypted leg cannot be decrypted with the provided keys.
-     * * Throws an error if the asset ID doesn't match the leg's asset ID.
-     * * Throws an error if the amount is provided and doesn't match the leg amount.
-     * * Throws an error if proof generation fails.
-     *
-     * # Example
-     * ```javascript
-     * // After both parties have affirmed, the receiver can claim
-     * const settlementLegs = await client.getSettlementLegs(settlementRef);
-     * const encryptedLeg = settlementLegs.getLeg(0);
-     * const leafIndex = receiverAccountState.leafIndex();
-     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
-     *
-     * const claimProof = receiverAccountState.receiverClaimProof(
-     *   receiverKeys,
-     *   path,
-     *   settlementRef,
-     *   0,
-     *   encryptedLeg,
-     *   assetId,
-     *   null
-     * );
-     *
-     * const results = await receiver.receiverClaim(claimProof);
-     * receiverAccountState.commitPendingState(results.leafIndex());
-     *
-     * // The receiver's balance is now updated with the transferred amount
-     * console.log('New balance:', receiverAccountState.balance());
-     * ```
-     * @param {AccountKeys} keys
-     * @param {AccountLeafPathAndRoot} path
-     * @param {any} settlement_ref
-     * @param {number} leg_id
-     * @param {SettlementLegEncrypted} leg_enc
-     * @param {number} asset_id
-     * @param {any} amount
-     * @returns {ReceiverClaimProof}
-     */
-    receiverClaimProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
-        _assertClass(keys, AccountKeys);
-        _assertClass(path, AccountLeafPathAndRoot);
-        _assertClass(leg_enc, SettlementLegEncrypted);
-        const ret = wasm.accountassetstate_receiverClaimProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return ReceiverClaimProof.__wrap(ret[0]);
-    }
-    /**
-     * Generates a zero-knowledge proof for the receiver to affirm their participation
-     * in a settlement leg.
-     *
-     * As the receiver in a confidential asset transfer, you must affirm the settlement leg
-     * by proving you can receive the assets. This doesn't immediately credit your balance;
-     * you must call `receiverClaimProof()` after both parties have affirmed to actually
-     * claim the transferred assets.
-     *
-     * # Arguments
-     * * `keys` - The account keys proving ownership of this account.
-     * * `path` - The curve tree path from the account leaf to the tree root.
-     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
-     * * `leg_id` - The leg ID within the settlement.
-     * * `leg_enc` - The encrypted settlement leg containing transfer details.
-     * * `asset_id` - The asset ID being received (must match the leg's asset).
-     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
-     *
-     * # Returns
-     * A `ReceiverAffirmationProof` that can be submitted via `PolymeshSigner.receiverAffirmation()`.
-     *
-     * # Errors
-     * * Throws an error if the encrypted leg cannot be decrypted with the provided keys.
-     * * Throws an error if the asset ID doesn't match the leg's asset ID.
-     * * Throws an error if the amount is provided and doesn't match the leg amount.
-     * * Throws an error if proof generation fails.
-     *
-     * # Example
-     * ```javascript
-     * const settlementLegs = await client.getSettlementLegs(settlementRef);
-     * const encryptedLeg = settlementLegs.getLeg(0);
-     * const leafIndex = receiverAccountState.leafIndex();
-     * const path = await accountCurveTree.getLeafPathAndRoot(leafIndex);
-     *
-     * const receiverProof = receiverAccountState.receiverAffirmProof(
-     *   receiverKeys,
-     *   path,
-     *   settlementRef,
-     *   0,
-     *   encryptedLeg,
-     *   assetId,
-     *   null
-     * );
-     *
-     * const results = await receiver.receiverAffirmation(receiverProof);
-     * receiverAccountState.commitPendingState(results.leafIndex());
-     * ```
-     * @param {AccountKeys} keys
-     * @param {AccountLeafPathAndRoot} path
-     * @param {any} settlement_ref
-     * @param {number} leg_id
-     * @param {SettlementLegEncrypted} leg_enc
-     * @param {number} asset_id
-     * @param {any} amount
-     * @returns {ReceiverAffirmationProof}
-     */
-    receiverAffirmProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
-        _assertClass(keys, AccountKeys);
-        _assertClass(path, AccountLeafPathAndRoot);
-        _assertClass(leg_enc, SettlementLegEncrypted);
-        const ret = wasm.accountassetstate_receiverAffirmProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return ReceiverAffirmationProof.__wrap(ret[0]);
-    }
-    /**
      * Generates a zero-knowledge proof for the sender to update their transaction counter
      * without transferring assets.
      *
@@ -1105,21 +766,87 @@ export class AccountAssetState {
         return SenderCounterUpdateProof.__wrap(ret[0]);
     }
     /**
-     * Gets the current confidential balance for this account asset.
+     * Generates a zero-knowledge proof for the sender to revert (cancel) their affirmation
+     * of a settlement leg.
+     *
+     * If a sender has affirmed a settlement leg but wants to cancel before the receiver
+     * claims the assets, they can generate a revert proof. This unlocks the previously
+     * locked assets and returns them to the sender's available balance.
+     *
+     * # Arguments
+     * * `keys` - The account keys proving ownership of this account.
+     * * `path` - The curve tree path from the account leaf to the tree root.
+     * * `settlement_ref` - The settlement reference ID (as a `bigint` or number).
+     * * `leg_id` - The leg ID within the settlement.
+     * * `leg_enc` - The encrypted settlement leg.
+     * * `asset_id` - The asset ID being reverted (must match the leg's asset).
+     * * `amount` - Optional amount for validation. Pass `null` or `undefined` to skip.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * A `SenderRevertAffirmationProof` that can be submitted to the blockchain.
+     *
+     * # Errors
+     * * Throws an error if the encrypted leg cannot be decrypted.
+     * * Throws an error if the asset ID doesn't match.
+     * * Throws an error if the amount is provided and doesn't match.
+     * * Throws an error if proof generation fails.
      *
      * # Example
      * ```javascript
-     * const balance = accountState.balance();
-     * console.log('Current balance:', balance);
+     * const revertProof = senderAccountState.senderRevertProof(
+     *   senderKeys,
+     *   path,
+     *   settlementRef,
+     *   0,
+     *   encryptedLeg,
+     *   assetId,
+     *   null
+     * );
+     *
+     * // Submit the revert proof to cancel the sender's affirmation
+     * const results = await sender.senderReversal(revertProof);
+     * senderAccountState.commitPendingState(results.leafIndex());
      * ```
-     * @returns {any}
+     * @param {AccountKeys} keys
+     * @param {AccountLeafPathAndRoot} path
+     * @param {any} settlement_ref
+     * @param {number} leg_id
+     * @param {SettlementLegEncrypted} leg_enc
+     * @param {number} asset_id
+     * @param {any} amount
+     * @returns {SenderRevertAffirmationProof}
      */
-    balance() {
-        const ret = wasm.accountassetstate_balance(this.__wbg_ptr);
-        return ret;
+    senderRevertProof(keys, path, settlement_ref, leg_id, leg_enc, asset_id, amount) {
+        _assertClass(keys, AccountKeys);
+        _assertClass(path, AccountLeafPathAndRoot);
+        _assertClass(leg_enc, SettlementLegEncrypted);
+        const ret = wasm.accountassetstate_senderRevertProof(this.__wbg_ptr, keys.__wbg_ptr, path.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, asset_id, amount);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SenderRevertAffirmationProof.__wrap(ret[0]);
+    }
+    /**
+     * Serializes the account asset state to a SCALE-encoded byte array.
+     *
+     * This allows you to store the state off-chain and restore it later.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded state.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = accountState.toBytes();
+     * // Store bytes in local storage or a database
+     * localStorage.setItem('accountState', JSON.stringify(Array.from(bytes)));
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.accountassetstate_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the account asset state as a JSON string for debugging purposes.
@@ -1154,51 +881,9 @@ export class AccountAssetState {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Gets the asset ID associated with this account state.
-     *
-     * # Returns
-     * The numeric asset ID (as a number).
-     *
-     * # Example
-     * ```javascript
-     * const assetId = accountState.assetId();
-     * console.log('Asset ID:', assetId);
-     * ```
-     * @returns {number}
-     */
-    assetId() {
-        const ret = wasm.accountassetstate_assetId(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * Serializes the account asset state to a SCALE-encoded byte array.
-     *
-     * This allows you to store the state off-chain and restore it later.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded state.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = accountState.toBytes();
-     * // Store bytes in local storage or a database
-     * localStorage.setItem('accountState', JSON.stringify(Array.from(bytes)));
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.accountassetstate_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) AccountAssetState.prototype[Symbol.dispose] = AccountAssetState.prototype.free;
 
-const AccountKeysFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountkeys_free(ptr >>> 0, 1));
 /**
  * Contains the secret keys for a confidential account.
  *
@@ -1224,46 +909,30 @@ const AccountKeysFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class AccountKeys {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountKeys.prototype);
         obj.__wbg_ptr = ptr;
         AccountKeysFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountKeysFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountkeys_free(ptr, 0);
     }
     /**
-     * Extracts the public keys from these account keys.
+     * Clears the secret keys from memory by zeroing them out.
      *
-     * Public keys can be safely shared and are used for account registration,
-     * receiving settlements, and encryption.
-     *
-     * # Returns
-     * An `AccountPublicKeys` object containing both the account public key and encryption public key.
-     *
-     * # Example
-     * ```javascript
-     * const publicKeys = keys.publicKeys();
-     * console.log('Account key:', publicKeys.accountPublicKey().toJson());
-     * console.log('Encryption key:', publicKeys.encryptionPublicKey().toJson());
-     * ```
-     * @returns {AccountPublicKeys}
+     * The `AccountKeys` instance can't be used after calling this method.
      */
-    publicKeys() {
-        const ret = wasm.accountkeys_publicKeys(this.__wbg_ptr);
-        return AccountPublicKeys.__wrap(ret);
+    clear() {
+        const ptr = this.__destroy_into_raw();
+        wasm.accountkeys_clear(ptr);
     }
     /**
      * Extracts the encryption key pair from these account keys.
@@ -1287,37 +956,124 @@ export class AccountKeys {
         return EncryptionKeyPair.__wrap(ret);
     }
     /**
-     * Generates a zero-knowledge proof for registering this account on-chain.
+     * Creates account keys from any seed string using deterministic hashing.
      *
-     * This proof demonstrates that the account holder possesses the secret keys
-     * corresponding to the public keys being registered, without revealing the secret keys.
+     * This is a convenience method that accepts any string and hashes it to create
+     * a deterministic 32-byte seed. The same input string will always produce the
+     * same keys.
      *
      * # Arguments
-     * * `did` - The identity ID (DID) to link this account to. Accepts:
-     *   - Hex string with or without "0x" prefix (e.g., "0x1234...")
-     *   - 32-byte `Uint8Array`
+     * * `seed` - Any string to use as the seed (will be hashed internally).
      *
      * # Returns
-     * An `AccountRegistrationProof` that can be submitted to the blockchain.
+     * A new `AccountKeys` object.
      *
      * # Errors
-     * * Throws an error if the DID format is invalid.
-     * * Throws an error if proof generation fails.
+     * * Throws an error if key generation fails.
      *
      * # Example
      * ```javascript
-     * const proof = keys.registerAccountProof(myDid);
-     * const result = await signer.registerAccount(proof);
+     * const keys = AccountKeys.fromSeed("my-secure-passphrase");
+     * // Same seed always produces the same keys
+     * const keys2 = AccountKeys.fromSeed("my-secure-passphrase");
      * ```
-     * @param {any} did
-     * @returns {AccountRegistrationProof}
+     * @param {string} seed
+     * @returns {AccountKeys}
      */
-    registerAccountProof(did) {
-        const ret = wasm.accountkeys_registerAccountProof(this.__wbg_ptr, did);
+    static fromSeed(seed) {
+        const ptr0 = passStringToWasm0(seed, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.accountkeys_fromSeed(ptr0, len0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        return AccountRegistrationProof.__wrap(ret[0]);
+        return AccountKeys.__wrap(ret[0]);
+    }
+    /**
+     * Generate mediator affirmation for a settlement leg.
+     *
+     * # Arguments
+     * * `settlement_ref` - The settlement reference (can be hex string or Uint8Array).
+     * * `leg_id` - The identifier of the settlement leg.
+     * * `leg_enc` - The encrypted settlement leg.
+     * * `accept` - Boolean indicating whether to accept (true) or reject (false) the leg.
+     * * `asset_id` - The asset ID of the settlement leg.
+     * * `amount` - The expected amount (can be null/undefined to skip check).
+     *
+     * # Returns
+     * A `MediatorAffirmationProof` that can be submitted to the blockchain.
+     *
+     * # Errors
+     * * Throws an error if decryption fails.
+     * * Throws an error if asset ID or amount do not match.
+     * * Throws an error if the account is not a mediator for the leg.
+     * @param {any} settlement_ref
+     * @param {number} leg_id
+     * @param {SettlementLegEncrypted} leg_enc
+     * @param {boolean} accept
+     * @param {number} asset_id
+     * @param {any} amount
+     * @returns {MediatorAffirmationProof}
+     */
+    mediatorAffirmationProof(settlement_ref, leg_id, leg_enc, accept, asset_id, amount) {
+        _assertClass(leg_enc, SettlementLegEncrypted);
+        const ret = wasm.accountkeys_mediatorAffirmationProof(this.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, accept, asset_id, amount);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return MediatorAffirmationProof.__wrap(ret[0]);
+    }
+    /**
+     * Creates new account keys from a hexadecimal seed string.
+     *
+     * # Arguments
+     * * `seed_hex` - A 32-byte hexadecimal string (64 hex characters), with or without "0x" prefix.
+     *
+     * # Returns
+     * A new `AccountKeys` object containing the generated secret keys.
+     *
+     * # Errors
+     * * Throws an error if the seed is not valid hexadecimal.
+     * * Throws an error if the seed is not exactly 32 bytes (64 hex characters).
+     *
+     * # Example
+     * ```javascript
+     * const seed = generateRandomSeed(); // Returns a 64-character hex string
+     * const keys = new AccountKeys(seed);
+     * ```
+     * @param {string} seed_hex
+     */
+    constructor(seed_hex) {
+        const ptr0 = passStringToWasm0(seed_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.accountkeys_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        AccountKeysFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Extracts the public keys from these account keys.
+     *
+     * Public keys can be safely shared and are used for account registration,
+     * receiving settlements, and encryption.
+     *
+     * # Returns
+     * An `AccountPublicKeys` object containing both the account public key and encryption public key.
+     *
+     * # Example
+     * ```javascript
+     * const publicKeys = keys.publicKeys();
+     * console.log('Account key:', publicKeys.accountPublicKey().toJson());
+     * console.log('Encryption key:', publicKeys.encryptionPublicKey().toJson());
+     * ```
+     * @returns {AccountPublicKeys}
+     */
+    publicKeys() {
+        const ret = wasm.accountkeys_publicKeys(this.__wbg_ptr);
+        return AccountPublicKeys.__wrap(ret);
     }
     /**
      * Generates a zero-knowledge proof for registering this account for a specific asset.
@@ -1361,85 +1117,41 @@ export class AccountKeys {
         return AccountAssetRegistration.__wrap(ret[0]);
     }
     /**
-     * Creates new account keys from a hexadecimal seed string.
+     * Generates a zero-knowledge proof for registering this account on-chain.
+     *
+     * This proof demonstrates that the account holder possesses the secret keys
+     * corresponding to the public keys being registered, without revealing the secret keys.
      *
      * # Arguments
-     * * `seed_hex` - A 32-byte hexadecimal string (64 hex characters), with or without "0x" prefix.
+     * * `did` - The identity ID (DID) to link this account to. Accepts:
+     *   - Hex string with or without "0x" prefix (e.g., "0x1234...")
+     *   - 32-byte `Uint8Array`
      *
      * # Returns
-     * A new `AccountKeys` object containing the generated secret keys.
+     * An `AccountRegistrationProof` that can be submitted to the blockchain.
      *
      * # Errors
-     * * Throws an error if the seed is not valid hexadecimal.
-     * * Throws an error if the seed is not exactly 32 bytes (64 hex characters).
+     * * Throws an error if the DID format is invalid.
+     * * Throws an error if proof generation fails.
      *
      * # Example
      * ```javascript
-     * const seed = generateRandomSeed(); // Returns a 64-character hex string
-     * const keys = new AccountKeys(seed);
+     * const proof = keys.registerAccountProof(myDid);
+     * const result = await signer.registerAccount(proof);
      * ```
-     * @param {string} seed_hex
+     * @param {any} did
+     * @returns {AccountRegistrationProof}
      */
-    constructor(seed_hex) {
-        const ptr0 = passStringToWasm0(seed_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.accountkeys_new(ptr0, len0);
+    registerAccountProof(did) {
+        const ret = wasm.accountkeys_registerAccountProof(this.__wbg_ptr, did);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
-        AccountKeysFinalization.register(this, this.__wbg_ptr, this);
-        return this;
-    }
-    /**
-     * Clears the secret keys from memory by zeroing them out.
-     *
-     * The `AccountKeys` instance can't be used after calling this method.
-     */
-    clear() {
-        const ptr = this.__destroy_into_raw();
-        wasm.accountkeys_clear(ptr);
-    }
-    /**
-     * Creates account keys from any seed string using deterministic hashing.
-     *
-     * This is a convenience method that accepts any string and hashes it to create
-     * a deterministic 32-byte seed. The same input string will always produce the
-     * same keys.
-     *
-     * # Arguments
-     * * `seed` - Any string to use as the seed (will be hashed internally).
-     *
-     * # Returns
-     * A new `AccountKeys` object.
-     *
-     * # Errors
-     * * Throws an error if key generation fails.
-     *
-     * # Example
-     * ```javascript
-     * const keys = AccountKeys.fromSeed("my-secure-passphrase");
-     * // Same seed always produces the same keys
-     * const keys2 = AccountKeys.fromSeed("my-secure-passphrase");
-     * ```
-     * @param {string} seed
-     * @returns {AccountKeys}
-     */
-    static fromSeed(seed) {
-        const ptr0 = passStringToWasm0(seed, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.accountkeys_fromSeed(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountKeys.__wrap(ret[0]);
+        return AccountRegistrationProof.__wrap(ret[0]);
     }
 }
 if (Symbol.dispose) AccountKeys.prototype[Symbol.dispose] = AccountKeys.prototype.free;
 
-const AccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountleafpathandroot_free(ptr >>> 0, 1));
 /**
  * Account leaf path and root.
  *
@@ -1448,22 +1160,18 @@ const AccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'und
  * (e.g., proving balance sufficiency during settlement affirmations).
  */
 export class AccountLeafPathAndRoot {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountLeafPathAndRoot.prototype);
         obj.__wbg_ptr = ptr;
         AccountLeafPathAndRootFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountLeafPathAndRootFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountleafpathandroot_free(ptr, 0);
@@ -1550,9 +1258,6 @@ export class AccountLeafPathAndRoot {
 }
 if (Symbol.dispose) AccountLeafPathAndRoot.prototype[Symbol.dispose] = AccountLeafPathAndRoot.prototype.free;
 
-const AccountLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountleafpathbuilder_free(ptr >>> 0, 1));
 /**
  * Account leaf path builder.
  *
@@ -1606,17 +1311,82 @@ const AccountLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'und
  * ```
  */
 export class AccountLeafPathBuilder {
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountLeafPathBuilderFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountleafpathbuilder_free(ptr, 0);
+    }
+    /**
+     * Builds the account leaf path with the root included.
+     *
+     * Constructs the complete curve tree path from the target leaf to the root, including the root value.
+     * This is used when generating zero-knowledge proofs about account states.
+     *
+     * # Returns
+     * An `AccountLeafPathAndRoot` instance containing both the curve tree path and the root.
+     *
+     * # Errors
+     * * Throws an error if required leaves, nodes, or root have not been set.
+     * * Throws an error if the path cannot be constructed.
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
+     *
+     * // Set all leaves
+     * const minLeaf = builder.getMinLeafIndex();
+     * const maxLeaf = builder.getMaxLeafIndex();
+     * for (let i = minLeaf; i < maxLeaf; i++) {
+     *   const leaf = await client.getAccountLeaf(i, blockNumber);
+     *   builder.setLeaf(i, leaf);
+     * }
+     *
+     * // Set all inner nodes
+     * const nodeLocations = builder.getNodeLocations();
+     * for (let i = 0; i < nodeLocations.length; i++) {
+     *   const node = await client.getAccountInnerNode(nodeLocations[i], blockNumber);
+     *   builder.setNodeAtIndex(i, node);
+     * }
+     *
+     * // Set the root
+     * const root = await client.getAccountTreeRoot(blockNumber);
+     * builder.setRoot(root);
+     *
+     * // Build the complete path with root
+     * const pathAndRoot = builder.buildLeafPathWithRoot();
+     * ```
+     * @returns {AccountLeafPathAndRoot}
+     */
+    buildLeafPathWithRoot() {
+        const ret = wasm.accountleafpathbuilder_buildLeafPathWithRoot(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountLeafPathAndRoot.__wrap(ret[0]);
+    }
+    /**
+     * Returns the `L` parameter of the account tree.
+     *
+     * This represents the branching factor (arity) of the tree - how many children each node has.
+     *
+     * # Returns
+     * The tree arity as a number (typically 4 for account trees).
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
+     * console.log(`Tree arity: ${builder.getL()}`); // 4
+     * ```
+     * @returns {number}
+     */
+    getL() {
+        const ret = wasm.accountleafpathbuilder_getL(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * Gets the list of leaf indices that need to be queried from the blockchain.
@@ -1644,35 +1414,23 @@ export class AccountLeafPathBuilder {
         return v1;
     }
     /**
-     * Sets an inner node at the specified location index.
+     * Returns the `M` parameter of the account tree.
      *
-     * The location index corresponds to the position in the array returned by `getNodeLocations()`.
+     * This represents the maximum number of children stored in each compressed inner node.
      *
-     * # Arguments
-     * * `location_index` - The index in the node locations array
-     * * `node` - A `Uint8Array` containing the SCALE-encoded inner node, or `null`/`undefined` to remove
-     *
-     * # Errors
-     * * Throws an error if the location index is out of bounds.
-     * * Throws an error if the node data cannot be decoded.
+     * # Returns
+     * The compression parameter as a number.
      *
      * # Example
      * ```javascript
      * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
-     * const nodeLocations = builder.getNodeLocations();
-     * for (let i = 0; i < nodeLocations.length; i++) {
-     *   const node = await client.getAccountInnerNode(nodeLocations[i], blockNumber);
-     *   builder.setNodeAtIndex(i, node);
-     * }
+     * console.log(`Compression parameter: ${builder.getM()}`);
      * ```
-     * @param {number} location_index
-     * @param {any | null} [node]
+     * @returns {number}
      */
-    setNodeAtIndex(location_index, node) {
-        const ret = wasm.accountleafpathbuilder_setNodeAtIndex(this.__wbg_ptr, location_index, isLikeNone(node) ? 0 : addToExternrefTable0(node));
-        if (ret[1]) {
-            throw takeFromExternrefTable0(ret[0]);
-        }
+    getM() {
+        const ret = wasm.accountleafpathbuilder_getM(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * Gets the maximum leaf index that needs to be queried.
@@ -1749,54 +1507,6 @@ export class AccountLeafPathBuilder {
         return v1;
     }
     /**
-     * Builds the account leaf path with the root included.
-     *
-     * Constructs the complete curve tree path from the target leaf to the root, including the root value.
-     * This is used when generating zero-knowledge proofs about account states.
-     *
-     * # Returns
-     * An `AccountLeafPathAndRoot` instance containing both the curve tree path and the root.
-     *
-     * # Errors
-     * * Throws an error if required leaves, nodes, or root have not been set.
-     * * Throws an error if the path cannot be constructed.
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
-     *
-     * // Set all leaves
-     * const minLeaf = builder.getMinLeafIndex();
-     * const maxLeaf = builder.getMaxLeafIndex();
-     * for (let i = minLeaf; i < maxLeaf; i++) {
-     *   const leaf = await client.getAccountLeaf(i, blockNumber);
-     *   builder.setLeaf(i, leaf);
-     * }
-     *
-     * // Set all inner nodes
-     * const nodeLocations = builder.getNodeLocations();
-     * for (let i = 0; i < nodeLocations.length; i++) {
-     *   const node = await client.getAccountInnerNode(nodeLocations[i], blockNumber);
-     *   builder.setNodeAtIndex(i, node);
-     * }
-     *
-     * // Set the root
-     * const root = await client.getAccountTreeRoot(blockNumber);
-     * builder.setRoot(root);
-     *
-     * // Build the complete path with root
-     * const pathAndRoot = builder.buildLeafPathWithRoot();
-     * ```
-     * @returns {AccountLeafPathAndRoot}
-     */
-    buildLeafPathWithRoot() {
-        const ret = wasm.accountleafpathbuilder_buildLeafPathWithRoot(this.__wbg_ptr);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountLeafPathAndRoot.__wrap(ret[0]);
-    }
-    /**
      * Creates a new account leaf path builder.
      *
      * # Arguments
@@ -1820,47 +1530,9 @@ export class AccountLeafPathBuilder {
      */
     constructor(leaf_index, height, block_number) {
         const ret = wasm.accountleafpathbuilder_new(leaf_index, height, block_number);
-        this.__wbg_ptr = ret >>> 0;
+        this.__wbg_ptr = ret;
         AccountLeafPathBuilderFinalization.register(this, this.__wbg_ptr, this);
         return this;
-    }
-    /**
-     * Returns the `L` parameter of the account tree.
-     *
-     * This represents the branching factor (arity) of the tree - how many children each node has.
-     *
-     * # Returns
-     * The tree arity as a number (typically 4 for account trees).
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
-     * console.log(`Tree arity: ${builder.getL()}`); // 4
-     * ```
-     * @returns {number}
-     */
-    getL() {
-        const ret = wasm.accountleafpathbuilder_getL(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * Returns the `M` parameter of the account tree.
-     *
-     * This represents the maximum number of children stored in each compressed inner node.
-     *
-     * # Returns
-     * The compression parameter as a number.
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
-     * console.log(`Compression parameter: ${builder.getM()}`);
-     * ```
-     * @returns {number}
-     */
-    getM() {
-        const ret = wasm.accountleafpathbuilder_getM(this.__wbg_ptr);
-        return ret >>> 0;
     }
     /**
      * Sets a leaf value at the specified index.
@@ -1888,6 +1560,37 @@ export class AccountLeafPathBuilder {
         }
     }
     /**
+     * Sets an inner node at the specified location index.
+     *
+     * The location index corresponds to the position in the array returned by `getNodeLocations()`.
+     *
+     * # Arguments
+     * * `location_index` - The index in the node locations array
+     * * `node` - A `Uint8Array` containing the SCALE-encoded inner node, or `null`/`undefined` to remove
+     *
+     * # Errors
+     * * Throws an error if the location index is out of bounds.
+     * * Throws an error if the node data cannot be decoded.
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AccountLeafPathBuilder(leafIndex, 4, blockNumber);
+     * const nodeLocations = builder.getNodeLocations();
+     * for (let i = 0; i < nodeLocations.length; i++) {
+     *   const node = await client.getAccountInnerNode(nodeLocations[i], blockNumber);
+     *   builder.setNodeAtIndex(i, node);
+     * }
+     * ```
+     * @param {number} location_index
+     * @param {any | null} [node]
+     */
+    setNodeAtIndex(location_index, node) {
+        const ret = wasm.accountleafpathbuilder_setNodeAtIndex(this.__wbg_ptr, location_index, isLikeNone(node) ? 0 : addToExternrefTable0(node));
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * Sets the tree root value.
      *
      * # Arguments
@@ -1909,9 +1612,6 @@ export class AccountLeafPathBuilder {
 }
 if (Symbol.dispose) AccountLeafPathBuilder.prototype[Symbol.dispose] = AccountLeafPathBuilder.prototype.free;
 
-const AccountPublicKeyFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountpublickey_free(ptr >>> 0, 1));
 /**
  * The public key component used for account identification in the account curve tree.
  *
@@ -1929,22 +1629,18 @@ const AccountPublicKeyFinalization = (typeof FinalizationRegistry === 'undefined
  * ```
  */
 export class AccountPublicKey {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountPublicKey.prototype);
         obj.__wbg_ptr = ptr;
         AccountPublicKeyFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountPublicKeyFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountpublickey_free(ptr, 0);
@@ -1976,6 +1672,18 @@ export class AccountPublicKey {
             throw takeFromExternrefTable0(ret[1]);
         }
         return AccountPublicKey.__wrap(ret[0]);
+    }
+    /**
+     * Import account public key from a JsValue.
+     * @param {any} js_value
+     * @returns {AccountPublicKeys}
+     */
+    static fromJs(js_value) {
+        const ret = wasm.accountpublickey_fromJs(js_value);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountPublicKeys.__wrap(ret[0]);
     }
     /**
      * Creates a new account public key from various input formats.
@@ -2013,9 +1721,27 @@ export class AccountPublicKey {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         AccountPublicKeyFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * Serializes the account public key to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded public key.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = accountKey.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.accountpublickey_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the account public key as a JsValue for interoperability.
@@ -2027,18 +1753,6 @@ export class AccountPublicKey {
             throw takeFromExternrefTable0(ret[1]);
         }
         return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Import account public key from a JsValue.
-     * @param {any} js_value
-     * @returns {AccountPublicKeys}
-     */
-    static fromJs(js_value) {
-        const ret = wasm.accountpublickey_fromJs(js_value);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountPublicKeys.__wrap(ret[0]);
     }
     /**
      * Exports the account public key as a JSON string for debugging purposes.
@@ -2073,30 +1787,9 @@ export class AccountPublicKey {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Serializes the account public key to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded public key.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = accountKey.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.accountpublickey_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) AccountPublicKey.prototype[Symbol.dispose] = AccountPublicKey.prototype.free;
 
-const AccountPublicKeysFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountpublickeys_free(ptr >>> 0, 1));
 /**
  * Contains both the account public key and encryption public key for a confidential account.
  *
@@ -2120,53 +1813,21 @@ const AccountPublicKeysFinalization = (typeof FinalizationRegistry === 'undefine
  * ```
  */
 export class AccountPublicKeys {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountPublicKeys.prototype);
         obj.__wbg_ptr = ptr;
         AccountPublicKeysFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountPublicKeysFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountpublickeys_free(ptr, 0);
-    }
-    /**
-     * Deserializes public keys from a SCALE-encoded byte array.
-     *
-     * # Arguments
-     * * `bytes` - A `Uint8Array` containing SCALE-encoded public keys.
-     *
-     * # Returns
-     * The deserialized `AccountPublicKeys`.
-     *
-     * # Errors
-     * * Throws an error if the byte array is invalid or corrupted.
-     *
-     * # Example
-     * ```javascript
-     * const publicKeys = AccountPublicKeys.fromBytes(publicKeyBytes);
-     * ```
-     * @param {Uint8Array} bytes
-     * @returns {AccountPublicKeys}
-     */
-    static fromBytes(bytes) {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.accountpublickeys_fromBytes(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountPublicKeys.__wrap(ret[0]);
     }
     /**
      * Extracts the account public key component.
@@ -2199,6 +1860,46 @@ export class AccountPublicKeys {
     encryptionPublicKey() {
         const ret = wasm.accountpublickeys_encryptionPublicKey(this.__wbg_ptr);
         return EncryptionPublicKey.__wrap(ret);
+    }
+    /**
+     * Deserializes public keys from a SCALE-encoded byte array.
+     *
+     * # Arguments
+     * * `bytes` - A `Uint8Array` containing SCALE-encoded public keys.
+     *
+     * # Returns
+     * The deserialized `AccountPublicKeys`.
+     *
+     * # Errors
+     * * Throws an error if the byte array is invalid or corrupted.
+     *
+     * # Example
+     * ```javascript
+     * const publicKeys = AccountPublicKeys.fromBytes(publicKeyBytes);
+     * ```
+     * @param {Uint8Array} bytes
+     * @returns {AccountPublicKeys}
+     */
+    static fromBytes(bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.accountpublickeys_fromBytes(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountPublicKeys.__wrap(ret[0]);
+    }
+    /**
+     * Import public keys from a JsValue.
+     * @param {any} js_value
+     * @returns {AccountPublicKeys}
+     */
+    static fromJs(js_value) {
+        const ret = wasm.accountpublickeys_fromJs(js_value);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountPublicKeys.__wrap(ret[0]);
     }
     /**
      * Creates `AccountPublicKeys` from various input formats.
@@ -2235,9 +1936,27 @@ export class AccountPublicKeys {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         AccountPublicKeysFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * Serializes the public keys to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded public keys.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = publicKeys.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.accountpublickeys_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the public keys as a JsValue for interoperability.
@@ -2249,18 +1968,6 @@ export class AccountPublicKeys {
             throw takeFromExternrefTable0(ret[1]);
         }
         return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Import public keys from a JsValue.
-     * @param {any} js_value
-     * @returns {AccountPublicKeys}
-     */
-    static fromJs(js_value) {
-        const ret = wasm.accountpublickeys_fromJs(js_value);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountPublicKeys.__wrap(ret[0]);
     }
     /**
      * Exports the public keys as a JSON string for debugging purposes.
@@ -2295,30 +2002,9 @@ export class AccountPublicKeys {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Serializes the public keys to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded public keys.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = publicKeys.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.accountpublickeys_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) AccountPublicKeys.prototype[Symbol.dispose] = AccountPublicKeys.prototype.free;
 
-const AccountRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountregistrationproof_free(ptr >>> 0, 1));
 /**
  * A zero-knowledge proof for registering a confidential account on-chain.
  *
@@ -2333,22 +2019,18 @@ const AccountRegistrationProofFinalization = (typeof FinalizationRegistry === 'u
  * ```
  */
 export class AccountRegistrationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountRegistrationProof.prototype);
         obj.__wbg_ptr = ptr;
         AccountRegistrationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountRegistrationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountregistrationproof_free(ptr, 0);
@@ -2402,9 +2084,6 @@ export class AccountRegistrationProof {
 }
 if (Symbol.dispose) AccountRegistrationProof.prototype[Symbol.dispose] = AccountRegistrationProof.prototype.free;
 
-const AccountStateFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_accountstate_free(ptr >>> 0, 1));
 /**
  * Represents the on-chain commitment value stored in the account curve tree.
  *
@@ -2423,53 +2102,37 @@ const AccountStateFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class AccountState {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AccountState.prototype);
         obj.__wbg_ptr = ptr;
         AccountStateFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AccountStateFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_accountstate_free(ptr, 0);
     }
     /**
-     * Deserializes account state from a SCALE-encoded byte array.
-     *
-     * # Arguments
-     * * `bytes` - A `Uint8Array` containing SCALE-encoded account state data.
+     * Gets the asset ID associated with this account state.
      *
      * # Returns
-     * The deserialized `AccountState` object.
-     *
-     * # Errors
-     * * Throws an error if the byte array is invalid or corrupted.
+     * The numeric asset ID.
      *
      * # Example
      * ```javascript
-     * const accountState = AccountState.fromBytes(encodedBytes);
+     * const assetId = accountState.assetId();
      * ```
-     * @param {Uint8Array} bytes
-     * @returns {AccountState}
+     * @returns {number}
      */
-    static fromBytes(bytes) {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.accountstate_fromBytes(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AccountState.__wrap(ret[0]);
+    assetId() {
+        const ret = wasm.accountstate_assetId(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * Gets the confidential balance for this account.
@@ -2507,6 +2170,52 @@ export class AccountState {
         return BigInt.asUintN(64, ret);
     }
     /**
+     * Deserializes account state from a SCALE-encoded byte array.
+     *
+     * # Arguments
+     * * `bytes` - A `Uint8Array` containing SCALE-encoded account state data.
+     *
+     * # Returns
+     * The deserialized `AccountState` object.
+     *
+     * # Errors
+     * * Throws an error if the byte array is invalid or corrupted.
+     *
+     * # Example
+     * ```javascript
+     * const accountState = AccountState.fromBytes(encodedBytes);
+     * ```
+     * @param {Uint8Array} bytes
+     * @returns {AccountState}
+     */
+    static fromBytes(bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.accountstate_fromBytes(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AccountState.__wrap(ret[0]);
+    }
+    /**
+     * Serializes the account state to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded state.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = accountState.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.accountstate_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
      * Exports the account state as a JSON string for debugging purposes.
      *
      * # Returns
@@ -2539,46 +2248,9 @@ export class AccountState {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Gets the asset ID associated with this account state.
-     *
-     * # Returns
-     * The numeric asset ID.
-     *
-     * # Example
-     * ```javascript
-     * const assetId = accountState.assetId();
-     * ```
-     * @returns {number}
-     */
-    assetId() {
-        const ret = wasm.accountstate_assetId(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * Serializes the account state to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded state.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = accountState.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.accountstate_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) AccountState.prototype[Symbol.dispose] = AccountState.prototype.free;
 
-const AssetLeafPathFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpath_free(ptr >>> 0, 1));
 /**
  * Asset leaf path.
  *
@@ -2586,22 +2258,18 @@ const AssetLeafPathFinalization = (typeof FinalizationRegistry === 'undefined')
  * Used when you only need the path structure without the specific root commitment.
  */
 export class AssetLeafPath {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AssetLeafPath.prototype);
         obj.__wbg_ptr = ptr;
         AssetLeafPathFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetLeafPathFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetleafpath_free(ptr, 0);
@@ -2658,9 +2326,6 @@ export class AssetLeafPath {
 }
 if (Symbol.dispose) AssetLeafPath.prototype[Symbol.dispose] = AssetLeafPath.prototype.free;
 
-const AssetLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpathandroot_free(ptr >>> 0, 1));
 /**
  * Asset leaf path and root.
  *
@@ -2669,22 +2334,18 @@ const AssetLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undef
  * This structure is used when building settlement proofs to prove asset states.
  */
 export class AssetLeafPathAndRoot {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AssetLeafPathAndRoot.prototype);
         obj.__wbg_ptr = ptr;
         AssetLeafPathAndRootFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetLeafPathAndRootFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetleafpathandroot_free(ptr, 0);
@@ -2797,9 +2458,6 @@ export class AssetLeafPathAndRoot {
 }
 if (Symbol.dispose) AssetLeafPathAndRoot.prototype[Symbol.dispose] = AssetLeafPathAndRoot.prototype.free;
 
-const AssetLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpathbuilder_free(ptr >>> 0, 1));
 /**
  * Asset leaf path builder.
  *
@@ -2850,14 +2508,12 @@ const AssetLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'undef
  * ```
  */
 export class AssetLeafPathBuilder {
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetLeafPathBuilderFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetleafpathbuilder_free(ptr, 0);
@@ -2891,6 +2547,73 @@ export class AssetLeafPathBuilder {
         return AssetLeafPath.__wrap(ret[0]);
     }
     /**
+     * Builds the asset leaf path with the root included.
+     *
+     * Constructs the complete curve tree path from the target leaf to the root, including the root value.
+     * This is the most common method used as proofs typically require both the path and the root.
+     *
+     * # Returns
+     * An `AssetLeafPathAndRoot` instance containing both the curve tree path and the root.
+     *
+     * # Errors
+     * * Throws an error if required leaves, nodes, or root have not been set.
+     * * Throws an error if the path cannot be constructed.
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
+     *
+     * // Set all leaves
+     * const minLeaf = builder.getMinLeafIndex();
+     * const maxLeaf = builder.getMaxLeafIndex();
+     * for (let i = minLeaf; i < maxLeaf; i++) {
+     *   const leaf = await client.getAssetLeaf(i, blockNumber);
+     *   builder.setLeaf(i, leaf);
+     * }
+     *
+     * // Set all inner nodes
+     * const nodeLocations = builder.getNodeLocations();
+     * for (let i = 0; i < nodeLocations.length; i++) {
+     *   const node = await client.getAssetInnerNode(nodeLocations[i], blockNumber);
+     *   builder.setNodeAtIndex(i, node);
+     * }
+     *
+     * // Set the root
+     * const root = await client.getAssetTreeRoot(blockNumber);
+     * builder.setRoot(root);
+     *
+     * // Build the complete path with root
+     * const pathAndRoot = builder.buildLeafPathWithRoot();
+     * ```
+     * @returns {AssetLeafPathAndRoot}
+     */
+    buildLeafPathWithRoot() {
+        const ret = wasm.assetleafpathbuilder_buildLeafPathWithRoot(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return AssetLeafPathAndRoot.__wrap(ret[0]);
+    }
+    /**
+     * Returns the `L` parameter of the asset tree.
+     *
+     * This represents the branching factor (arity) of the tree - how many children each node has.
+     *
+     * # Returns
+     * The tree arity as a number (typically 4 for asset trees).
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
+     * console.log(`Tree arity: ${builder.getL()}`); // 4
+     * ```
+     * @returns {number}
+     */
+    getL() {
+        const ret = wasm.assetleafpathbuilder_getL(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * Gets the list of leaf indices that need to be queried from the blockchain.
      *
      * Returns all sibling leaf indices along the path to the target leaf.
@@ -2916,35 +2639,23 @@ export class AssetLeafPathBuilder {
         return v1;
     }
     /**
-     * Sets an inner node at the specified location index.
+     * Returns the `M` parameter of the asset tree.
      *
-     * The location index corresponds to the position in the array returned by `getNodeLocations()`.
+     * This represents the maximum number of children stored in each compressed inner node.
      *
-     * # Arguments
-     * * `location_index` - The index in the node locations array
-     * * `node` - A `Uint8Array` containing the SCALE-encoded inner node, or `null`/`undefined` to remove
-     *
-     * # Errors
-     * * Throws an error if the location index is out of bounds.
-     * * Throws an error if the node data cannot be decoded.
+     * # Returns
+     * The compression parameter as a number.
      *
      * # Example
      * ```javascript
      * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
-     * const nodeLocations = builder.getNodeLocations();
-     * for (let i = 0; i < nodeLocations.length; i++) {
-     *   const node = await client.getAssetInnerNode(nodeLocations[i], blockNumber);
-     *   builder.setNodeAtIndex(i, node);
-     * }
+     * console.log(`Compression parameter: ${builder.getM()}`);
      * ```
-     * @param {number} location_index
-     * @param {any | null} [node]
+     * @returns {number}
      */
-    setNodeAtIndex(location_index, node) {
-        const ret = wasm.assetleafpathbuilder_setNodeAtIndex(this.__wbg_ptr, location_index, isLikeNone(node) ? 0 : addToExternrefTable0(node));
-        if (ret[1]) {
-            throw takeFromExternrefTable0(ret[0]);
-        }
+    getM() {
+        const ret = wasm.assetleafpathbuilder_getM(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * Gets the maximum leaf index that needs to be queried.
@@ -3021,54 +2732,6 @@ export class AssetLeafPathBuilder {
         return v1;
     }
     /**
-     * Builds the asset leaf path with the root included.
-     *
-     * Constructs the complete curve tree path from the target leaf to the root, including the root value.
-     * This is the most common method used as proofs typically require both the path and the root.
-     *
-     * # Returns
-     * An `AssetLeafPathAndRoot` instance containing both the curve tree path and the root.
-     *
-     * # Errors
-     * * Throws an error if required leaves, nodes, or root have not been set.
-     * * Throws an error if the path cannot be constructed.
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
-     *
-     * // Set all leaves
-     * const minLeaf = builder.getMinLeafIndex();
-     * const maxLeaf = builder.getMaxLeafIndex();
-     * for (let i = minLeaf; i < maxLeaf; i++) {
-     *   const leaf = await client.getAssetLeaf(i, blockNumber);
-     *   builder.setLeaf(i, leaf);
-     * }
-     *
-     * // Set all inner nodes
-     * const nodeLocations = builder.getNodeLocations();
-     * for (let i = 0; i < nodeLocations.length; i++) {
-     *   const node = await client.getAssetInnerNode(nodeLocations[i], blockNumber);
-     *   builder.setNodeAtIndex(i, node);
-     * }
-     *
-     * // Set the root
-     * const root = await client.getAssetTreeRoot(blockNumber);
-     * builder.setRoot(root);
-     *
-     * // Build the complete path with root
-     * const pathAndRoot = builder.buildLeafPathWithRoot();
-     * ```
-     * @returns {AssetLeafPathAndRoot}
-     */
-    buildLeafPathWithRoot() {
-        const ret = wasm.assetleafpathbuilder_buildLeafPathWithRoot(this.__wbg_ptr);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return AssetLeafPathAndRoot.__wrap(ret[0]);
-    }
-    /**
      * Creates a new asset leaf path builder.
      *
      * # Arguments
@@ -3092,47 +2755,9 @@ export class AssetLeafPathBuilder {
      */
     constructor(leaf_index, height, block_number) {
         const ret = wasm.assetleafpathbuilder_new(leaf_index, height, block_number);
-        this.__wbg_ptr = ret >>> 0;
+        this.__wbg_ptr = ret;
         AssetLeafPathBuilderFinalization.register(this, this.__wbg_ptr, this);
         return this;
-    }
-    /**
-     * Returns the `L` parameter of the asset tree.
-     *
-     * This represents the branching factor (arity) of the tree - how many children each node has.
-     *
-     * # Returns
-     * The tree arity as a number (typically 4 for asset trees).
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
-     * console.log(`Tree arity: ${builder.getL()}`); // 4
-     * ```
-     * @returns {number}
-     */
-    getL() {
-        const ret = wasm.assetleafpathbuilder_getL(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * Returns the `M` parameter of the asset tree.
-     *
-     * This represents the maximum number of children stored in each compressed inner node.
-     *
-     * # Returns
-     * The compression parameter as a number.
-     *
-     * # Example
-     * ```javascript
-     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
-     * console.log(`Compression parameter: ${builder.getM()}`);
-     * ```
-     * @returns {number}
-     */
-    getM() {
-        const ret = wasm.assetleafpathbuilder_getM(this.__wbg_ptr);
-        return ret >>> 0;
     }
     /**
      * Sets a leaf value at the specified index.
@@ -3160,6 +2785,37 @@ export class AssetLeafPathBuilder {
         }
     }
     /**
+     * Sets an inner node at the specified location index.
+     *
+     * The location index corresponds to the position in the array returned by `getNodeLocations()`.
+     *
+     * # Arguments
+     * * `location_index` - The index in the node locations array
+     * * `node` - A `Uint8Array` containing the SCALE-encoded inner node, or `null`/`undefined` to remove
+     *
+     * # Errors
+     * * Throws an error if the location index is out of bounds.
+     * * Throws an error if the node data cannot be decoded.
+     *
+     * # Example
+     * ```javascript
+     * const builder = new AssetLeafPathBuilder(leafIndex, 4, blockNumber);
+     * const nodeLocations = builder.getNodeLocations();
+     * for (let i = 0; i < nodeLocations.length; i++) {
+     *   const node = await client.getAssetInnerNode(nodeLocations[i], blockNumber);
+     *   builder.setNodeAtIndex(i, node);
+     * }
+     * ```
+     * @param {number} location_index
+     * @param {any | null} [node]
+     */
+    setNodeAtIndex(location_index, node) {
+        const ret = wasm.assetleafpathbuilder_setNodeAtIndex(this.__wbg_ptr, location_index, isLikeNone(node) ? 0 : addToExternrefTable0(node));
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * Sets the tree root value.
      *
      * # Arguments
@@ -3181,9 +2837,6 @@ export class AssetLeafPathBuilder {
 }
 if (Symbol.dispose) AssetLeafPathBuilder.prototype[Symbol.dispose] = AssetLeafPathBuilder.prototype.free;
 
-const AssetMintingProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assetmintingproof_free(ptr >>> 0, 1));
 /**
  * A zero-knowledge proof that allows minting new confidential assets.
  *
@@ -3199,22 +2852,18 @@ const AssetMintingProofFinalization = (typeof FinalizationRegistry === 'undefine
  * ```
  */
 export class AssetMintingProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AssetMintingProof.prototype);
         obj.__wbg_ptr = ptr;
         AssetMintingProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetMintingProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetmintingproof_free(ptr, 0);
@@ -3246,30 +2895,6 @@ export class AssetMintingProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return AssetMintingProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hexadecimal string.
-     *
-     * # Returns
-     * A hex-encoded string representation of the proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = mintingProof.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.assetmintingproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Deserializes a minting proof from a hexadecimal string.
@@ -3319,12 +2944,33 @@ export class AssetMintingProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hexadecimal string.
+     *
+     * # Returns
+     * A hex-encoded string representation of the proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = mintingProof.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.assetmintingproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) AssetMintingProof.prototype[Symbol.dispose] = AssetMintingProof.prototype.free;
 
-const AssetStateFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assetstate_free(ptr >>> 0, 1));
 /**
  * Represents the confidential asset state stored in the asset curve tree.
  *
@@ -3349,25 +2995,54 @@ const AssetStateFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class AssetState {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AssetState.prototype);
         obj.__wbg_ptr = ptr;
         AssetStateFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetStateFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetstate_free(ptr, 0);
+    }
+    /**
+     * Gets the unique asset identifier.
+     *
+     * # Returns
+     * The asset ID as a number.
+     *
+     * # Example
+     * ```javascript
+     * const assetId = assetState.assetId();
+     * console.log('Asset ID:', assetId);
+     * ```
+     * @returns {number}
+     */
+    assetId() {
+        const ret = wasm.assetstate_assetId(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Gets the number of auditors associated with this asset.
+     *
+     * # Returns
+     * The count of auditors as a number.
+     *
+     * # Example
+     * ```javascript
+     * console.log('Auditors:', assetState.auditorCount());
+     * ```
+     * @returns {number}
+     */
+    auditorCount() {
+        const ret = wasm.assetstate_auditorCount(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * Deserializes asset state from a SCALE-encoded byte array.
@@ -3420,22 +3095,6 @@ export class AssetState {
         return BigInt.asUintN(64, ret);
     }
     /**
-     * Gets the number of auditors associated with this asset.
-     *
-     * # Returns
-     * The count of auditors as a number.
-     *
-     * # Example
-     * ```javascript
-     * console.log('Auditors:', assetState.auditorCount());
-     * ```
-     * @returns {number}
-     */
-    auditorCount() {
-        const ret = wasm.assetstate_auditorCount(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
      * Gets the number of mediators associated with this asset.
      *
      * # Returns
@@ -3477,32 +3136,44 @@ export class AssetState {
      * # Examples
      * ```javascript
      * // From Polkadot.js chain data (recommended)
-     * const assetDetail = await api.query.confidentialAssets.dartAssetDetails(assetId);
-     * const assetState = new AssetState(assetId, assetDetail.mediators, assetDetail.auditors);
-     *
-     * // From pre-converted EncryptionPublicKey objects
-     * const mediatorKey = new EncryptionPublicKey("0x1234...");
-     * const auditorKey = new EncryptionPublicKey("0x5678...");
-     * const assetState = new AssetState(assetId, [mediatorKey], [auditorKey]);
-     *
-     * // From hex strings or Uint8Arrays
-     * const assetState = new AssetState(assetId, ["0xabc..."], [new Uint8Array(32)]);
+     * const assetKeys = await api.query.confidentialAssets.keys(assetId);
+     * const assetState = new AssetState(assetId, assetKeys);
      *
      * // Use in settlement legs
      * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
      * ```
      * @param {number} asset_id
-     * @param {any} mediators
-     * @param {any} auditors
+     * @param {any} asset_keys
      */
-    constructor(asset_id, mediators, auditors) {
-        const ret = wasm.assetstate_new(asset_id, mediators, auditors);
+    constructor(asset_id, asset_keys) {
+        const ret = wasm.assetstate_new(asset_id, asset_keys);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         AssetStateFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * Serializes the asset state to a SCALE-encoded byte array.
+     *
+     * This allows you to store the asset state off-chain and restore it later.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded asset state.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = assetState.toBytes();
+     * localStorage.setItem('assetState', JSON.stringify(Array.from(bytes)));
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.assetstate_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the asset state as a JSON string for debugging purposes.
@@ -3537,50 +3208,9 @@ export class AssetState {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Gets the unique asset identifier.
-     *
-     * # Returns
-     * The asset ID as a number.
-     *
-     * # Example
-     * ```javascript
-     * const assetId = assetState.assetId();
-     * console.log('Asset ID:', assetId);
-     * ```
-     * @returns {number}
-     */
-    assetId() {
-        const ret = wasm.assetstate_assetId(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * Serializes the asset state to a SCALE-encoded byte array.
-     *
-     * This allows you to store the asset state off-chain and restore it later.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded asset state.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = assetState.toBytes();
-     * localStorage.setItem('assetState', JSON.stringify(Array.from(bytes)));
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.assetstate_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) AssetState.prototype[Symbol.dispose] = AssetState.prototype.free;
 
-const AssetTreeRootFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_assettreeroot_free(ptr >>> 0, 1));
 /**
  * Asset tree root.
  *
@@ -3588,22 +3218,18 @@ const AssetTreeRootFinalization = (typeof FinalizationRegistry === 'undefined')
  * This root is used in settlement proofs to verify that asset states are valid.
  */
 export class AssetTreeRoot {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(AssetTreeRoot.prototype);
         obj.__wbg_ptr = ptr;
         AssetTreeRootFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         AssetTreeRootFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assettreeroot_free(ptr, 0);
@@ -3660,9 +3286,6 @@ export class AssetTreeRoot {
 }
 if (Symbol.dispose) AssetTreeRoot.prototype[Symbol.dispose] = AssetTreeRoot.prototype.free;
 
-const BatchedAccountAssetRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_batchedaccountassetregistrationproof_free(ptr >>> 0, 1));
 /**
  * A batched collection of account asset registration proofs for multiple accounts.
  *
@@ -3677,22 +3300,18 @@ const BatchedAccountAssetRegistrationProofFinalization = (typeof FinalizationReg
  * ```
  */
 export class BatchedAccountAssetRegistrationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(BatchedAccountAssetRegistrationProof.prototype);
         obj.__wbg_ptr = ptr;
         BatchedAccountAssetRegistrationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         BatchedAccountAssetRegistrationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_batchedaccountassetregistrationproof_free(ptr, 0);
@@ -3746,9 +3365,6 @@ export class BatchedAccountAssetRegistrationProof {
 }
 if (Symbol.dispose) BatchedAccountAssetRegistrationProof.prototype[Symbol.dispose] = BatchedAccountAssetRegistrationProof.prototype.free;
 
-const EncryptionKeyPairFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_encryptionkeypair_free(ptr >>> 0, 1));
 /**
  * Contains the encryption secret key for decrypting confidential transaction data.
  *
@@ -3766,59 +3382,21 @@ const EncryptionKeyPairFinalization = (typeof FinalizationRegistry === 'undefine
  * ```
  */
 export class EncryptionKeyPair {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(EncryptionKeyPair.prototype);
         obj.__wbg_ptr = ptr;
         EncryptionKeyPairFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         EncryptionKeyPairFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_encryptionkeypair_free(ptr, 0);
-    }
-    /**
-     * Generate mediator affirmation for a settlement leg.
-     *
-     * # Arguments
-     * * `settlement_ref` - The settlement reference (can be hex string or Uint8Array).
-     * * `leg_id` - The identifier of the settlement leg.
-     * * `leg_enc` - The encrypted settlement leg.
-     * * `accept` - Boolean indicating whether to accept (true) or reject (false) the leg.
-     * * `asset_id` - The asset ID of the settlement leg.
-     * * `amount` - The expected amount (can be null/undefined to skip check).
-     *
-     * # Returns
-     * A `MediatorAffirmationProof` that can be submitted to the blockchain.
-     *
-     * # Errors
-     * * Throws an error if decryption fails.
-     * * Throws an error if asset ID or amount do not match.
-     * * Throws an error if the account is not a mediator for the leg.
-     * @param {any} settlement_ref
-     * @param {number} leg_id
-     * @param {SettlementLegEncrypted} leg_enc
-     * @param {boolean} accept
-     * @param {number} asset_id
-     * @param {any} amount
-     * @returns {MediatorAffirmationProof}
-     */
-    mediatorAffirmationProof(settlement_ref, leg_id, leg_enc, accept, asset_id, amount) {
-        _assertClass(leg_enc, SettlementLegEncrypted);
-        const ret = wasm.encryptionkeypair_mediatorAffirmationProof(this.__wbg_ptr, settlement_ref, leg_id, leg_enc.__wbg_ptr, accept, asset_id, amount);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return MediatorAffirmationProof.__wrap(ret[0]);
     }
     /**
      * Clears the encryption secret key from memory by zeroing it out.
@@ -3832,9 +3410,6 @@ export class EncryptionKeyPair {
 }
 if (Symbol.dispose) EncryptionKeyPair.prototype[Symbol.dispose] = EncryptionKeyPair.prototype.free;
 
-const EncryptionPublicKeyFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_encryptionpublickey_free(ptr >>> 0, 1));
 /**
  * The public key used for encrypting confidential transaction data.
  *
@@ -3856,22 +3431,18 @@ const EncryptionPublicKeyFinalization = (typeof FinalizationRegistry === 'undefi
  * ```
  */
 export class EncryptionPublicKey {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(EncryptionPublicKey.prototype);
         obj.__wbg_ptr = ptr;
         EncryptionPublicKeyFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         EncryptionPublicKeyFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_encryptionpublickey_free(ptr, 0);
@@ -3899,6 +3470,18 @@ export class EncryptionPublicKey {
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.encryptionpublickey_fromBytes(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return EncryptionPublicKey.__wrap(ret[0]);
+    }
+    /**
+     * Import encryption public key from a JsValue.
+     * @param {any} js_value
+     * @returns {EncryptionPublicKey}
+     */
+    static fromJs(js_value) {
+        const ret = wasm.encryptionpublickey_fromJs(js_value);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -3940,9 +3523,27 @@ export class EncryptionPublicKey {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         EncryptionPublicKeyFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * Serializes the encryption public key to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded public key.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = encryptionKey.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.encryptionpublickey_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the encryption public key as a JsValue for interoperability.
@@ -3954,18 +3555,6 @@ export class EncryptionPublicKey {
             throw takeFromExternrefTable0(ret[1]);
         }
         return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Import encryption public key from a JsValue.
-     * @param {any} js_value
-     * @returns {EncryptionPublicKey}
-     */
-    static fromJs(js_value) {
-        const ret = wasm.encryptionpublickey_fromJs(js_value);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return EncryptionPublicKey.__wrap(ret[0]);
     }
     /**
      * Exports the encryption public key as a JSON string for debugging purposes.
@@ -4000,30 +3589,9 @@ export class EncryptionPublicKey {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
     }
-    /**
-     * Serializes the encryption public key to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded public key.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = encryptionKey.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.encryptionpublickey_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) EncryptionPublicKey.prototype[Symbol.dispose] = EncryptionPublicKey.prototype.free;
 
-const FeeAccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_feeaccountleafpathandroot_free(ptr >>> 0, 1));
 /**
  * Fee account leaf path and root.
  *
@@ -4031,22 +3599,18 @@ const FeeAccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === '
  * at a specific block number. Used for generating zero-knowledge proofs about fee account states.
  */
 export class FeeAccountLeafPathAndRoot {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(FeeAccountLeafPathAndRoot.prototype);
         obj.__wbg_ptr = ptr;
         FeeAccountLeafPathAndRootFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         FeeAccountLeafPathAndRootFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_feeaccountleafpathandroot_free(ptr, 0);
@@ -4105,9 +3669,6 @@ export class FeeAccountLeafPathAndRoot {
 }
 if (Symbol.dispose) FeeAccountLeafPathAndRoot.prototype[Symbol.dispose] = FeeAccountLeafPathAndRoot.prototype.free;
 
-const LegBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_legbuilder_free(ptr >>> 0, 1));
 /**
  * Holds the information needed for a single transfer leg in a settlement.
  *
@@ -4130,30 +3691,54 @@ const LegBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class LegBuilder {
-
     toJSON() {
         return {
-            sender: this.sender,
-            receiver: this.receiver,
-            asset: this.asset,
             amount: this.amount,
+            asset: this.asset,
+            receiver: this.receiver,
+            sender: this.sender,
         };
     }
-
     toString() {
         return JSON.stringify(this);
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         LegBuilderFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_legbuilder_free(ptr, 0);
+    }
+    /**
+     * @returns {bigint}
+     */
+    get amount() {
+        const ret = wasm.__wbg_get_legbuilder_amount(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+     * @returns {AssetState}
+     */
+    get asset() {
+        const ret = wasm.__wbg_get_legbuilder_asset(this.__wbg_ptr);
+        return AssetState.__wrap(ret);
+    }
+    /**
+     * @returns {AccountPublicKeys}
+     */
+    get receiver() {
+        const ret = wasm.__wbg_get_legbuilder_receiver(this.__wbg_ptr);
+        return AccountPublicKeys.__wrap(ret);
+    }
+    /**
+     * @returns {AccountPublicKeys}
+     */
+    get sender() {
+        const ret = wasm.__wbg_get_legbuilder_sender(this.__wbg_ptr);
+        return AccountPublicKeys.__wrap(ret);
     }
     /**
      * Creates a new transfer leg for a settlement.
@@ -4202,46 +3787,15 @@ export class LegBuilder {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         LegBuilderFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
     /**
-     * @returns {AccountPublicKeys}
+     * @param {bigint} arg0
      */
-    get sender() {
-        const ret = wasm.__wbg_get_legbuilder_sender(this.__wbg_ptr);
-        return AccountPublicKeys.__wrap(ret);
-    }
-    /**
-     * @param {AccountPublicKeys} arg0
-     */
-    set sender(arg0) {
-        _assertClass(arg0, AccountPublicKeys);
-        var ptr0 = arg0.__destroy_into_raw();
-        wasm.__wbg_set_legbuilder_sender(this.__wbg_ptr, ptr0);
-    }
-    /**
-     * @returns {AccountPublicKeys}
-     */
-    get receiver() {
-        const ret = wasm.__wbg_get_legbuilder_receiver(this.__wbg_ptr);
-        return AccountPublicKeys.__wrap(ret);
-    }
-    /**
-     * @param {AccountPublicKeys} arg0
-     */
-    set receiver(arg0) {
-        _assertClass(arg0, AccountPublicKeys);
-        var ptr0 = arg0.__destroy_into_raw();
-        wasm.__wbg_set_legbuilder_receiver(this.__wbg_ptr, ptr0);
-    }
-    /**
-     * @returns {AssetState}
-     */
-    get asset() {
-        const ret = wasm.__wbg_get_legbuilder_asset(this.__wbg_ptr);
-        return AssetState.__wrap(ret);
+    set amount(arg0) {
+        wasm.__wbg_set_legbuilder_amount(this.__wbg_ptr, arg0);
     }
     /**
      * @param {AssetState} arg0
@@ -4252,36 +3806,34 @@ export class LegBuilder {
         wasm.__wbg_set_legbuilder_asset(this.__wbg_ptr, ptr0);
     }
     /**
-     * @returns {bigint}
+     * @param {AccountPublicKeys} arg0
      */
-    get amount() {
-        const ret = wasm.__wbg_get_legbuilder_amount(this.__wbg_ptr);
-        return BigInt.asUintN(64, ret);
+    set receiver(arg0) {
+        _assertClass(arg0, AccountPublicKeys);
+        var ptr0 = arg0.__destroy_into_raw();
+        wasm.__wbg_set_legbuilder_receiver(this.__wbg_ptr, ptr0);
     }
     /**
-     * @param {bigint} arg0
+     * @param {AccountPublicKeys} arg0
      */
-    set amount(arg0) {
-        wasm.__wbg_set_legbuilder_amount(this.__wbg_ptr, arg0);
+    set sender(arg0) {
+        _assertClass(arg0, AccountPublicKeys);
+        var ptr0 = arg0.__destroy_into_raw();
+        wasm.__wbg_set_legbuilder_sender(this.__wbg_ptr, ptr0);
     }
 }
 if (Symbol.dispose) LegBuilder.prototype[Symbol.dispose] = LegBuilder.prototype.free;
 
-const MasterSeedFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_masterseed_free(ptr >>> 0, 1));
 /**
  * MasterSeed for deriving account keys.
  */
 export class MasterSeed {
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         MasterSeedFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_masterseed_free(ptr, 0);
@@ -4328,16 +3880,13 @@ export class MasterSeed {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         MasterSeedFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
 }
 if (Symbol.dispose) MasterSeed.prototype[Symbol.dispose] = MasterSeed.prototype.free;
 
-const MediatorAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_mediatoraffirmationproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof for mediator affirmation of a settlement.
  *
@@ -4358,22 +3907,18 @@ const MediatorAffirmationProofFinalization = (typeof FinalizationRegistry === 'u
  * ```
  */
 export class MediatorAffirmationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(MediatorAffirmationProof.prototype);
         obj.__wbg_ptr = ptr;
         MediatorAffirmationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         MediatorAffirmationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_mediatoraffirmationproof_free(ptr, 0);
@@ -4405,30 +3950,6 @@ export class MediatorAffirmationProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return MediatorAffirmationProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hex-encoded string.
-     *
-     * # Returns
-     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.mediatoraffirmationproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Imports a proof from a hex-encoded string.
@@ -4477,12 +3998,33 @@ export class MediatorAffirmationProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hex-encoded string.
+     *
+     * # Returns
+     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.mediatoraffirmationproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) MediatorAffirmationProof.prototype[Symbol.dispose] = MediatorAffirmationProof.prototype.free;
 
-const ReceiverAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_receiveraffirmationproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof that the receiver affirms a settlement leg.
  *
@@ -4508,22 +4050,18 @@ const ReceiverAffirmationProofFinalization = (typeof FinalizationRegistry === 'u
  * ```
  */
 export class ReceiverAffirmationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(ReceiverAffirmationProof.prototype);
         obj.__wbg_ptr = ptr;
         ReceiverAffirmationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         ReceiverAffirmationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_receiveraffirmationproof_free(ptr, 0);
@@ -4555,30 +4093,6 @@ export class ReceiverAffirmationProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return ReceiverAffirmationProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hex-encoded string.
-     *
-     * # Returns
-     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.receiveraffirmationproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Imports a proof from a hex-encoded string.
@@ -4627,12 +4141,33 @@ export class ReceiverAffirmationProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hex-encoded string.
+     *
+     * # Returns
+     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.receiveraffirmationproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) ReceiverAffirmationProof.prototype[Symbol.dispose] = ReceiverAffirmationProof.prototype.free;
 
-const ReceiverClaimProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_receiverclaimproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof for claiming assets from a settlement leg.
  *
@@ -4658,22 +4193,18 @@ const ReceiverClaimProofFinalization = (typeof FinalizationRegistry === 'undefin
  * ```
  */
 export class ReceiverClaimProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(ReceiverClaimProof.prototype);
         obj.__wbg_ptr = ptr;
         ReceiverClaimProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         ReceiverClaimProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_receiverclaimproof_free(ptr, 0);
@@ -4705,30 +4236,6 @@ export class ReceiverClaimProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return ReceiverClaimProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hex-encoded string.
-     *
-     * # Returns
-     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.receiverclaimproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Imports a proof from a hex-encoded string.
@@ -4777,12 +4284,33 @@ export class ReceiverClaimProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hex-encoded string.
+     *
+     * # Returns
+     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.receiverclaimproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) ReceiverClaimProof.prototype[Symbol.dispose] = ReceiverClaimProof.prototype.free;
 
-const SenderAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_senderaffirmationproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof that the sender affirms a settlement leg.
  *
@@ -4808,22 +4336,18 @@ const SenderAffirmationProofFinalization = (typeof FinalizationRegistry === 'und
  * ```
  */
 export class SenderAffirmationProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SenderAffirmationProof.prototype);
         obj.__wbg_ptr = ptr;
         SenderAffirmationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SenderAffirmationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_senderaffirmationproof_free(ptr, 0);
@@ -4855,31 +4379,6 @@ export class SenderAffirmationProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SenderAffirmationProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hex-encoded string.
-     *
-     * # Returns
-     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * console.log(hexString); // "a1b2c3..."
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.senderaffirmationproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Imports a proof from a hex-encoded string.
@@ -4933,12 +4432,34 @@ export class SenderAffirmationProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hex-encoded string.
+     *
+     * # Returns
+     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * console.log(hexString); // "a1b2c3..."
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.senderaffirmationproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) SenderAffirmationProof.prototype[Symbol.dispose] = SenderAffirmationProof.prototype.free;
 
-const SenderCounterUpdateProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_sendercounterupdateproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof for updating the sender's counter after leg affirmation.
  *
@@ -4964,22 +4485,18 @@ const SenderCounterUpdateProofFinalization = (typeof FinalizationRegistry === 'u
  * ```
  */
 export class SenderCounterUpdateProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SenderCounterUpdateProof.prototype);
         obj.__wbg_ptr = ptr;
         SenderCounterUpdateProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SenderCounterUpdateProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_sendercounterupdateproof_free(ptr, 0);
@@ -5011,30 +4528,6 @@ export class SenderCounterUpdateProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SenderCounterUpdateProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a hex-encoded string.
-     *
-     * # Returns
-     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = proof.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.sendercounterupdateproof_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
     }
     /**
      * Imports a proof from a hex-encoded string.
@@ -5083,12 +4576,33 @@ export class SenderCounterUpdateProof {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
+    /**
+     * Exports the proof as a hex-encoded string.
+     *
+     * # Returns
+     * A hex string (without "0x" prefix) representing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = proof.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.sendercounterupdateproof_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
 }
 if (Symbol.dispose) SenderCounterUpdateProof.prototype[Symbol.dispose] = SenderCounterUpdateProof.prototype.free;
 
-const SenderReversalProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_senderreversalproof_free(ptr >>> 0, 1));
 /**
  * Zero-knowledge proof for reversing a sender's affirmation of a settlement leg.
  *
@@ -5113,26 +4627,22 @@ const SenderReversalProofFinalization = (typeof FinalizationRegistry === 'undefi
  * const result = await issuer.senderRevert(proof);
  * ```
  */
-export class SenderReversalProof {
-
+export class SenderRevertAffirmationProof {
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(SenderReversalProof.prototype);
+        const obj = Object.create(SenderRevertAffirmationProof.prototype);
         obj.__wbg_ptr = ptr;
-        SenderReversalProofFinalization.register(obj, obj.__wbg_ptr, obj);
+        SenderRevertAffirmationProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
-        SenderReversalProofFinalization.unregister(this);
+        SenderRevertAffirmationProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
-        wasm.__wbg_senderreversalproof_free(ptr, 0);
+        wasm.__wbg_senderrevertaffirmationproof_free(ptr, 0);
     }
     /**
      * Imports a proof from a SCALE-encoded byte array.
@@ -5151,16 +4661,63 @@ export class SenderReversalProof {
      * const proof = SenderReversalProof.fromBytes(bytes);
      * ```
      * @param {Uint8Array} bytes
-     * @returns {SenderReversalProof}
+     * @returns {SenderRevertAffirmationProof}
      */
     static fromBytes(bytes) {
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.senderreversalproof_fromBytes(ptr0, len0);
+        const ret = wasm.senderrevertaffirmationproof_fromBytes(ptr0, len0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        return SenderReversalProof.__wrap(ret[0]);
+        return SenderRevertAffirmationProof.__wrap(ret[0]);
+    }
+    /**
+     * Imports a proof from a hex-encoded string.
+     *
+     * # Arguments
+     * * `hex_str` - A hex string representing the SCALE-encoded proof (with or without "0x" prefix).
+     *
+     * # Returns
+     * A `SenderRevertAffirmationProof` instance.
+     *
+     * # Errors
+     * * Throws an error if the string is not valid hex.
+     * * Throws an error if the decoded bytes are not a valid sender revert affirmation proof.
+     *
+     * # Example
+     * ```javascript
+     * const proof = SenderRevertAffirmationProof.fromHex("a1b2c3...");
+     * ```
+     * @param {string} hex_str
+     * @returns {SenderRevertAffirmationProof}
+     */
+    static fromHex(hex_str) {
+        const ptr0 = passStringToWasm0(hex_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.senderrevertaffirmationproof_fromHex(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SenderRevertAffirmationProof.__wrap(ret[0]);
+    }
+    /**
+     * Exports the proof as a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded proof.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = proof.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.senderrevertaffirmationproof_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Exports the proof as a hex-encoded string.
@@ -5178,7 +4735,7 @@ export class SenderReversalProof {
         let deferred1_0;
         let deferred1_1;
         try {
-            const ret = wasm.senderreversalproof_toHex(this.__wbg_ptr);
+            const ret = wasm.senderrevertaffirmationproof_toHex(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -5186,59 +4743,9 @@ export class SenderReversalProof {
             wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
         }
     }
-    /**
-     * Imports a proof from a hex-encoded string.
-     *
-     * # Arguments
-     * * `hex_str` - A hex string representing the SCALE-encoded proof (with or without "0x" prefix).
-     *
-     * # Returns
-     * A `SenderReversalProof` instance.
-     *
-     * # Errors
-     * * Throws an error if the string is not valid hex.
-     * * Throws an error if the decoded bytes are not a valid sender reversal proof.
-     *
-     * # Example
-     * ```javascript
-     * const proof = SenderReversalProof.fromHex("a1b2c3...");
-     * ```
-     * @param {string} hex_str
-     * @returns {SenderReversalProof}
-     */
-    static fromHex(hex_str) {
-        const ptr0 = passStringToWasm0(hex_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.senderreversalproof_fromHex(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return SenderReversalProof.__wrap(ret[0]);
-    }
-    /**
-     * Exports the proof as a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded proof.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = proof.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.senderreversalproof_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
-if (Symbol.dispose) SenderReversalProof.prototype[Symbol.dispose] = SenderReversalProof.prototype.free;
+if (Symbol.dispose) SenderRevertAffirmationProof.prototype[Symbol.dispose] = SenderRevertAffirmationProof.prototype.free;
 
-const SettlementBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementbuilder_free(ptr >>> 0, 1));
 /**
  * Builds a confidential settlement transaction with multiple legs.
  *
@@ -5264,14 +4771,12 @@ const SettlementBuilderFinalization = (typeof FinalizationRegistry === 'undefine
  * ```
  */
 export class SettlementBuilder {
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementBuilderFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementbuilder_free(ptr, 0);
@@ -5306,6 +4811,53 @@ export class SettlementBuilder {
         }
     }
     /**
+     * Adds a transfer leg to the settlement.
+     *
+     * Multiple legs can be added to create a multi-leg settlement where multiple
+     * transfers happen atomically.
+     *
+     * # Arguments
+     * * `leg` - A `LegBuilder` containing the transfer details.
+     *
+     * # Example
+     * ```javascript
+     * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, 1000n);
+     * builder.addLeg(leg);
+     * ```
+     * @param {LegBuilder} leg
+     */
+    addLeg(leg) {
+        _assertClass(leg, LegBuilder);
+        wasm.settlementbuilder_addLeg(this.__wbg_ptr, leg.__wbg_ptr);
+    }
+    /**
+     * Builds the final settlement proof from all added legs and paths.
+     *
+     * This consumes the builder and generates the zero-knowledge proof that can
+     * be submitted to the blockchain to create the settlement.
+     *
+     * # Returns
+     * A `SettlementProof` ready to be submitted on-chain.
+     *
+     * # Errors
+     * * Throws an error if proof generation fails (e.g., missing asset paths).
+     *
+     * # Example
+     * ```javascript
+     * const proof = builder.build();
+     * const result = await signer.createSettlement(proof);
+     * ```
+     * @returns {SettlementProof}
+     */
+    build() {
+        const ptr = this.__destroy_into_raw();
+        const ret = wasm.settlementbuilder_build(ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SettlementProof.__wrap(ret[0]);
+    }
+    /**
      * Creates a new settlement builder.
      *
      * # Arguments
@@ -5338,63 +4890,13 @@ export class SettlementBuilder {
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
-        this.__wbg_ptr = ret[0] >>> 0;
+        this.__wbg_ptr = ret[0];
         SettlementBuilderFinalization.register(this, this.__wbg_ptr, this);
         return this;
-    }
-    /**
-     * Builds the final settlement proof from all added legs and paths.
-     *
-     * This consumes the builder and generates the zero-knowledge proof that can
-     * be submitted to the blockchain to create the settlement.
-     *
-     * # Returns
-     * A `SettlementProof` ready to be submitted on-chain.
-     *
-     * # Errors
-     * * Throws an error if proof generation fails (e.g., missing asset paths).
-     *
-     * # Example
-     * ```javascript
-     * const proof = builder.build();
-     * const result = await signer.createSettlement(proof);
-     * ```
-     * @returns {SettlementProof}
-     */
-    build() {
-        const ptr = this.__destroy_into_raw();
-        const ret = wasm.settlementbuilder_build(ptr);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return SettlementProof.__wrap(ret[0]);
-    }
-    /**
-     * Adds a transfer leg to the settlement.
-     *
-     * Multiple legs can be added to create a multi-leg settlement where multiple
-     * transfers happen atomically.
-     *
-     * # Arguments
-     * * `leg` - A `LegBuilder` containing the transfer details.
-     *
-     * # Example
-     * ```javascript
-     * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, 1000n);
-     * builder.addLeg(leg);
-     * ```
-     * @param {LegBuilder} leg
-     */
-    addLeg(leg) {
-        _assertClass(leg, LegBuilder);
-        wasm.settlementbuilder_addLeg(this.__wbg_ptr, leg.__wbg_ptr);
     }
 }
 if (Symbol.dispose) SettlementBuilder.prototype[Symbol.dispose] = SettlementBuilder.prototype.free;
 
-const SettlementLegFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementleg_free(ptr >>> 0, 1));
 /**
  * Represents a decrypted settlement leg with visible transfer details.
  *
@@ -5402,8 +4904,8 @@ const SettlementLegFinalization = (typeof FinalizationRegistry === 'undefined')
  * The fields are accessible as properties in JavaScript.
  *
  * # Properties
- * * `sender` - The sender's account public key (`AccountPublicKey`)
- * * `receiver` - The receiver's account public key (`AccountPublicKey`)
+ * * `sender` - The sender's encryption public keys (`EncryptionPublicKey`)
+ * * `receiver` - The receiver's encryption public keys (`EncryptionPublicKey`)
  * * `assetId` - The asset identifier (number)
  * * `amount` - The transfer amount (number)
  *
@@ -5421,39 +4923,54 @@ const SettlementLegFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class SettlementLeg {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SettlementLeg.prototype);
         obj.__wbg_ptr = ptr;
         SettlementLegFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     toJSON() {
         return {
+            amount: this.amount,
+            assetId: this.assetId,
+            receiver: this.receiver,
             role: this.role,
             sender: this.sender,
-            receiver: this.receiver,
-            assetId: this.assetId,
-            amount: this.amount,
         };
     }
-
     toString() {
         return JSON.stringify(this);
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementLegFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementleg_free(ptr, 0);
+    }
+    /**
+     * @returns {bigint}
+     */
+    get amount() {
+        const ret = wasm.__wbg_get_settlementleg_amount(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+     * @returns {number}
+     */
+    get assetId() {
+        const ret = wasm.__wbg_get_settlementleg_assetId(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {EncryptionPublicKey}
+     */
+    get receiver() {
+        const ret = wasm.__wbg_get_settlementleg_receiver(this.__wbg_ptr);
+        return EncryptionPublicKey.__wrap(ret);
     }
     /**
      * @returns {string}
@@ -5471,49 +4988,17 @@ export class SettlementLeg {
         }
     }
     /**
-     * @param {string} arg0
-     */
-    set role(arg0) {
-        const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.__wbg_set_settlementleg_role(this.__wbg_ptr, ptr0, len0);
-    }
-    /**
-     * @returns {AccountPublicKey}
+     * @returns {EncryptionPublicKey}
      */
     get sender() {
         const ret = wasm.__wbg_get_settlementleg_sender(this.__wbg_ptr);
-        return AccountPublicKey.__wrap(ret);
+        return EncryptionPublicKey.__wrap(ret);
     }
     /**
-     * @param {AccountPublicKey} arg0
+     * @param {bigint} arg0
      */
-    set sender(arg0) {
-        _assertClass(arg0, AccountPublicKey);
-        var ptr0 = arg0.__destroy_into_raw();
-        wasm.__wbg_set_settlementleg_sender(this.__wbg_ptr, ptr0);
-    }
-    /**
-     * @returns {AccountPublicKey}
-     */
-    get receiver() {
-        const ret = wasm.__wbg_get_settlementleg_receiver(this.__wbg_ptr);
-        return AccountPublicKey.__wrap(ret);
-    }
-    /**
-     * @param {AccountPublicKey} arg0
-     */
-    set receiver(arg0) {
-        _assertClass(arg0, AccountPublicKey);
-        var ptr0 = arg0.__destroy_into_raw();
-        wasm.__wbg_set_settlementleg_receiver(this.__wbg_ptr, ptr0);
-    }
-    /**
-     * @returns {number}
-     */
-    get assetId() {
-        const ret = wasm.__wbg_get_settlementleg_assetId(this.__wbg_ptr);
-        return ret >>> 0;
+    set amount(arg0) {
+        wasm.__wbg_set_settlementleg_amount(this.__wbg_ptr, arg0);
     }
     /**
      * @param {number} arg0
@@ -5522,24 +5007,32 @@ export class SettlementLeg {
         wasm.__wbg_set_settlementleg_assetId(this.__wbg_ptr, arg0);
     }
     /**
-     * @returns {bigint}
+     * @param {EncryptionPublicKey} arg0
      */
-    get amount() {
-        const ret = wasm.__wbg_get_settlementleg_amount(this.__wbg_ptr);
-        return BigInt.asUintN(64, ret);
+    set receiver(arg0) {
+        _assertClass(arg0, EncryptionPublicKey);
+        var ptr0 = arg0.__destroy_into_raw();
+        wasm.__wbg_set_settlementleg_receiver(this.__wbg_ptr, ptr0);
     }
     /**
-     * @param {bigint} arg0
+     * @param {string} arg0
      */
-    set amount(arg0) {
-        wasm.__wbg_set_settlementleg_amount(this.__wbg_ptr, arg0);
+    set role(arg0) {
+        const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_settlementleg_role(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * @param {EncryptionPublicKey} arg0
+     */
+    set sender(arg0) {
+        _assertClass(arg0, EncryptionPublicKey);
+        var ptr0 = arg0.__destroy_into_raw();
+        wasm.__wbg_set_settlementleg_sender(this.__wbg_ptr, ptr0);
     }
 }
 if (Symbol.dispose) SettlementLeg.prototype[Symbol.dispose] = SettlementLeg.prototype.free;
 
-const SettlementLegEncryptedFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegencrypted_free(ptr >>> 0, 1));
 /**
  * Represents an encrypted settlement leg retrieved from the blockchain.
  *
@@ -5562,22 +5055,18 @@ const SettlementLegEncryptedFinalization = (typeof FinalizationRegistry === 'und
  * ```
  */
 export class SettlementLegEncrypted {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SettlementLegEncrypted.prototype);
         obj.__wbg_ptr = ptr;
         SettlementLegEncryptedFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementLegEncryptedFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementlegencrypted_free(ptr, 0);
@@ -5609,6 +5098,76 @@ export class SettlementLegEncrypted {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SettlementLegEncrypted.__wrap(ret[0]);
+    }
+    /**
+     * Deserializes an encrypted leg from a hexadecimal string.
+     *
+     * # Arguments
+     * * `hex_str` - A hex-encoded string (with or without "0x" prefix).
+     *
+     * # Returns
+     * The deserialized `SettlementLegEncrypted`.
+     *
+     * # Errors
+     * * Throws an error if the hex string is invalid.
+     *
+     * # Example
+     * ```javascript
+     * const encryptedLeg = SettlementLegEncrypted.fromHex("0x1234...");
+     * ```
+     * @param {string} hex_str
+     * @returns {SettlementLegEncrypted}
+     */
+    static fromHex(hex_str) {
+        const ptr0 = passStringToWasm0(hex_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.settlementlegencrypted_fromHex(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SettlementLegEncrypted.__wrap(ret[0]);
+    }
+    /**
+     * Serializes the encrypted leg to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded encrypted leg.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = encryptedLeg.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.settlementlegencrypted_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * Exports the encrypted leg as a hexadecimal string.
+     *
+     * # Returns
+     * A hex-encoded string representation of the encrypted leg.
+     *
+     * # Example
+     * ```javascript
+     * const hexString = encryptedLeg.toHex();
+     * ```
+     * @returns {string}
+     */
+    toHex() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.settlementlegencrypted_toHex(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
     }
     /**
      * Attempts to decrypt the leg using account keys.
@@ -5673,88 +5232,15 @@ export class SettlementLegEncrypted {
      */
     tryDecryptAsMediatorOrAuditor(encryption_key, max_asset_id) {
         _assertClass(encryption_key, EncryptionKeyPair);
-        const ret = wasm.settlementlegencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr, isLikeNone(max_asset_id) ? 0x100000001 : (max_asset_id) >>> 0);
+        const ret = wasm.settlementlegencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr, isLikeNone(max_asset_id) ? Number.MAX_SAFE_INTEGER : (max_asset_id) >>> 0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
         return ret[0] === 0 ? undefined : SettlementLeg.__wrap(ret[0]);
     }
-    /**
-     * Exports the encrypted leg as a hexadecimal string.
-     *
-     * # Returns
-     * A hex-encoded string representation of the encrypted leg.
-     *
-     * # Example
-     * ```javascript
-     * const hexString = encryptedLeg.toHex();
-     * ```
-     * @returns {string}
-     */
-    toHex() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.settlementlegencrypted_toHex(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
-     * Deserializes an encrypted leg from a hexadecimal string.
-     *
-     * # Arguments
-     * * `hex_str` - A hex-encoded string (with or without "0x" prefix).
-     *
-     * # Returns
-     * The deserialized `SettlementLegEncrypted`.
-     *
-     * # Errors
-     * * Throws an error if the hex string is invalid.
-     *
-     * # Example
-     * ```javascript
-     * const encryptedLeg = SettlementLegEncrypted.fromHex("0x1234...");
-     * ```
-     * @param {string} hex_str
-     * @returns {SettlementLegEncrypted}
-     */
-    static fromHex(hex_str) {
-        const ptr0 = passStringToWasm0(hex_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.settlementlegencrypted_fromHex(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return SettlementLegEncrypted.__wrap(ret[0]);
-    }
-    /**
-     * Serializes the encrypted leg to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded encrypted leg.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = encryptedLeg.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.settlementlegencrypted_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
 }
 if (Symbol.dispose) SettlementLegEncrypted.prototype[Symbol.dispose] = SettlementLegEncrypted.prototype.free;
 
-const SettlementLegsFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegs_free(ptr >>> 0, 1));
 /**
  * A collection of decrypted (or partially decrypted) settlement legs.
  *
@@ -5779,22 +5265,18 @@ const SettlementLegsFinalization = (typeof FinalizationRegistry === 'undefined')
  * ```
  */
 export class SettlementLegs {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SettlementLegs.prototype);
         obj.__wbg_ptr = ptr;
         SettlementLegsFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementLegsFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementlegs_free(ptr, 0);
@@ -5844,9 +5326,6 @@ export class SettlementLegs {
 }
 if (Symbol.dispose) SettlementLegs.prototype[Symbol.dispose] = SettlementLegs.prototype.free;
 
-const SettlementLegsEncryptedFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegsencrypted_free(ptr >>> 0, 1));
 /**
  * A collection of encrypted settlement legs.
  *
@@ -5870,22 +5349,18 @@ const SettlementLegsEncryptedFinalization = (typeof FinalizationRegistry === 'un
  * ```
  */
 export class SettlementLegsEncrypted {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SettlementLegsEncrypted.prototype);
         obj.__wbg_ptr = ptr;
         SettlementLegsEncryptedFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementLegsEncryptedFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementlegsencrypted_free(ptr, 0);
@@ -5917,6 +5392,64 @@ export class SettlementLegsEncrypted {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SettlementLegsEncrypted.__wrap(ret[0]);
+    }
+    /**
+     * Gets an encrypted leg by its index.
+     *
+     * # Arguments
+     * * `index` - The zero-based index of the leg to retrieve.
+     *
+     * # Returns
+     * * `Some(SettlementLegEncrypted)` if the index is valid.
+     * * `None` if the index is out of bounds.
+     *
+     * # Example
+     * ```javascript
+     * const leg = encryptedLegs.getLeg(0);
+     * if (leg) {
+     *     const decrypted = leg.tryDecrypt(accountKeys);
+     * }
+     * ```
+     * @param {number} index
+     * @returns {SettlementLegEncrypted | undefined}
+     */
+    getLeg(index) {
+        const ret = wasm.settlementlegsencrypted_getLeg(this.__wbg_ptr, index);
+        return ret === 0 ? undefined : SettlementLegEncrypted.__wrap(ret);
+    }
+    /**
+     * Gets the number of encrypted legs.
+     *
+     * # Returns
+     * The count of legs as a number.
+     *
+     * # Example
+     * ```javascript
+     * console.log('Number of legs:', encryptedLegs.legCount());
+     * ```
+     * @returns {number}
+     */
+    legCount() {
+        const ret = wasm.settlementlegsencrypted_legCount(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Serializes all encrypted legs to a SCALE-encoded byte array.
+     *
+     * # Returns
+     * A `Uint8Array` containing the SCALE-encoded encrypted legs.
+     *
+     * # Example
+     * ```javascript
+     * const bytes = encryptedLegs.toBytes();
+     * ```
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.settlementlegsencrypted_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * Attempts to decrypt all legs using account keys.
@@ -5974,70 +5507,9 @@ export class SettlementLegsEncrypted {
         const ret = wasm.settlementlegsencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr);
         return SettlementLegs.__wrap(ret);
     }
-    /**
-     * Gets an encrypted leg by its index.
-     *
-     * # Arguments
-     * * `index` - The zero-based index of the leg to retrieve.
-     *
-     * # Returns
-     * * `Some(SettlementLegEncrypted)` if the index is valid.
-     * * `None` if the index is out of bounds.
-     *
-     * # Example
-     * ```javascript
-     * const leg = encryptedLegs.getLeg(0);
-     * if (leg) {
-     *     const decrypted = leg.tryDecrypt(accountKeys);
-     * }
-     * ```
-     * @param {number} index
-     * @returns {SettlementLegEncrypted | undefined}
-     */
-    getLeg(index) {
-        const ret = wasm.settlementlegsencrypted_getLeg(this.__wbg_ptr, index);
-        return ret === 0 ? undefined : SettlementLegEncrypted.__wrap(ret);
-    }
-    /**
-     * Serializes all encrypted legs to a SCALE-encoded byte array.
-     *
-     * # Returns
-     * A `Uint8Array` containing the SCALE-encoded encrypted legs.
-     *
-     * # Example
-     * ```javascript
-     * const bytes = encryptedLegs.toBytes();
-     * ```
-     * @returns {Uint8Array}
-     */
-    toBytes() {
-        const ret = wasm.settlementlegsencrypted_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
-    /**
-     * Gets the number of encrypted legs.
-     *
-     * # Returns
-     * The count of legs as a number.
-     *
-     * # Example
-     * ```javascript
-     * console.log('Number of legs:', encryptedLegs.legCount());
-     * ```
-     * @returns {number}
-     */
-    legCount() {
-        const ret = wasm.settlementlegsencrypted_legCount(this.__wbg_ptr);
-        return ret >>> 0;
-    }
 }
 if (Symbol.dispose) SettlementLegsEncrypted.prototype[Symbol.dispose] = SettlementLegsEncrypted.prototype.free;
 
-const SettlementProofFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_settlementproof_free(ptr >>> 0, 1));
 /**
  * A zero-knowledge proof for creating a confidential settlement on-chain.
  *
@@ -6054,22 +5526,18 @@ const SettlementProofFinalization = (typeof FinalizationRegistry === 'undefined'
  * ```
  */
 export class SettlementProof {
-
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(SettlementProof.prototype);
         obj.__wbg_ptr = ptr;
         SettlementProofFinalization.register(obj, obj.__wbg_ptr, obj);
         return obj;
     }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         SettlementProofFinalization.unregister(this);
         return ptr;
     }
-
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_settlementproof_free(ptr, 0);
@@ -6101,22 +5569,6 @@ export class SettlementProof {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SettlementProof.__wrap(ret[0]);
-    }
-    /**
-     * Gets the number of legs in this settlement.
-     *
-     * # Returns
-     * The count of transfer legs as a number.
-     *
-     * # Example
-     * ```javascript
-     * console.log('Settlement has', proof.getLegCount(), 'legs');
-     * ```
-     * @returns {number}
-     */
-    getLegCount() {
-        const ret = wasm.settlementproof_getLegCount(this.__wbg_ptr);
-        return ret >>> 0;
     }
     /**
      * Gets the block number at which the asset tree root was captured.
@@ -6158,6 +5610,22 @@ export class SettlementProof {
         return SettlementLegsEncrypted.__wrap(ret);
     }
     /**
+     * Gets the number of legs in this settlement.
+     *
+     * # Returns
+     * The count of transfer legs as a number.
+     *
+     * # Example
+     * ```javascript
+     * console.log('Settlement has', proof.getLegCount(), 'legs');
+     * ```
+     * @returns {number}
+     */
+    getLegCount() {
+        const ret = wasm.settlementproof_getLegCount(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * Gets the settlement memo/description.
      *
      * # Returns
@@ -6195,160 +5663,216 @@ export class SettlementProof {
 }
 if (Symbol.dispose) SettlementProof.prototype[Symbol.dispose] = SettlementProof.prototype.free;
 
-export function __wbg_BigInt_77ad2fe9a1c378c1(arg0) {
+/**
+ * Generates a cryptographically secure random 32-byte seed for key generation.
+ *
+ * This function uses the operating system's random number generator to produce
+ * a high-quality random seed suitable for generating account keys.
+ *
+ * # Returns
+ * A 64-character hexadecimal string representing the 32-byte seed.
+ *
+ * # Errors
+ * * May throw an error if the OS random number generator is unavailable (rare).
+ *
+ * # Example
+ * ```javascript
+ * const seed = generateRandomSeed();
+ * console.log('Random seed:', seed); // e.g., "a1b2c3d4..."
+ *
+ * // Use the seed to create account keys
+ * const keys = new AccountKeys(seed);
+ * ```
+ * @returns {string}
+ */
+export function generateRandomSeed() {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.generateRandomSeed();
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Initialize the WASM module. This should be called once when loading the module.
+ * It sets up panic hooks for better error messages in the browser console.
+ */
+export function init() {
+    wasm.init();
+}
+
+/**
+ * Get the version of the polymesh-dart-wasm library
+ * @returns {string}
+ */
+export function version() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.version();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+export function __wbg_BigInt_590a7bb99baad06a(arg0) {
     const ret = BigInt(arg0);
     return ret;
-};
-
-export function __wbg_BigInt_7bf8b8b2f99c431a() { return handleError(function (arg0) {
+}
+export function __wbg_BigInt_d576983233c6e0d1() { return handleError(function (arg0) {
     const ret = BigInt(arg0);
     return ret;
-}, arguments) };
-
-export function __wbg_Error_e83987f665cf5504(arg0, arg1) {
+}, arguments); }
+export function __wbg_Error_ef53bc310eb298a0(arg0, arg1) {
     const ret = Error(getStringFromWasm0(arg0, arg1));
     return ret;
-};
-
-export function __wbg_String_8f0eb39a4a4c2f66(arg0, arg1) {
+}
+export function __wbg_Number_6b506e6536831eaa(arg0) {
+    const ret = Number(arg0);
+    return ret;
+}
+export function __wbg_String_8564e559799eccda(arg0, arg1) {
     const ret = String(arg1);
     const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
     getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-};
-
-export function __wbg___wbindgen_boolean_get_6d5a1ee65bab5f68(arg0) {
+}
+export function __wbg___wbindgen_boolean_get_1a45e2c38d4d41b9(arg0) {
     const v = arg0;
     const ret = typeof(v) === 'boolean' ? v : undefined;
     return isLikeNone(ret) ? 0xFFFFFF : ret ? 1 : 0;
-};
-
-export function __wbg___wbindgen_debug_string_df47ffb5e35e6763(arg0, arg1) {
+}
+export function __wbg___wbindgen_debug_string_0accd80f45e5faa2(arg0, arg1) {
     const ret = debugString(arg1);
     const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
     getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-};
-
-export function __wbg___wbindgen_in_bb933bd9e1b3bc0f(arg0, arg1) {
+}
+export function __wbg___wbindgen_in_70a403a56e771704(arg0, arg1) {
     const ret = arg0 in arg1;
     return ret;
-};
-
-export function __wbg___wbindgen_is_function_ee8a6c5833c90377(arg0) {
+}
+export function __wbg___wbindgen_is_function_754e9f305ff6029e(arg0) {
     const ret = typeof(arg0) === 'function';
     return ret;
-};
-
-export function __wbg___wbindgen_is_object_c818261d21f283a4(arg0) {
+}
+export function __wbg___wbindgen_is_null_or_undefined_cf617b836541fad3(arg0) {
+    const ret = arg0 == null;
+    return ret;
+}
+export function __wbg___wbindgen_is_object_56732c2bc353f41d(arg0) {
     const val = arg0;
     const ret = typeof(val) === 'object' && val !== null;
     return ret;
-};
-
-export function __wbg___wbindgen_is_string_fbb76cb2940daafd(arg0) {
+}
+export function __wbg___wbindgen_is_string_c236cabd84a4d769(arg0) {
     const ret = typeof(arg0) === 'string';
     return ret;
-};
-
-export function __wbg___wbindgen_is_undefined_2d472862bd29a478(arg0) {
+}
+export function __wbg___wbindgen_is_undefined_67b456be8673d3d7(arg0) {
     const ret = arg0 === undefined;
     return ret;
-};
-
-export function __wbg___wbindgen_jsval_loose_eq_b664b38a2f582147(arg0, arg1) {
+}
+export function __wbg___wbindgen_jsval_loose_eq_2c56564c75129511(arg0, arg1) {
     const ret = arg0 == arg1;
     return ret;
-};
-
-export function __wbg___wbindgen_lt_6594d884e1c6a1ab(arg0, arg1) {
+}
+export function __wbg___wbindgen_lt_b4bcf1fdfe2e41fe(arg0, arg1) {
     const ret = arg0 < arg1;
     return ret;
-};
-
-export function __wbg___wbindgen_neg_9b61844910d27670(arg0) {
+}
+export function __wbg___wbindgen_neg_c5be7a95a9dd509c(arg0) {
     const ret = -arg0;
     return ret;
-};
-
-export function __wbg___wbindgen_number_get_a20bf9b85341449d(arg0, arg1) {
+}
+export function __wbg___wbindgen_number_get_9bb1761122181af2(arg0, arg1) {
     const obj = arg1;
     const ret = typeof(obj) === 'number' ? obj : undefined;
     getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
     getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
-};
-
-export function __wbg___wbindgen_string_get_e4f06c90489ad01b(arg0, arg1) {
+}
+export function __wbg___wbindgen_string_get_72bdf95d3ae505b1(arg0, arg1) {
     const obj = arg1;
     const ret = typeof(obj) === 'string' ? obj : undefined;
     var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     var len1 = WASM_VECTOR_LEN;
     getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
     getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-};
-
-export function __wbg___wbindgen_throw_b855445ff6a94295(arg0, arg1) {
+}
+export function __wbg___wbindgen_throw_1506f2235d1bdba0(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
-};
-
-export function __wbg_call_525440f72fbfc0ea() { return handleError(function (arg0, arg1, arg2) {
-    const ret = arg0.call(arg1, arg2);
-    return ret;
-}, arguments) };
-
-export function __wbg_call_e762c39fa8ea36bf() { return handleError(function (arg0, arg1) {
+}
+export function __wbg_call_8a89609d89f6608a() { return handleError(function (arg0, arg1) {
     const ret = arg0.call(arg1);
     return ret;
-}, arguments) };
-
-export function __wbg_crypto_574e78ad8b13b65f(arg0) {
+}, arguments); }
+export function __wbg_call_9c758de292015997() { return handleError(function (arg0, arg1, arg2) {
+    const ret = arg0.call(arg1, arg2);
+    return ret;
+}, arguments); }
+export function __wbg_crypto_38df2bab126b63dc(arg0) {
     const ret = arg0.crypto;
     return ret;
-};
-
-export function __wbg_debug_e55e1461940eb14d(arg0, arg1, arg2, arg3) {
+}
+export function __wbg_debug_6d96d354ecb8cdb3(arg0, arg1, arg2, arg3) {
     console.debug(arg0, arg1, arg2, arg3);
-};
-
-export function __wbg_error_a7f8fbb0523dae15(arg0) {
+}
+export function __wbg_done_60cf307fcc680536(arg0) {
+    const ret = arg0.done;
+    return ret;
+}
+export function __wbg_entries_04b37a02507f1713(arg0) {
+    const ret = Object.entries(arg0);
+    return ret;
+}
+export function __wbg_error_78ff5b3a29b770e0(arg0) {
     console.error(arg0);
-};
-
-export function __wbg_error_d8b22cf4e59a6791(arg0, arg1, arg2, arg3) {
+}
+export function __wbg_error_9ad1450feb5d541d(arg0, arg1, arg2, arg3) {
     console.error(arg0, arg1, arg2, arg3);
-};
-
-export function __wbg_from_a4ad7cbddd0d7135(arg0) {
-    const ret = Array.from(arg0);
-    return ret;
-};
-
-export function __wbg_getRandomValues_b8f5dbd5f3995a9e() { return handleError(function (arg0, arg1) {
+}
+export function __wbg_getRandomValues_c44a50d8cfdaebeb() { return handleError(function (arg0, arg1) {
     arg0.getRandomValues(arg1);
-}, arguments) };
-
-export function __wbg_get_7bed016f185add81(arg0, arg1) {
-    const ret = arg0[arg1 >>> 0];
-    return ret;
-};
-
-export function __wbg_get_efcb449f58ec27c2() { return handleError(function (arg0, arg1) {
+}, arguments); }
+export function __wbg_get_1f8f054ddbaa7db2() { return handleError(function (arg0, arg1) {
     const ret = Reflect.get(arg0, arg1);
     return ret;
-}, arguments) };
-
-export function __wbg_get_with_ref_key_1dc361bd10053bfe(arg0, arg1) {
+}, arguments); }
+export function __wbg_get_2b48c7d0d006a781(arg0, arg1) {
+    const ret = arg0[arg1 >>> 0];
+    return ret;
+}
+export function __wbg_get_de6a0f7d4d18a304() { return handleError(function (arg0, arg1) {
+    const ret = Reflect.get(arg0, arg1);
+    return ret;
+}, arguments); }
+export function __wbg_get_unchecked_33f6e5c9e2f2d6b2(arg0, arg1) {
+    const ret = arg0[arg1 >>> 0];
+    return ret;
+}
+export function __wbg_get_with_ref_key_6412cf3094599694(arg0, arg1) {
     const ret = arg0[arg1];
     return ret;
-};
-
-export function __wbg_info_68cd5b51ef7e5137(arg0, arg1, arg2, arg3) {
+}
+export function __wbg_info_5cfb3f6c22c53cf9(arg0, arg1, arg2, arg3) {
     console.info(arg0, arg1, arg2, arg3);
-};
-
-export function __wbg_instanceof_ArrayBuffer_70beb1189ca63b38(arg0) {
+}
+export function __wbg_instanceof_ArrayBuffer_8f49811467741499(arg0) {
     let result;
     try {
         result = arg0 instanceof ArrayBuffer;
@@ -6357,9 +5881,8 @@ export function __wbg_instanceof_ArrayBuffer_70beb1189ca63b38(arg0) {
     }
     const ret = result;
     return ret;
-};
-
-export function __wbg_instanceof_Uint8Array_20c8e73002f7af98(arg0) {
+}
+export function __wbg_instanceof_Uint8Array_86f30649f63ef9c2(arg0) {
     let result;
     try {
         result = arg0 instanceof Uint8Array;
@@ -6368,139 +5891,132 @@ export function __wbg_instanceof_Uint8Array_20c8e73002f7af98(arg0) {
     }
     const ret = result;
     return ret;
-};
-
-export function __wbg_length_69bca3cb64fc8748(arg0) {
+}
+export function __wbg_isArray_67c2c9c4313f4448(arg0) {
+    const ret = Array.isArray(arg0);
+    return ret;
+}
+export function __wbg_isSafeInteger_66acec27e09e99a7(arg0) {
+    const ret = Number.isSafeInteger(arg0);
+    return ret;
+}
+export function __wbg_iterator_8732428d309e270e() {
+    const ret = Symbol.iterator;
+    return ret;
+}
+export function __wbg_length_4a591ecaa01354d9(arg0) {
     const ret = arg0.length;
     return ret;
-};
-
-export function __wbg_length_cdd215e10d9dd507(arg0) {
+}
+export function __wbg_length_66f1a4b2e9026940(arg0) {
     const ret = arg0.length;
     return ret;
-};
-
-export function __wbg_log_45eb3a49e7cdcb64(arg0, arg1, arg2, arg3) {
+}
+export function __wbg_log_d5e0f90a3ac097e3(arg0, arg1, arg2, arg3) {
     console.log(arg0, arg1, arg2, arg3);
-};
-
-export function __wbg_msCrypto_a61aeb35a24c1329(arg0) {
+}
+export function __wbg_msCrypto_bd5a034af96bcba6(arg0) {
     const ret = arg0.msCrypto;
     return ret;
-};
-
-export function __wbg_new_1acc0b6eea89d040() {
-    const ret = new Object();
-    return ret;
-};
-
-export function __wbg_new_5a79be3ab53b8aa5(arg0) {
+}
+export function __wbg_new_578aeef4b6b94378(arg0) {
     const ret = new Uint8Array(arg0);
     return ret;
-};
-
-export function __wbg_new_from_slice_92f4d78ca282a2d2(arg0, arg1) {
+}
+export function __wbg_new_ce1ab61c1c2b300d() {
+    const ret = new Object();
+    return ret;
+}
+export function __wbg_new_from_slice_18fa1f71286d66b8(arg0, arg1) {
     const ret = new Uint8Array(getArrayU8FromWasm0(arg0, arg1));
     return ret;
-};
-
-export function __wbg_new_no_args_ee98eee5275000a4(arg0, arg1) {
-    const ret = new Function(getStringFromWasm0(arg0, arg1));
-    return ret;
-};
-
-export function __wbg_new_with_length_01aa0dc35aa13543(arg0) {
+}
+export function __wbg_new_with_length_36a4998e27b014c5(arg0) {
     const ret = new Uint8Array(arg0 >>> 0);
     return ret;
-};
-
-export function __wbg_node_905d3e251edff8a2(arg0) {
+}
+export function __wbg_next_9e03acdf51c4960d(arg0) {
+    const ret = arg0.next;
+    return ret;
+}
+export function __wbg_next_eb8ca7351fa27906() { return handleError(function (arg0) {
+    const ret = arg0.next();
+    return ret;
+}, arguments); }
+export function __wbg_node_84ea875411254db1(arg0) {
     const ret = arg0.node;
     return ret;
-};
-
-export function __wbg_process_dc0fbacc7c1c06f7(arg0) {
+}
+export function __wbg_process_44c7a14e11e9f69e(arg0) {
     const ret = arg0.process;
     return ret;
-};
-
-export function __wbg_prototypesetcall_2a6620b6922694b2(arg0, arg1, arg2) {
+}
+export function __wbg_prototypesetcall_3249fc62a0fafa30(arg0, arg1, arg2) {
     Uint8Array.prototype.set.call(getArrayU8FromWasm0(arg0, arg1), arg2);
-};
-
-export function __wbg_randomFillSync_ac0988aba3254290() { return handleError(function (arg0, arg1) {
+}
+export function __wbg_randomFillSync_6c25eac9869eb53c() { return handleError(function (arg0, arg1) {
     arg0.randomFillSync(arg1);
-}, arguments) };
-
-export function __wbg_require_60cc747a6bc5215a() { return handleError(function () {
+}, arguments); }
+export function __wbg_require_b4edbdcf3e2a1ef0() { return handleError(function () {
     const ret = module.require;
     return ret;
-}, arguments) };
-
-export function __wbg_set_3f1d0b984ed272ed(arg0, arg1, arg2) {
+}, arguments); }
+export function __wbg_set_6be42768c690e380(arg0, arg1, arg2) {
     arg0[arg1] = arg2;
-};
-
-export function __wbg_static_accessor_GLOBAL_89e1d9ac6a1b250e() {
+}
+export function __wbg_static_accessor_GLOBAL_9d53f2689e622ca1() {
     const ret = typeof global === 'undefined' ? null : global;
     return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-};
-
-export function __wbg_static_accessor_GLOBAL_THIS_8b530f326a9e48ac() {
+}
+export function __wbg_static_accessor_GLOBAL_THIS_a1a35cec07001a8a() {
     const ret = typeof globalThis === 'undefined' ? null : globalThis;
     return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-};
-
-export function __wbg_static_accessor_SELF_6fdf4b64710cc91b() {
+}
+export function __wbg_static_accessor_SELF_4c59f6c7ea29a144() {
     const ret = typeof self === 'undefined' ? null : self;
     return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-};
-
-export function __wbg_static_accessor_WINDOW_b45bfc5a37f6cfa2() {
+}
+export function __wbg_static_accessor_WINDOW_e70ae9f2eb052253() {
     const ret = typeof window === 'undefined' ? null : window;
     return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-};
-
-export function __wbg_subarray_480600f3d6a9f26c(arg0, arg1, arg2) {
+}
+export function __wbg_subarray_4aa221f6a4f5ab22(arg0, arg1, arg2) {
     const ret = arg0.subarray(arg1 >>> 0, arg2 >>> 0);
     return ret;
-};
-
-export function __wbg_toString_b4979eaf8b235b54(arg0, arg1, arg2) {
+}
+export function __wbg_toString_0fa9821f840aaf09(arg0, arg1, arg2) {
     const ret = arg1.toString(arg2);
     const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
     getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-};
-
-export function __wbg_versions_c01dfd4722a88165(arg0) {
+}
+export function __wbg_value_f3625092ee4b37f4(arg0) {
+    const ret = arg0.value;
+    return ret;
+}
+export function __wbg_versions_276b2795b1c6a219(arg0) {
     const ret = arg0.versions;
     return ret;
-};
-
-export function __wbg_warn_8f5b5437666d0885(arg0, arg1, arg2, arg3) {
+}
+export function __wbg_warn_c49a7a9581bf8bea(arg0, arg1, arg2, arg3) {
     console.warn(arg0, arg1, arg2, arg3);
-};
-
-export function __wbindgen_cast_2241b6af4c4b2941(arg0, arg1) {
-    // Cast intrinsic for `Ref(String) -> Externref`.
-    const ret = getStringFromWasm0(arg0, arg1);
-    return ret;
-};
-
-export function __wbindgen_cast_cb9088102bce6b30(arg0, arg1) {
-    // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8Array")`.
-    const ret = getArrayU8FromWasm0(arg0, arg1);
-    return ret;
-};
-
-export function __wbindgen_cast_d6cd19b81560fd6e(arg0) {
+}
+export function __wbindgen_cast_0000000000000001(arg0) {
     // Cast intrinsic for `F64 -> Externref`.
     const ret = arg0;
     return ret;
-};
-
+}
+export function __wbindgen_cast_0000000000000002(arg0, arg1) {
+    // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8Array")`.
+    const ret = getArrayU8FromWasm0(arg0, arg1);
+    return ret;
+}
+export function __wbindgen_cast_0000000000000003(arg0, arg1) {
+    // Cast intrinsic for `Ref(String) -> Externref`.
+    const ret = getStringFromWasm0(arg0, arg1);
+    return ret;
+}
 export function __wbindgen_init_externref_table() {
     const table = wasm.__wbindgen_externrefs;
     const offset = table.grow(4);
@@ -6509,16 +6025,330 @@ export function __wbindgen_init_externref_table() {
     table.set(offset + 1, null);
     table.set(offset + 2, true);
     table.set(offset + 3, false);
-    ;
-};
+}
+const AccountAssetRegistrationFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetregistration_free(ptr, 1));
+const AccountAssetRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetregistrationproof_free(ptr, 1));
+const AccountAssetStateFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountassetstate_free(ptr, 1));
+const AccountKeysFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountkeys_free(ptr, 1));
+const AccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountleafpathandroot_free(ptr, 1));
+const AccountLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountleafpathbuilder_free(ptr, 1));
+const AccountPublicKeyFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountpublickey_free(ptr, 1));
+const AccountPublicKeysFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountpublickeys_free(ptr, 1));
+const AccountRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountregistrationproof_free(ptr, 1));
+const AccountStateFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_accountstate_free(ptr, 1));
+const AssetLeafPathFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpath_free(ptr, 1));
+const AssetLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpathandroot_free(ptr, 1));
+const AssetLeafPathBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assetleafpathbuilder_free(ptr, 1));
+const AssetMintingProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assetmintingproof_free(ptr, 1));
+const AssetStateFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assetstate_free(ptr, 1));
+const AssetTreeRootFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_assettreeroot_free(ptr, 1));
+const BatchedAccountAssetRegistrationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_batchedaccountassetregistrationproof_free(ptr, 1));
+const EncryptionKeyPairFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_encryptionkeypair_free(ptr, 1));
+const EncryptionPublicKeyFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_encryptionpublickey_free(ptr, 1));
+const FeeAccountLeafPathAndRootFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_feeaccountleafpathandroot_free(ptr, 1));
+const LegBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_legbuilder_free(ptr, 1));
+const MasterSeedFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_masterseed_free(ptr, 1));
+const MediatorAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_mediatoraffirmationproof_free(ptr, 1));
+const ReceiverAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_receiveraffirmationproof_free(ptr, 1));
+const ReceiverClaimProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_receiverclaimproof_free(ptr, 1));
+const SenderAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_senderaffirmationproof_free(ptr, 1));
+const SenderCounterUpdateProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_sendercounterupdateproof_free(ptr, 1));
+const SenderRevertAffirmationProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_senderrevertaffirmationproof_free(ptr, 1));
+const SettlementBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementbuilder_free(ptr, 1));
+const SettlementLegFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementleg_free(ptr, 1));
+const SettlementLegEncryptedFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegencrypted_free(ptr, 1));
+const SettlementLegsFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegs_free(ptr, 1));
+const SettlementLegsEncryptedFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementlegsencrypted_free(ptr, 1));
+const SettlementProofFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_settlementproof_free(ptr, 1));
 
-export function __wbindgen_object_is_null_or_undefined(arg0) {
-    const ret = arg0 == null;
-    return ret;
-};
+function addToExternrefTable0(obj) {
+    const idx = wasm.__externref_table_alloc();
+    wasm.__wbindgen_externrefs.set(idx, obj);
+    return idx;
+}
 
-export function __wbindgen_object_is_undefined(arg0) {
-    const ret = arg0 === undefined;
-    return ret;
-};
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+}
 
+function debugString(val) {
+    // primitive types
+    const type = typeof val;
+    if (type == 'number' || type == 'boolean' || val == null) {
+        return  `${val}`;
+    }
+    if (type == 'string') {
+        return `"${val}"`;
+    }
+    if (type == 'symbol') {
+        const description = val.description;
+        if (description == null) {
+            return 'Symbol';
+        } else {
+            return `Symbol(${description})`;
+        }
+    }
+    if (type == 'function') {
+        const name = val.name;
+        if (typeof name == 'string' && name.length > 0) {
+            return `Function(${name})`;
+        } else {
+            return 'Function';
+        }
+    }
+    // objects
+    if (Array.isArray(val)) {
+        const length = val.length;
+        let debug = '[';
+        if (length > 0) {
+            debug += debugString(val[0]);
+        }
+        for(let i = 1; i < length; i++) {
+            debug += ', ' + debugString(val[i]);
+        }
+        debug += ']';
+        return debug;
+    }
+    // Test for built-in
+    const builtInMatches = /\[object ([^\]]+)\]/.exec(toString.call(val));
+    let className;
+    if (builtInMatches && builtInMatches.length > 1) {
+        className = builtInMatches[1];
+    } else {
+        // Failed to match the standard '[object ClassName]'
+        return toString.call(val);
+    }
+    if (className == 'Object') {
+        // we're a user defined class or Object
+        // JSON.stringify avoids problems with cycles, and is generally much
+        // easier than looping through ownProperties of `val`.
+        try {
+            return 'Object(' + JSON.stringify(val) + ')';
+        } catch (_) {
+            return 'Object';
+        }
+    }
+    // errors
+    if (val instanceof Error) {
+        return `${val.name}: ${val.message}\n${val.stack}`;
+    }
+    // TODO we could test for more things here, like `Set`s and `Map`s.
+    return className;
+}
+
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(wasm.__wbindgen_externrefs.get(mem.getUint32(i, true)));
+    }
+    wasm.__externref_drop_slice(ptr, len);
+    return result;
+}
+
+function getArrayU64FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getBigUint64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+let cachedBigUint64ArrayMemory0 = null;
+function getBigUint64ArrayMemory0() {
+    if (cachedBigUint64ArrayMemory0 === null || cachedBigUint64ArrayMemory0.byteLength === 0) {
+        cachedBigUint64ArrayMemory0 = new BigUint64Array(wasm.memory.buffer);
+    }
+    return cachedBigUint64ArrayMemory0;
+}
+
+let cachedDataViewMemory0 = null;
+function getDataViewMemory0() {
+    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
+        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
+    }
+    return cachedDataViewMemory0;
+}
+
+function getStringFromWasm0(ptr, len) {
+    return decodeText(ptr >>> 0, len);
+}
+
+let cachedUint8ArrayMemory0 = null;
+function getUint8ArrayMemory0() {
+    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+    }
+    return cachedUint8ArrayMemory0;
+}
+
+function handleError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        const idx = addToExternrefTable0(e);
+        wasm.__wbindgen_exn_store(idx);
+    }
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function passStringToWasm0(arg, malloc, realloc) {
+    if (realloc === undefined) {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = malloc(buf.length, 1) >>> 0;
+        getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+        WASM_VECTOR_LEN = buf.length;
+        return ptr;
+    }
+
+    let len = arg.length;
+    let ptr = malloc(len, 1) >>> 0;
+
+    const mem = getUint8ArrayMemory0();
+
+    let offset = 0;
+
+    for (; offset < len; offset++) {
+        const code = arg.charCodeAt(offset);
+        if (code > 0x7F) break;
+        mem[ptr + offset] = code;
+    }
+    if (offset !== len) {
+        if (offset !== 0) {
+            arg = arg.slice(offset);
+        }
+        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
+        const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+        const ret = cachedTextEncoder.encodeInto(arg, view);
+
+        offset += ret.written;
+        ptr = realloc(ptr, len, offset, 1) >>> 0;
+    }
+
+    WASM_VECTOR_LEN = offset;
+    return ptr;
+}
+
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_externrefs.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
+}
+
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+cachedTextDecoder.decode();
+const MAX_SAFARI_DECODE_BYTES = 2146435072;
+let numBytesDecoded = 0;
+function decodeText(ptr, len) {
+    numBytesDecoded += len;
+    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
+        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+        cachedTextDecoder.decode();
+        numBytesDecoded = len;
+    }
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+
+const cachedTextEncoder = new TextEncoder();
+
+if (!('encodeInto' in cachedTextEncoder)) {
+    cachedTextEncoder.encodeInto = function (arg, view) {
+        const buf = cachedTextEncoder.encode(arg);
+        view.set(buf);
+        return {
+            read: arg.length,
+            written: buf.length
+        };
+    };
+}
+
+let WASM_VECTOR_LEN = 0;
+
+
+let wasm;
+export function __wbg_set_wasm(val) {
+    wasm = val;
+}

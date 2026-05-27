@@ -159,10 +159,11 @@ export async function revertSenderAffirmation(
 
   // Submit transaction
   onSubmitting?.();
-  const tx = polkadotApi.tx.confidentialAssets.senderRevert(proofBytes);
+  const tx =
+    polkadotApi.tx.confidentialAssets.senderRevertAffirmation(proofBytes);
   const result = await submitTransaction({
     tx,
-    tag: 'confidentialAssets.senderRevert',
+    tag: 'confidentialAssets.senderRevertAffirmation',
   });
 
   // Extract new leaf index and commit state

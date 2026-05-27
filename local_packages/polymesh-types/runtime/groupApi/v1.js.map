@@ -1,1 +1,0 @@
-{"version":3,"file":"v1.js","sourceRoot":"","sources":["../../../src/runtime/groupApi/v1.ts"],"names":[],"mappings":";;;AAEa,QAAA,UAAU,GAAmC;IACxD,qBAAqB,EAAE;QACrB,WAAW,EAAE,qBAAqB;QAClC,MAAM,EAAE,EAAE;QACV,IAAI,EAAE,aAAa;KACpB;IACD,oBAAoB,EAAE;QACpB,WAAW,EAAE,oBAAoB;QACjC,MAAM,EAAE,EAAE;QACV,IAAI,EAAE,aAAa;KACpB;CACF,CAAC"}

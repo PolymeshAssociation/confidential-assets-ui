@@ -19,10 +19,6 @@ export interface BuildCurveTreeLeafPathParams {
    * Polkadot API instance
    */
   polkadotApi: ApiPromise;
-  /**
-   * Tree height (default: 4)
-   */
-  height?: number;
 }
 
 /**
@@ -38,17 +34,20 @@ export interface BuildCurveTreeLeafPathParams {
 export async function buildAccountLeafPathWithRoot(
   params: BuildCurveTreeLeafPathParams,
 ) {
-  const { currentLeafIndex, polkadotApi, height = 4 } = params;
+  const { currentLeafIndex, polkadotApi } = params;
 
-  // Get the last curve tree update block number
-  const curveTreeLastUpdate =
-    await polkadotApi.query.confidentialAssets.accountCurveTreeLastUpdate();
+  // Fetch last update timestamp and tree height from chain in parallel
+  const [curveTreeLastUpdate, chainHeight] = await Promise.all([
+    polkadotApi.query.confidentialAssets.accountCurveTreeLastUpdate(),
+    polkadotApi.query.confidentialAssets.accountCurveTreeHeight(),
+  ]);
+  const treeHeight = chainHeight.toNumber();
 
   // Initialize the leaf path builder
   const accountLeafPathBuilder = new AccountLeafPathBuilder(
     currentLeafIndex,
-    height,
-    curveTreeLastUpdate.toNumber(),
+    treeHeight,
+    curveTreeLastUpdate.blockNumber.toNumber(),
   );
 
   // Get the indices and locations we need to query
@@ -56,8 +55,9 @@ export async function buildAccountLeafPathWithRoot(
   const nodeLocationsPaths = accountLeafPathBuilder.getNodeLocations();
 
   // Get the API at the historical block
-  const blockHash =
-    await polkadotApi.rpc.chain.getBlockHash(curveTreeLastUpdate);
+  const blockHash = await polkadotApi.rpc.chain.getBlockHash(
+    curveTreeLastUpdate.blockNumber,
+  );
   const apiAt = await polkadotApi.at(blockHash);
 
   // Query the chain for the required leaves using multi query
@@ -92,7 +92,7 @@ export async function buildAccountLeafPathWithRoot(
   // Query the chain for the account tree root
   const accountTreeRootOption =
     await apiAt.query.confidentialAssets.accountCurveTreeRoots(
-      curveTreeLastUpdate,
+      curveTreeLastUpdate.blockNumber,
     );
   if (accountTreeRootOption.isNone) {
     throw new Error(
@@ -136,11 +136,11 @@ export async function getAssetCurveTreeState(
   // Get the last asset curve tree update block number
   const assetCurveTreeLastUpdate =
     await polkadotApi.query.confidentialAssets.assetCurveTreeLastUpdate();
-  const blockNumber = assetCurveTreeLastUpdate.toNumber();
+  const blockNumber = assetCurveTreeLastUpdate.blockNumber.toNumber();
 
   // Get the block hash
   const blockHash = await polkadotApi.rpc.chain.getBlockHash(
-    assetCurveTreeLastUpdate,
+    assetCurveTreeLastUpdate.blockNumber,
   );
   const blockHashHex = blockHash.toHex();
 
@@ -150,7 +150,7 @@ export async function getAssetCurveTreeState(
   // Query the chain for the asset tree root
   const assetTreeRootOption =
     await apiAt.query.confidentialAssets.assetCurveTreeRoots(
-      assetCurveTreeLastUpdate,
+      assetCurveTreeLastUpdate.blockNumber,
     );
 
   if (assetTreeRootOption.isNone) {
@@ -189,10 +189,6 @@ export interface BuildAssetLeafPathParams {
    * If not provided, will be fetched based on blockNumber
    */
   blockHash?: string;
-  /**
-   * Tree height (default: 4)
-   */
-  height?: number;
 }
 
 /**
@@ -250,10 +246,13 @@ async function populateAssetLeafPathBuilder(
 export async function buildAssetLeafPath(
   params: BuildAssetLeafPathParams,
 ): Promise<AssetLeafPath> {
-  const { currentLeafIndex, polkadotApi, blockNumber, height = 4 } = params;
+  const { currentLeafIndex, polkadotApi, blockNumber } = params;
   let { blockHash } = params;
 
-  // If blockHash is not provided, fetch it using the blockNumber
+  // Fetch block hash and/or tree height from chain as needed
+  const treeHeight = (
+    await polkadotApi.query.confidentialAssets.assetCurveTreeHeight()
+  ).toNumber();
   if (!blockHash) {
     const hash = await polkadotApi.rpc.chain.getBlockHash(blockNumber);
     blockHash = hash.toHex();
@@ -262,7 +261,7 @@ export async function buildAssetLeafPath(
   // Initialize the asset leaf path builder
   const assetLeafPathBuilder = new AssetLeafPathBuilder(
     currentLeafIndex,
-    height,
+    treeHeight,
     blockNumber,
   );
 
@@ -303,15 +302,19 @@ export interface AssetLeafPathResult {
 export async function buildAssetLeafPathWithRoot(
   params: BuildCurveTreeLeafPathParams,
 ): Promise<AssetLeafPathResult> {
-  const { currentLeafIndex, polkadotApi, height = 4 } = params;
+  const { currentLeafIndex, polkadotApi } = params;
 
-  // Get the current state (root, block, hash)
-  const state = await getAssetCurveTreeState(polkadotApi);
+  // Fetch current state and tree height from chain in parallel
+  const [state, chainHeight] = await Promise.all([
+    getAssetCurveTreeState(polkadotApi),
+    polkadotApi.query.confidentialAssets.assetCurveTreeHeight(),
+  ]);
+  const treeHeight = chainHeight.toNumber();
 
   // Initialize the asset leaf path builder
   const assetLeafPathBuilder = new AssetLeafPathBuilder(
     currentLeafIndex,
-    height,
+    treeHeight,
     state.blockNumber,
   );
 

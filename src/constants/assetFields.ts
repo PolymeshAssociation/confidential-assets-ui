@@ -6,9 +6,11 @@ import type { AssetMetadataKey, AssetTemplateType } from '@/types/asset';
  * Constants related to asset fields, validation, and limits
  */
 
-// Constants for maximum number of auditors and mediators
+// Constants for maximum number of auditors, mediators, and combined encryption keys
+// These are used as fallback defaults when chain constants are unavailable
 export const MAX_AUDITORS = 2;
 export const MAX_MEDIATORS = 2;
+export const MAX_ENCRYPTION_KEYS = 2; // Combined limit: auditors + mediators
 
 // Mapping of template types to their specific fields
 export const TEMPLATE_FIELDS_MAP: Record<

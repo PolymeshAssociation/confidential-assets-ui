@@ -86,16 +86,16 @@ export async function decryptSettlement(
   }
 
   // Extract leg details
-  const senderKeyHex = decryptedLeg.sender.toJs() as string;
-  const receiverKeyHex = decryptedLeg.receiver.toJs() as string;
+  const senderEncryptionKey = decryptedLeg.sender.toJs() as string;
+  const receiverEncryptionKey = decryptedLeg.receiver.toJs() as string;
   const assetId = decryptedLeg.assetId.toString();
 
   const legDetails: SettlementLegDetails = {
     legId,
     assetId,
     amount: decryptedLeg.amount.toString(),
-    senderPublicKey: senderKeyHex,
-    receiverPublicKey: receiverKeyHex,
+    senderEncryptionKey,
+    receiverEncryptionKey,
   };
 
   return {

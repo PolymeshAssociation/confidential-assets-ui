@@ -66,8 +66,8 @@ export interface SettlementContextValue {
       legId: number;
       assetId: string;
       amount: string;
-      senderPublicKey: string;
-      receiverPublicKey: string;
+      senderEncryptionKey: string;
+      receiverEncryptionKey: string;
     };
     roles: SettlementRole[];
   }>;

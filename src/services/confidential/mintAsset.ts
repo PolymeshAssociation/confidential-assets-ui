@@ -10,6 +10,7 @@ import type { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { EventRecord } from '@polkadot/types/interfaces';
 import type { ISubmittableResult } from '@polkadot/types/types';
+import { hexToU8a, u8aToHex } from '@polkadot/util';
 import type { AccountKeys } from '@polymesh/polymesh-dart-wasm';
 import {
   commitAndExportState,
@@ -18,6 +19,11 @@ import {
 } from './helpers';
 
 export interface MintAssetParams {
+  /**
+   * User's on-chain Polymesh identity (DID) as 0x-prefixed hex string
+   */
+  did: string | Uint8Array;
+
   /**
    * Amount to mint (as string to handle big numbers)
    */
@@ -104,6 +110,7 @@ export async function mintConfidentialAsset(
   params: MintAssetParams,
 ): Promise<MintAssetResult> {
   const {
+    did,
     amount,
     stateBytes,
     polkadotApi,
@@ -117,6 +124,22 @@ export async function mintConfidentialAsset(
   const accountAssetState = restoreAccountAssetState(stateBytes);
   const currentLeafIndex = accountAssetState.leafIndex();
 
+  // Convert DID to Uint8Array
+  let didBytes: Uint8Array;
+  if (typeof did === 'string') {
+    didBytes = hexToU8a(did);
+  } else {
+    didBytes = did;
+  }
+
+  if (didBytes.length !== 32) {
+    throw new Error(
+      `DID must be exactly 32 bytes, got ${
+        didBytes.length
+      } bytes. DID hex: ${u8aToHex(didBytes)}`,
+    );
+  }
+
   // Build account leaf path
   onGeneratingProof?.();
   const accountLeafPath = await buildAccountLeafPathWithRoot({
@@ -128,6 +151,7 @@ export async function mintConfidentialAsset(
   const mintingProof = accountAssetState.assetMintingProof(
     accountKeys,
     accountLeafPath,
+    didBytes,
     amount,
   );
 

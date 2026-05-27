@@ -1,6 +1,7 @@
 import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { onboardAccount } from '@/services/onboarding';
+import { getErrorMessage } from '@/utils/error';
 import {
   Alert,
   Button,
@@ -70,7 +71,7 @@ export function HomePage() {
         id: notificationId,
         color: 'red',
         title: 'Onboarding Failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: getErrorMessage(error),
         loading: false,
         autoClose: false,
         withCloseButton: true,

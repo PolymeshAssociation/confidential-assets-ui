@@ -63,6 +63,12 @@ export function SendSettlementModal({
   const [isValidatingReceiver, setIsValidatingReceiver] = useState(false);
   const [receiverError, setReceiverError] = useState<string>('');
 
+  // Asset registration state
+  const [isReceiverRegisteredForAsset, setIsReceiverRegisteredForAsset] =
+    useState(false);
+  const [isCheckingReceiverRegistration, setIsCheckingReceiverRegistration] =
+    useState(false);
+
   // Result data
   const [settlementId, setSettlementId] = useState<string>('');
   const [txHash, setTxHash] = useState<string>('');
@@ -90,6 +96,8 @@ export function SendSettlementModal({
         setBlockNumber(0);
         setIsValidatingReceiver(false);
         setReceiverError('');
+        setIsReceiverRegisteredForAsset(false);
+        setIsCheckingReceiverRegistration(false);
       }, 200);
     }
   }, [opened]);
@@ -154,6 +162,33 @@ export function SendSettlementModal({
 
     validateAndFetchReceiverKey();
   }, [receiverAccountKey, polkadotApi]);
+
+  // Check if receiver is registered for the selected asset
+  useEffect(() => {
+    const checkReceiverRegistration = async () => {
+      setIsReceiverRegisteredForAsset(false);
+      if (!receiverEncryptionKey || !selectedAssetId || !polkadotApi) return;
+
+      setIsCheckingReceiverRegistration(true);
+      try {
+        const accountKeyWithPrefix = receiverAccountKey.startsWith('0x')
+          ? receiverAccountKey
+          : `0x${receiverAccountKey}`;
+
+        const isRegistered =
+          await polkadotApi.query.confidentialAssets.accountAssetRegistrations(
+            accountKeyWithPrefix,
+            parseInt(selectedAssetId, 10),
+          );
+        setIsReceiverRegisteredForAsset(isRegistered.isTrue);
+      } catch (err) {
+        console.error('Failed to check receiver asset registration:', err);
+      } finally {
+        setIsCheckingReceiverRegistration(false);
+      }
+    };
+    checkReceiverRegistration();
+  }, [receiverEncryptionKey, selectedAssetId, polkadotApi, receiverAccountKey]);
 
   // Get asset decimals for display
   const decimals = selectedAsset?.decimals || 0;
@@ -390,6 +425,23 @@ export function SendSettlementModal({
                   </Card>
                 )}
 
+                {/* Receiver asset registration warning */}
+                {receiverEncryptionKey &&
+                  selectedAssetId &&
+                  !isCheckingReceiverRegistration &&
+                  !isReceiverRegisteredForAsset && (
+                    <Alert
+                      icon={<IconAlertCircle size={16} />}
+                      color="yellow"
+                      variant="light"
+                    >
+                      <Text size="sm">
+                        Receiver is not registered for this asset. They will
+                        need to register before they can receive the transfer.
+                      </Text>
+                    </Alert>
+                  )}
+
                 {/* Memo */}
                 <Textarea
                   label="Memo (max 256 characters)"
@@ -504,9 +556,10 @@ export function SendSettlementModal({
                 <Text size="sm">
                   1. Share the Transfer ID with the receiver
                 </Text>
-                <Text size="sm">2. Both parties must affirm the transfer</Text>
+                <Text size="sm">2. All parties can affirm in any order</Text>
                 <Text size="sm">
-                  3. After affirmation, the receiver can claim the assets
+                  3. Once all parties have affirmed, the receiver can claim the
+                  assets
                 </Text>
               </Stack>
             </Alert>

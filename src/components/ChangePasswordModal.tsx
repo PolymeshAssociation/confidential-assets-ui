@@ -1,6 +1,6 @@
 import { MIN_PASSWORD_LENGTH } from '@/config/passwordConfig';
 import { useNotification } from '@/hooks/useNotification';
-import { validatePassword } from '@/utils/passwordValidation';
+import { validatePasswordSync } from '@/utils/passwordValidation';
 import { Button, Modal, PasswordInput, Stack, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useEffect, useState } from 'react';
@@ -30,12 +30,11 @@ export function ChangePasswordModal({
     },
     validate: {
       oldPassword: (value) => (!value ? 'Current password is required' : null),
-      newPassword: async (value, values) => {
+      newPassword: (value, values) => {
         if (!value) return 'New password is required';
 
-        // Use async validation
-        const result = await validatePassword(value);
-        if (!result.isValid) return result.error;
+        const error = validatePasswordSync(value);
+        if (error) return error;
 
         if (value === values.oldPassword) {
           return 'New password must be different from current password';

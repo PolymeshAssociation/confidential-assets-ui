@@ -1,5 +1,6 @@
 import { useNotification } from '@/hooks/useNotification';
 import { apolloClient } from '@/services/apollo';
+import { getErrorMessage } from '@/utils/error';
 import { ApolloProvider } from '@apollo/client/react';
 import type { ApiPromise } from '@polkadot/api';
 import type { BrowserExtensionSigningManager as SigningManagerType } from '@polymeshassociation/browser-extension-signing-manager';
@@ -18,6 +19,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
   const { showError } = useNotification();
   const [sdk, setSdk] = useState<PolymeshType | null>(null);
   const [polkadotApi, setPolkadotApi] = useState<ApiPromise | null>(null);
+  const [genesisHash, setGenesisHash] = useState<string | null>(null);
   const [signingManager, setSigningManager] =
     useState<SigningManagerType | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -154,6 +156,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
             sdkRef.current = sdkInstance;
             setSdk(sdkInstance);
             setPolkadotApi(sdkInstance._polkadotApi);
+            setGenesisHash(sdkInstance._polkadotApi.genesisHash.toHex());
             console.log(`Connected to ${NODE_URL}`);
           }
           setIsConnected(true);
@@ -293,8 +296,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         // Only show error if this is still the current connection
         if (currentWalletConnectionRef.current === connectionId) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error';
+          const errorMessage = getErrorMessage(error);
 
           // Provide more specific error messages
           if (errorMessage.includes('getAccountsWithMeta')) {
@@ -389,6 +391,7 @@ export function PolymeshProvider({ children }: { children: ReactNode }) {
   const value = {
     sdk,
     polkadotApi,
+    genesisHash,
     signingManager,
     isConnected,
     isConnecting,
