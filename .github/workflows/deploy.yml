@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_POLYMESH_NODE_URL: ${{ secrets.VITE_POLYMESH_NODE_URL }}
+      VITE_SUBQUERY_URL: ${{ secrets.VITE_SUBQUERY_URL }}
+      VITE_ONBOARDING_URL: ${{ secrets.VITE_ONBOARDING_URL }}
+      VITE_EXPLORER_URL: ${{ secrets.VITE_EXPLORER_URL }}
+      VITE_MIN_PASSWORD_LENGTH: ${{ secrets.VITE_MIN_PASSWORD_LENGTH }}
+      VITE_ENABLE_BREACH_CHECK: ${{ secrets.VITE_ENABLE_BREACH_CHECK }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build:gh
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
