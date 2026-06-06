@@ -207,7 +207,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
           const assetState = new AssetState(
             assetIdNum,
-            assetDetails.assetKeysRaw,
+            assetDetails.assetKeysRaw?.toU8a(),
           );
 
           serviceLegs.push({
