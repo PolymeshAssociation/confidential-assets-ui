@@ -120,7 +120,7 @@ pnpm preview
 
 1. **Connect Wallet**: Select and authorize a wallet (Polymesh Wallet, Subwallet, Polkadot.js etc.)
 2. **Select Signing Key**: Choose an account/key from the connected wallet
-3. **Create Identity** (if needed): Request a DID and test POLYX from the devnet faucet
+3. **Create Identity** (if needed): Request a DID and test POLYX
 
 ### 2. Confidential Account Management
 

@@ -150,7 +150,7 @@ export function HomePage() {
           <Alert
             variant="light"
             color="blue"
-            title="Welcome to the Confidential Assets Devnet"
+            title="Welcome to Polymesh Confidential Assets"
             icon={<IconShieldLock size={20} />}
           >
             To get started, you need a decentralized identity (DID) and some
@@ -182,10 +182,6 @@ export function HomePage() {
           >
             Get Test POLYX & DID
           </Button>
-
-          <Text size="xs" c="dimmed" ta="center">
-            This will request funds from the devnet faucet.
-          </Text>
         </Stack>
       );
     }
