@@ -38,8 +38,8 @@ WORKDIR /srv
 RUN chown -R node:node /srv/ && \
     chmod 0750 /srv/
 
-COPY --chown=node:node package.json pnpm-lock.yaml /srv/
-RUN chmod 0640 /srv/package.json /srv/pnpm-lock.yaml
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml /srv/
+RUN chmod 0640 /srv/package.json /srv/pnpm-lock.yaml /srv/pnpm-workspace.yaml
 
 # Copy local packages needed for install
 COPY --chown=node:node local_packages/ /srv/local_packages/

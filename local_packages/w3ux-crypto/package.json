@@ -1,0 +1,11 @@
+{
+  "name": "@w3ux/crypto",
+  "version": "1.2.1",
+  "description": "Local replacement for @w3ux/crypto, which is no longer on npm. Re-exports blake2AsU8a from @polkadot/util-crypto.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "dependencies": {
+    "@polkadot/util-crypto": "12.6.2"
+  }
+}

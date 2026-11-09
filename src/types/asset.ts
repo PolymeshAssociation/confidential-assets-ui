@@ -236,15 +236,17 @@ export interface AssetDetails {
   ownerDid: string;
   /** Decoded metadata from chain data field */
   metadata?: AssetMetadata;
-  /** Array of mediator encryption public keys (hex strings) */
+  /** Array of mediator account public keys (hex strings) */
   mediators: string[];
-  /** Array of auditor encryption public keys (hex strings) */
+  /** Array of auditor and mediator encryption public keys (hex strings) */
   auditors: string[];
   /**
    * Raw asset keys from chain (PolymeshDartBpAssetAssetKeys)
    * Includes `encKeys` and `mediators`, held in-memory only — never persisted.
    */
   assetKeysRaw?: PolymeshDartBpAssetAssetKeys;
+  /** Whether the asset is frozen (`confidentialAssets.assetFrozen`). The chain rejects new settlements for a frozen asset. */
+  frozen: boolean;
   /** Current balance (only present for registered assets with account state) */
   balance?: string;
   /** Timestamp when details were fetched/cached */

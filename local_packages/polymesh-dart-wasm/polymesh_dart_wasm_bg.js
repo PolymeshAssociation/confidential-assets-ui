@@ -1710,9 +1710,9 @@ export class AccountPublicKey {
      * const key2 = new AccountPublicKey(new Uint8Array(32));
      *
      * // From Polkadot.js Codec
-     * const assetDetail = await api.query.confidentialAssets.dartAssetDetails(assetId);
-     * const auditor = assetDetail.auditors[0]; // Auditor key from chain storage
-     * const key4 = new AccountPublicKey(auditor); // Automatically calls toU8a()
+     * const assetKeys = (await api.query.confidentialAssets.keys(assetId)).unwrap();
+     * const mediator = [...assetKeys.mediators][0]; // Mediator key from chain storage
+     * const key4 = new AccountPublicKey(mediator); // Automatically calls toU8a()
      * ```
      * @param {any} js_value
      */
@@ -2982,13 +2982,14 @@ if (Symbol.dispose) AssetMintingProof.prototype[Symbol.dispose] = AssetMintingPr
  * # Examples
  * ```javascript
  * // From Polkadot.js chain data (recommended)
- * const assetDetail = await api.query.confidentialAssets.dartAssetDetails(assetId);
- * const assetState = new AssetState(assetId, assetDetail.mediators, assetDetail.auditors);
+ * const assetKeys = await api.query.confidentialAssets.keys(assetId);
+ * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a());
  *
- * // From pre-converted keys
- * const mediatorKey = new EncryptionPublicKey("0x1234...");
- * const auditorKey = new EncryptionPublicKey("0x5678...");
- * const assetState = new AssetState(assetId, [mediatorKey], [auditorKey]);
+ * // From hex keys
+ * const assetState = new AssetState(assetId, {
+ *     encKeys: ["0x5678...", "0xabcd..."], // auditor and mediator encryption public keys
+ *     mediators: ["0x1234..."],            // mediator account public keys
+ * });
  *
  * // Use in settlement legs
  * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
@@ -3074,6 +3075,22 @@ export class AssetState {
         return AssetState.__wrap(ret[0]);
     }
     /**
+     * Returns `true` if the asset is frozen. The chain rejects new settlements for a frozen asset.
+     *
+     * # Example
+     * ```javascript
+     * const assetState = await client.getAssetState(assetId);
+     * if (assetState.isFrozen()) {
+     *     console.log('Asset is frozen');
+     * }
+     * ```
+     * @returns {boolean}
+     */
+    isFrozen() {
+        const ret = wasm.assetstate_isFrozen(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * Gets the leaf index of this asset in the asset curve tree.
      *
      * The leaf index is used to retrieve the asset's curve tree path for settlement proofs.
@@ -3111,21 +3128,13 @@ export class AssetState {
         return ret >>> 0;
     }
     /**
-     * Creates a new asset state from raw chain data or pre-converted encryption keys.
-     *
-     * This constructor automatically converts raw key data from various sources into
-     * `EncryptionPublicKey` objects. It's especially useful when querying the Polymesh chain
-     * for mediators and auditors using Polkadot.js, which returns keys as `Codec` objects
-     * with `.toU8a()` methods.
+     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` value. `frozen` is `false`.
      *
      * # Arguments
      * * `asset_id` - The unique identifier for this confidential asset (as a number).
-     * * `mediators` - Array of raw key data or `EncryptionPublicKey` objects. Each element can be:
-     *   - An existing `EncryptionPublicKey` object
-     *   - A `Uint8Array` (32 bytes)
-     *   - A hex string with or without "0x" prefix
-     *   - Any Polkadot.js `Codec` object with a `.toU8a()` method
-     * * `auditors` - Array of raw key data in the same formats as mediators.
+     * * `asset_keys` - Either the SCALE-encoded `AssetKeys` as a `Uint8Array` or hex string, or an object
+     *   `{ encKeys, mediators }` where `encKeys` are the auditor and mediator encryption public keys
+     *   and `mediators` are the mediator account public keys, each as a hex string.
      *
      * # Returns
      * A new `AssetState` object.
@@ -3137,7 +3146,7 @@ export class AssetState {
      * ```javascript
      * // From Polkadot.js chain data (recommended)
      * const assetKeys = await api.query.confidentialAssets.keys(assetId);
-     * const assetState = new AssetState(assetId, assetKeys);
+     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a());
      *
      * // Use in settlement legs
      * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
@@ -3427,7 +3436,10 @@ if (Symbol.dispose) EncryptionKeyPair.prototype[Symbol.dispose] = EncryptionKeyP
  * const encKey = new EncryptionPublicKey(uint8Array);
  *
  * // Use in AssetState
- * const assetState = new AssetState(assetId, [mediatorEncKey], [auditorEncKey]);
+ * const assetState = new AssetState(assetId, {
+ *     encKeys: [auditorEncKey.toJs(), mediatorEncKey.toJs()],
+ *     mediators: [mediatorAccountKey.toJs()],
+ * });
  * ```
  */
 export class EncryptionPublicKey {
@@ -3512,9 +3524,9 @@ export class EncryptionPublicKey {
      * const key2 = new EncryptionPublicKey(new Uint8Array(32));
      *
      * // From Polkadot.js Codec
-     * const assetDetail = await api.query.confidentialAssets.dartAssetDetails(assetId);
-     * const mediator = assetDetail.mediators[0]; // Mediator key from chain storage
-     * const key4 = new EncryptionPublicKey(mediator); // Automatically calls toU8a()
+     * const assetKeys = (await api.query.confidentialAssets.keys(assetId)).unwrap();
+     * const encKey = [...assetKeys.encKeys][0]; // Auditor or mediator key from chain storage
+     * const key4 = new EncryptionPublicKey(encKey); // Automatically calls toU8a()
      * ```
      * @param {any} js_value
      */
@@ -3762,7 +3774,7 @@ export class LegBuilder {
      * # On-chain Data
      * All the required information can be queried from on-chain:
      * - `confidentialAssets.accountEncryptionKey(accountPublicKey)` - Get encryption keys
-     * - `confidentialAssets.dartAssetDetails(assetId)` - Get asset mediators/auditors
+     * - `confidentialAssets.keys(assetId)` - Get asset auditor/mediator keys
      *
      * # Example
      * ```javascript
@@ -3862,14 +3874,18 @@ export class MasterSeed {
      * Creates a new MasterSeed from a hexadecimal seed string.
      *
      * # Arguments
-     * * `seed` - A seed phrase or "0x"-prefixed hexadecimal string used to derive the master seed.
+     * * `seed` - A "0x"-prefixed hexadecimal string, or else a string whose raw bytes are used.
+     *   Must decode to at least 32 bytes.
      *
      * # Returns
      * A new `MasterSeed` object containing the generated seed.
      *
+     * # Errors
+     * * Throws an error if the hex is invalid or the seed is shorter than 32 bytes.
+     *
      * # Example
      * ```javascript
-     * const masterSeed = new MasterSeed("my-secure-seed-phrase");
+     * const masterSeed = new MasterSeed("0x" + generateRandomSeed());
      * ```
      * @param {string} seed
      */
@@ -5072,6 +5088,44 @@ export class SettlementLegEncrypted {
         wasm.__wbg_settlementlegencrypted_free(ptr, 0);
     }
     /**
+     * Deserializes an encrypted leg from its bare (unprefixed) hexadecimal form.
+     *
+     * Expects the bare payload bytes without a SCALE length prefix — the format
+     * produced by polkadot-js `Bytes.toHex()` and stored by indexers (e.g.
+     * SubQuery). If your hex came from this class's `toHex()` (or is the full
+     * SCALE encoding with its length prefix), use `fromHex()` instead.
+     *
+     * The payload is validated, so an invalid leg fails here rather than
+     * silently returning `null` from a later `tryDecrypt()`.
+     *
+     * # Arguments
+     * * `hex_str` - A bare payload hex string (with or without "0x" prefix).
+     *
+     * # Returns
+     * The deserialized `SettlementLegEncrypted`.
+     *
+     * # Errors
+     * * Throws an error if the hex string is invalid or the payload is not a
+     *   valid encrypted leg.
+     *
+     * # Example
+     * ```javascript
+     * // Hex as stored by an indexer (no SCALE length prefix)
+     * const encryptedLeg = SettlementLegEncrypted.fromBareHex(indexerRow.encryptedData);
+     * ```
+     * @param {string} hex_str
+     * @returns {SettlementLegEncrypted}
+     */
+    static fromBareHex(hex_str) {
+        const ptr0 = passStringToWasm0(hex_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.settlementlegencrypted_fromBareHex(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SettlementLegEncrypted.__wrap(ret[0]);
+    }
+    /**
      * Deserializes an encrypted leg from a SCALE-encoded byte array.
      *
      * # Arguments
@@ -5100,20 +5154,30 @@ export class SettlementLegEncrypted {
         return SettlementLegEncrypted.__wrap(ret[0]);
     }
     /**
-     * Deserializes an encrypted leg from a hexadecimal string.
+     * Deserializes an encrypted leg from its SCALE-encoded hexadecimal form.
+     *
+     * Expects the SCALE encoding (compact length prefix + payload bytes) — the
+     * format produced by `toHex()`/`toBytes()` and by SCALE-encoding the chain
+     * storage value. If your hex is the bare payload without the length prefix
+     * (e.g. from polkadot-js `Bytes.toHex()` or an indexer such as SubQuery),
+     * use `fromBareHex()` instead.
+     *
+     * The payload is validated, so an invalid leg fails here rather than
+     * silently returning `null` from a later `tryDecrypt()`.
      *
      * # Arguments
-     * * `hex_str` - A hex-encoded string (with or without "0x" prefix).
+     * * `hex_str` - A SCALE-encoded hex string (with or without "0x" prefix).
      *
      * # Returns
      * The deserialized `SettlementLegEncrypted`.
      *
      * # Errors
-     * * Throws an error if the hex string is invalid.
+     * * Throws an error if the hex string is invalid, lacks a valid SCALE
+     *   length prefix, or the payload is not a valid encrypted leg.
      *
      * # Example
      * ```javascript
-     * const encryptedLeg = SettlementLegEncrypted.fromHex("0x1234...");
+     * const encryptedLeg = SettlementLegEncrypted.fromHex(otherLeg.toHex());
      * ```
      * @param {string} hex_str
      * @returns {SettlementLegEncrypted}
@@ -5211,16 +5275,24 @@ export class SettlementLegEncrypted {
      * # Arguments
      * * `encryption_key` - The encryption key pair for the mediator or auditor.
      * * `max_asset_id` - Optional maximum asset ID to limit decryption scope.
+     * * `affirmation_key` - Optional mediator account (affirmation) public key, as an
+     *   `AccountPublicKey`, hex string or `Uint8Array`. Without it a decrypted leg reports the
+     *   `Auditor` role.
+     * * `max_amount` - Optional upper bound on the leg amount (`bigint` or number). Bounds decryption time.
      *
      * # Returns
      * * `Some(SettlementLeg)` if decryption succeeded.
      * * `None` if decryption failed (you are not a mediator/auditor for this asset).
      *
+     * # Errors
+     * * Throws an error if `max_amount` is not a valid balance.
+     *
      * # Example
      * ```javascript
      * const mediatorKeys = accountKeys.encryptionKeyPair();
+     * const mediatorAccountKey = accountKeys.publicKeys().accountPublicKey();
      * const maxAssetId = 500; // Optional limit
-     * const decrypted = encryptedLeg.tryDecryptAsMediatorOrAuditor(mediatorKeys, maxAssetId);
+     * const decrypted = encryptedLeg.tryDecryptAsMediatorOrAuditor(mediatorKeys, maxAssetId, mediatorAccountKey);
      * if (decrypted) {
      *     console.log('Can see transfer details as mediator/auditor');
      *     console.log('Amount:', decrypted.amount);
@@ -5228,11 +5300,13 @@ export class SettlementLegEncrypted {
      * ```
      * @param {EncryptionKeyPair} encryption_key
      * @param {number | null} [max_asset_id]
+     * @param {any | null} [affirmation_key]
+     * @param {any | null} [max_amount]
      * @returns {SettlementLeg | undefined}
      */
-    tryDecryptAsMediatorOrAuditor(encryption_key, max_asset_id) {
+    tryDecryptAsMediatorOrAuditor(encryption_key, max_asset_id, affirmation_key, max_amount) {
         _assertClass(encryption_key, EncryptionKeyPair);
-        const ret = wasm.settlementlegencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr, isLikeNone(max_asset_id) ? Number.MAX_SAFE_INTEGER : (max_asset_id) >>> 0);
+        const ret = wasm.settlementlegencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr, isLikeNone(max_asset_id) ? Number.MAX_SAFE_INTEGER : (max_asset_id) >>> 0, isLikeNone(affirmation_key) ? 0 : addToExternrefTable0(affirmation_key), isLikeNone(max_amount) ? 0 : addToExternrefTable0(max_amount));
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -5489,23 +5563,36 @@ export class SettlementLegsEncrypted {
      *
      * # Arguments
      * * `encryption_key` - The encryption key pair for the mediator or auditor.
+     * * `affirmation_key` - Optional mediator account (affirmation) public key, as an
+     *   `AccountPublicKey`, hex string or `Uint8Array`. Without it every decrypted leg reports the
+     *   `Auditor` role.
+     * * `max_amount` - Optional upper bound on the leg amount (`bigint` or number). Bounds decryption time.
      *
      * # Returns
      * A `SettlementLegs` object where each leg is either decrypted (`Some`) or not (`None`).
      *
+     * # Errors
+     * * Throws an error if `max_amount` is not a valid balance.
+     *
      * # Example
      * ```javascript
      * const mediatorKeys = accountKeys.encryptionKeyPair();
-     * const decryptedLegs = encryptedLegs.tryDecryptAsMediatorOrAuditor(mediatorKeys);
+     * const mediatorAccountKey = accountKeys.publicKeys().accountPublicKey();
+     * const decryptedLegs = encryptedLegs.tryDecryptAsMediatorOrAuditor(mediatorKeys, mediatorAccountKey);
      * console.log('As mediator, can see', decryptedLegs.legCount(), 'legs');
      * ```
      * @param {EncryptionKeyPair} encryption_key
+     * @param {any | null} [affirmation_key]
+     * @param {any | null} [max_amount]
      * @returns {SettlementLegs}
      */
-    tryDecryptAsMediatorOrAuditor(encryption_key) {
+    tryDecryptAsMediatorOrAuditor(encryption_key, affirmation_key, max_amount) {
         _assertClass(encryption_key, EncryptionKeyPair);
-        const ret = wasm.settlementlegsencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr);
-        return SettlementLegs.__wrap(ret);
+        const ret = wasm.settlementlegsencrypted_tryDecryptAsMediatorOrAuditor(this.__wbg_ptr, encryption_key.__wbg_ptr, isLikeNone(affirmation_key) ? 0 : addToExternrefTable0(affirmation_key), isLikeNone(max_amount) ? 0 : addToExternrefTable0(max_amount));
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return SettlementLegs.__wrap(ret[0]);
     }
 }
 if (Symbol.dispose) SettlementLegsEncrypted.prototype[Symbol.dispose] = SettlementLegsEncrypted.prototype.free;
@@ -5740,10 +5827,6 @@ export function __wbg_Error_ef53bc310eb298a0(arg0, arg1) {
     const ret = Error(getStringFromWasm0(arg0, arg1));
     return ret;
 }
-export function __wbg_Number_6b506e6536831eaa(arg0) {
-    const ret = Number(arg0);
-    return ret;
-}
 export function __wbg_String_8564e559799eccda(arg0, arg1) {
     const ret = String(arg1);
     const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -5836,10 +5919,6 @@ export function __wbg_done_60cf307fcc680536(arg0) {
     const ret = arg0.done;
     return ret;
 }
-export function __wbg_entries_04b37a02507f1713(arg0) {
-    const ret = Object.entries(arg0);
-    return ret;
-}
 export function __wbg_error_78ff5b3a29b770e0(arg0) {
     console.error(arg0);
 }
@@ -5853,10 +5932,6 @@ export function __wbg_get_1f8f054ddbaa7db2() { return handleError(function (arg0
     const ret = Reflect.get(arg0, arg1);
     return ret;
 }, arguments); }
-export function __wbg_get_2b48c7d0d006a781(arg0, arg1) {
-    const ret = arg0[arg1 >>> 0];
-    return ret;
-}
 export function __wbg_get_de6a0f7d4d18a304() { return handleError(function (arg0, arg1) {
     const ret = Reflect.get(arg0, arg1);
     return ret;
@@ -5894,10 +5969,6 @@ export function __wbg_instanceof_Uint8Array_86f30649f63ef9c2(arg0) {
 }
 export function __wbg_isArray_67c2c9c4313f4448(arg0) {
     const ret = Array.isArray(arg0);
-    return ret;
-}
-export function __wbg_isSafeInteger_66acec27e09e99a7(arg0) {
-    const ret = Number.isSafeInteger(arg0);
     return ret;
 }
 export function __wbg_iterator_8732428d309e270e() {

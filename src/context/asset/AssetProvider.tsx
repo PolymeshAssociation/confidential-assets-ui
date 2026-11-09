@@ -20,7 +20,12 @@ import type { AssetDetails, AssetMetadata } from '@/types/asset';
 import { getErrorMessage } from '@/utils/error';
 import { decodeMetadata } from '@/utils/metadata';
 import { notifications } from '@mantine/notifications';
-import type { PolymeshDartBpAssetAssetKeys } from '@polkadot/types/lookup';
+import type { Option } from '@polkadot/types';
+import type {
+  PolymeshDartBpAssetAssetKeys,
+  PolymeshDartBpKeysAccountPublicKey,
+} from '@polkadot/types/lookup';
+import type { Codec } from '@polkadot/types/types';
 import { base64Decode } from '@polkadot/util-crypto';
 import { AccountAssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -73,14 +78,27 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
       try {
         // Query all asset details in parallel
-        const [details, nameOption, symbolOption, decimalsOption, keysOption] =
-          await Promise.all([
-            polkadotApi.query.confidentialAssets.details(assetId),
-            polkadotApi.query.confidentialAssets.names(assetId),
-            polkadotApi.query.confidentialAssets.symbols(assetId),
-            polkadotApi.query.confidentialAssets.decimals(assetId),
-            polkadotApi.query.confidentialAssets.keys(assetId),
-          ]);
+        // `assetFrozen` is new in DART v1 and missing from the `polymesh-types` augmentation.
+        const assetFrozenQuery = (
+          polkadotApi.query.confidentialAssets as unknown as {
+            assetFrozen: (id: string) => Promise<Option<Codec>>;
+          }
+        ).assetFrozen;
+        const [
+          details,
+          nameOption,
+          symbolOption,
+          decimalsOption,
+          keysOption,
+          frozenOption,
+        ] = await Promise.all([
+          polkadotApi.query.confidentialAssets.details(assetId),
+          polkadotApi.query.confidentialAssets.names(assetId),
+          polkadotApi.query.confidentialAssets.symbols(assetId),
+          polkadotApi.query.confidentialAssets.decimals(assetId),
+          polkadotApi.query.confidentialAssets.keys(assetId),
+          assetFrozenQuery(assetId),
+        ]);
 
         if (details.isSome) {
           const assetDetail = details.unwrap();
@@ -103,7 +121,10 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           let assetKeysRaw: PolymeshDartBpAssetAssetKeys | undefined;
           if (keysOption.isSome) {
             assetKeysRaw = keysOption.unwrap();
-            for (const [accountKey] of assetKeysRaw.mediators) {
+            // DART v1 stores mediators as `BTreeSet<AccountPublicKey>`. `polymesh-types` still types it as the v0.1 map.
+            const mediatorKeys =
+              assetKeysRaw.mediators as unknown as Iterable<PolymeshDartBpKeysAccountPublicKey>;
+            for (const accountKey of mediatorKeys) {
               mediators.push(accountKey.toHex());
             }
             for (const encKey of assetKeysRaw.encKeys) {
@@ -138,6 +159,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             mediators,
             auditors,
             assetKeysRaw,
+            frozen: frozenOption.isSome,
             fetchedAt: Date.now(),
           };
 

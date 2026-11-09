@@ -6,3 +6,5 @@ allowBuilds:
   utf-8-validate: true
 minimumReleaseAgeExclude:
   - '@polymeshassociation/polymesh-sdk@30.0.0-beta.1'
+overrides:
+  '@w3ux/crypto': 'file:./local_packages/w3ux-crypto'

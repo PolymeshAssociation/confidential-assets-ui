@@ -200,6 +200,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
               `Asset details not found for asset ID: ${leg.assetId}`,
             );
           }
+          if (assetDetails.frozen) {
+            throw new Error(
+              `Asset ${leg.assetId} is frozen. Settlements cannot be created for a frozen asset.`,
+            );
+          }
 
           const mediators = assetDetails.mediators || [];
           const auditors = assetDetails.auditors || [];
