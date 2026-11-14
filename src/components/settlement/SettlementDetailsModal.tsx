@@ -569,6 +569,23 @@ export function SettlementDetailsModal({
               )}
             </Group>
 
+            {/* From v8.2.0 the chain prunes legs, memo and affirmation status at finalization */}
+            {!isLoadingDetails &&
+              availableLegIds.length === 0 &&
+              settlementStatus?.status === 'Finalized' && (
+                <Alert
+                  icon={<IconInfoCircle size={16} />}
+                  color="blue"
+                  variant="light"
+                >
+                  <Text size="sm">
+                    This settlement is finalized. The chain removes its legs
+                    once a settlement is finalized, so they can no longer be
+                    decrypted.
+                  </Text>
+                </Alert>
+              )}
+
             <Accordion
               variant="separated"
               radius="md"
@@ -583,12 +600,13 @@ export function SettlementDetailsModal({
                   ? assetDetailsMap.get(decryptedLeg.details.assetId)
                   : null;
 
-                // Find user's mediator index if they are a mediator
-                // Mediators are identified by their account public key
+                // Find the user's mediator index in this leg. Use the leg's own mediators
+                // (`legMediators`), not the asset's current ones, which can change after the
+                // settlement is created. Mediators are identified by their account public key.
                 const userMediatorIndex =
-                  selectedKey && asset?.mediators
-                    ? asset.mediators.findIndex(
-                        (mediator) => mediator === selectedKey.publicKey,
+                  selectedKey && decryptedLeg
+                    ? decryptedLeg.details.mediators.indexOf(
+                        selectedKey.publicKey,
                       )
                     : -1;
 

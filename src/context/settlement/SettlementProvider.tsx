@@ -104,50 +104,57 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
   /**
    * Calculate all roles for a user in a settlement leg
-   * @param senderEncryptionKey - Sender's encryption public key (from decrypted leg)
-   * @param receiverEncryptionKey - Receiver's encryption public key (from decrypted leg)
-   * @param assetDetails - Asset details (mediators and auditors)
-   * @param userPublicKey - User's account public key
-   * @param userEncryptionPublicKey - User's encryption public key
+   *
+   * DART v1 names a mediator by its account public key, and stores auditor and mediator
+   * encryption keys together. A user is therefore a mediator when their account key is one of
+   * the leg's mediators, and an auditor only when their encryption key is an auditor key and
+   * they are not a mediator.
+   *
+   * @param params.senderEncryptionKey - Sender's encryption public key (from decrypted leg)
+   * @param params.receiverEncryptionKey - Receiver's encryption public key (from decrypted leg)
+   * @param params.mediators - Mediator account public keys for the leg
+   * @param params.auditors - Auditor encryption public keys for the asset
+   * @param params.decryptedAs - Role DART reported when decrypting, if known
+   * @param params.userPublicKey - User's account public key
+   * @param params.userEncryptionPublicKey - User's encryption public key
    * @returns Array of roles the user has in this leg
    */
   const calculateRolesForLeg = useCallback(
-    (
-      senderEncryptionKey: string,
-      receiverEncryptionKey: string,
-      assetDetails: { mediators: string[]; auditors: string[] } | null,
-      userPublicKey: string,
-      userEncryptionPublicKey: string,
-    ): SettlementRole[] => {
+    (params: {
+      senderEncryptionKey: string;
+      receiverEncryptionKey: string;
+      mediators: string[];
+      auditors: string[];
+      decryptedAs?: 'participant' | 'mediator' | 'auditor';
+      userPublicKey: string;
+      userEncryptionPublicKey: string;
+    }): SettlementRole[] => {
       const roles: SettlementRole[] = [];
 
-      // Check sender role
-      if (senderEncryptionKey === userEncryptionPublicKey) {
+      if (params.senderEncryptionKey === params.userEncryptionPublicKey) {
         roles.push('sender');
       }
 
-      // Check receiver role
-      if (receiverEncryptionKey === userEncryptionPublicKey) {
+      if (params.receiverEncryptionKey === params.userEncryptionPublicKey) {
         roles.push('receiver');
       }
 
-      // Check mediator/auditor roles if asset details available
-      if (assetDetails) {
-        // Mediators are identified by their account public key
-        const isMediator = assetDetails.mediators?.some((mediator) => {
-          return mediator === userPublicKey;
-        });
-        if (isMediator) {
-          roles.push('mediator');
-        }
+      const isMediator =
+        params.decryptedAs === 'mediator' ||
+        params.mediators.includes(params.userPublicKey);
+      if (isMediator) {
+        roles.push('mediator');
+      }
 
-        // Auditors are identified by their encryption public key
-        const isAuditor = assetDetails.auditors?.some((auditor) => {
-          return auditor === userEncryptionPublicKey;
-        });
-        if (isAuditor) {
-          roles.push('auditor');
-        }
+      // DART reports `auditor` only when the key decrypted the leg and the account is not one
+      // of the leg's mediators. That stays accurate after the asset's keys are rotated, when
+      // the asset's current auditor list may no longer include the key.
+      const isAuditor =
+        !isMediator &&
+        (params.decryptedAs === 'auditor' ||
+          params.auditors.includes(params.userEncryptionPublicKey));
+      if (isAuditor) {
+        roles.push('auditor');
       }
 
       return roles;
@@ -194,7 +201,10 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
         const myEncryptionPublicKey = selectedKey.encryptionPublicKey;
 
         for (const leg of params.legs) {
-          const assetDetails = await getAssetDetails(leg.assetId);
+          // Bypass the cache. The issuer can freeze the asset or rotate its keys
+          // (`updateAssetKeys`) at any time. A stale frozen flag or stale keys would cost a
+          // full proof generation before the chain rejects the settlement.
+          const assetDetails = await getAssetDetails(leg.assetId, true);
           if (!assetDetails) {
             throw new Error(
               `Asset details not found for asset ID: ${leg.assetId}`,
@@ -205,6 +215,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
               `Asset ${leg.assetId} is frozen. Settlements cannot be created for a frozen asset.`,
             );
           }
+          if (!assetDetails.assetKeysRaw) {
+            throw new Error(
+              `Asset ${leg.assetId} has no keys on chain, so a settlement leg cannot be built for it.`,
+            );
+          }
 
           const mediators = assetDetails.mediators || [];
           const auditors = assetDetails.auditors || [];
@@ -212,7 +227,7 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
           const assetState = new AssetState(
             assetIdNum,
-            assetDetails.assetKeysRaw?.toU8a(),
+            assetDetails.assetKeysRaw.toU8a(),
           );
 
           serviceLegs.push({
@@ -230,13 +245,15 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             .encryptionPublicKey()
             .toJs() as string;
 
-          const legRoles = calculateRolesForLeg(
-            senderEncKey,
-            receiverEncKey,
-            { mediators, auditors },
-            myPublicKey,
-            myEncryptionPublicKey,
-          );
+          // The new leg takes the asset's current mediators
+          const legRoles = calculateRolesForLeg({
+            senderEncryptionKey: senderEncKey,
+            receiverEncryptionKey: receiverEncKey,
+            mediators,
+            auditors,
+            userPublicKey: myPublicKey,
+            userEncryptionPublicKey: myEncryptionPublicKey,
+          });
 
           // Add all roles to the set
           legRoles.forEach((role) => roles.add(role));
@@ -352,19 +369,15 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         if (!selectedKey) throw new Error('No active key found');
 
-        // Calculate roles using helper
-        const roles = calculateRolesForLeg(
-          result.leg.senderEncryptionKey,
-          result.leg.receiverEncryptionKey,
-          assetDetails
-            ? {
-                mediators: assetDetails.mediators || [],
-                auditors: assetDetails.auditors || [],
-              }
-            : null,
-          selectedKey.publicKey,
-          selectedKey.encryptionPublicKey,
-        );
+        const roles = calculateRolesForLeg({
+          senderEncryptionKey: result.leg.senderEncryptionKey,
+          receiverEncryptionKey: result.leg.receiverEncryptionKey,
+          mediators: result.leg.mediators,
+          auditors: assetDetails?.auditors ?? [],
+          decryptedAs: result.decryptedAs,
+          userPublicKey: selectedKey.publicKey,
+          userEncryptionPublicKey: selectedKey.encryptionPublicKey,
+        });
 
         // Save/update settlement record
         const existingRecord = settlements.get(params.settlementId);
@@ -1276,7 +1289,8 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
             id: notificationId,
             loading: false,
             title: 'No Legs Found',
-            message: 'This settlement has no legs',
+            message:
+              'No legs on chain. The chain removes legs when a settlement is finalized.',
             color: 'yellow',
             autoClose: 5000,
           });
@@ -1315,19 +1329,16 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
                     decryptResult.leg.assetId,
                   );
 
-                  // Calculate roles using helper
-                  const roles = calculateRolesForLeg(
-                    decryptResult.leg.senderEncryptionKey,
-                    decryptResult.leg.receiverEncryptionKey,
-                    assetDetails
-                      ? {
-                          mediators: assetDetails.mediators || [],
-                          auditors: assetDetails.auditors || [],
-                        }
-                      : null,
-                    selectedKey.publicKey,
-                    selectedKey.encryptionPublicKey,
-                  );
+                  const roles = calculateRolesForLeg({
+                    senderEncryptionKey: decryptResult.leg.senderEncryptionKey,
+                    receiverEncryptionKey:
+                      decryptResult.leg.receiverEncryptionKey,
+                    mediators: decryptResult.leg.mediators,
+                    auditors: assetDetails?.auditors ?? [],
+                    decryptedAs: decryptResult.decryptedAs,
+                    userPublicKey: selectedKey.publicKey,
+                    userEncryptionPublicKey: selectedKey.encryptionPublicKey,
+                  });
 
                   const result: DecryptedLegResult = {
                     status: 'success',

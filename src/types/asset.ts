@@ -238,7 +238,13 @@ export interface AssetDetails {
   metadata?: AssetMetadata;
   /** Array of mediator account public keys (hex strings) */
   mediators: string[];
-  /** Array of auditor and mediator encryption public keys (hex strings) */
+  /**
+   * Auditor encryption public keys (hex strings).
+   *
+   * The chain stores auditor and mediator encryption keys together in `encKeys`. This list is
+   * `encKeys` minus each mediator account's own encryption key. A mediator using a shared key
+   * (`distributeEncryptionKey`) can't be told apart from an auditor, so that key stays in this list.
+   */
   auditors: string[];
   /**
    * Raw asset keys from chain (PolymeshDartBpAssetAssetKeys)

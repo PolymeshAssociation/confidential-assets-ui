@@ -23,7 +23,11 @@ export interface AssetContextValue {
   mintAsset: (params: MintAssetParams) => Promise<MintAssetResult>;
 
   // Asset queries
-  getAssetDetails: (assetId: string) => Promise<AssetDetails | null>; // Fetch and cache asset details
+  /** Fetch and cache asset details. Pass `forceRefresh` to bypass the cache. */
+  getAssetDetails: (
+    assetId: string,
+    forceRefresh?: boolean,
+  ) => Promise<AssetDetails | null>;
 
   // Data refresh
   refreshOwnedAssets: () => void;

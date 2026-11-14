@@ -20,12 +20,7 @@ import type { AssetDetails, AssetMetadata } from '@/types/asset';
 import { getErrorMessage } from '@/utils/error';
 import { decodeMetadata } from '@/utils/metadata';
 import { notifications } from '@mantine/notifications';
-import type { Option } from '@polkadot/types';
-import type {
-  PolymeshDartBpAssetAssetKeys,
-  PolymeshDartBpKeysAccountPublicKey,
-} from '@polkadot/types/lookup';
-import type { Codec } from '@polkadot/types/types';
+import type { PolymeshDartBpAssetAssetKeys } from '@polkadot/types/lookup';
 import { base64Decode } from '@polkadot/util-crypto';
 import { AccountAssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -78,12 +73,6 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
       try {
         // Query all asset details in parallel
-        // `assetFrozen` is new in DART v1 and missing from the `polymesh-types` augmentation.
-        const assetFrozenQuery = (
-          polkadotApi.query.confidentialAssets as unknown as {
-            assetFrozen: (id: string) => Promise<Option<Codec>>;
-          }
-        ).assetFrozen;
         const [
           details,
           nameOption,
@@ -97,7 +86,18 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           polkadotApi.query.confidentialAssets.symbols(assetId),
           polkadotApi.query.confidentialAssets.decimals(assetId),
           polkadotApi.query.confidentialAssets.keys(assetId),
-          assetFrozenQuery(assetId),
+          // A failed frozen lookup must not hide the asset. Treat it as unknown (not
+          // frozen); the chain still rejects a settlement for a frozen asset.
+          polkadotApi.query.confidentialAssets
+            .assetFrozen(assetId)
+            .catch((err: unknown) => {
+              console.warn(
+                '[Asset Provider] Could not query frozen state for asset',
+                assetId,
+                err,
+              );
+              return null;
+            }),
         ]);
 
         if (details.isSome) {
@@ -120,15 +120,31 @@ export function AssetProvider({ children }: { children: ReactNode }) {
           const auditors: string[] = [];
           let assetKeysRaw: PolymeshDartBpAssetAssetKeys | undefined;
           if (keysOption.isSome) {
-            assetKeysRaw = keysOption.unwrap();
-            // DART v1 stores mediators as `BTreeSet<AccountPublicKey>`. `polymesh-types` still types it as the v0.1 map.
-            const mediatorKeys =
-              assetKeysRaw.mediators as unknown as Iterable<PolymeshDartBpKeysAccountPublicKey>;
-            for (const accountKey of mediatorKeys) {
+            const keys = keysOption.unwrap();
+            assetKeysRaw = keys;
+            for (const accountKey of keys.mediators) {
               mediators.push(accountKey.toHex());
             }
-            for (const encKey of assetKeysRaw.encKeys) {
-              auditors.push(encKey.toHex());
+
+            // `encKeys` holds auditor and mediator encryption keys together. Remove each
+            // mediator account's own encryption key to leave the auditors.
+            const mediatorEncKeys = await Promise.all(
+              [...keys.mediators].map((accountKey) =>
+                polkadotApi.query.confidentialAssets.accountEncryptionKey(
+                  accountKey,
+                ),
+              ),
+            );
+            const mediatorEncKeyHexes = new Set(
+              mediatorEncKeys
+                .filter((encKey) => encKey.isSome)
+                .map((encKey) => encKey.unwrap().toHex()),
+            );
+            for (const encKey of keys.encKeys) {
+              const encKeyHex = encKey.toHex();
+              if (!mediatorEncKeyHexes.has(encKeyHex)) {
+                auditors.push(encKeyHex);
+              }
             }
           }
 
@@ -159,7 +175,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             mediators,
             auditors,
             assetKeysRaw,
-            frozen: frozenOption.isSome,
+            frozen: frozenOption?.isSome ?? false,
             fetchedAt: Date.now(),
           };
 
@@ -184,8 +200,11 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
   // Public method to get asset details (fetches if not cached)
   const getAssetDetails = useCallback(
-    async (assetId: string): Promise<AssetDetails | null> => {
-      return fetchAssetDetails(assetId, false);
+    async (
+      assetId: string,
+      forceRefresh = false,
+    ): Promise<AssetDetails | null> => {
+      return fetchAssetDetails(assetId, forceRefresh);
     },
     [fetchAssetDetails],
   );

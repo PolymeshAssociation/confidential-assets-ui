@@ -39,6 +39,39 @@ export async function queryEncryptedLeg(
   return SettlementLegEncrypted.fromBytes(legBytesArray);
 }
 
+/**
+ * Query the mediator account keys recorded for a settlement leg
+ * (`confidentialAssets.legMediators`, added in v8.2.0).
+ *
+ * The chain fixes a leg's mediators when the settlement is created, so they can differ
+ * from the asset's current mediators. The order matches the mediator index used in
+ * `legAffirmationStatus`.
+ *
+ * The chain does not always write this entry. An empty result means "not recorded", and
+ * callers should fall back to the asset's current mediators.
+ *
+ * @returns Mediator account public keys as hex strings. Empty if none are recorded.
+ */
+export async function queryLegMediators(
+  polkadotApi: ApiPromise,
+  settlementId: string,
+  legId: number,
+): Promise<string[]> {
+  const legMediatorsOption =
+    await polkadotApi.query.confidentialAssets.legMediators(
+      settlementId,
+      legId,
+    );
+
+  if (legMediatorsOption.isNone) {
+    return [];
+  }
+
+  return [...legMediatorsOption.unwrap().mediators].map((accountKey) =>
+    accountKey.toHex(),
+  );
+}
+
 // ============================================================================
 // Common Result Type
 // ============================================================================

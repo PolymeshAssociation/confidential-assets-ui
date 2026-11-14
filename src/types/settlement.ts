@@ -45,6 +45,12 @@ export interface SettlementLegDetails {
   amount: string;
   senderEncryptionKey: string;
   receiverEncryptionKey: string;
+  /**
+   * Mediator account public keys for this leg (hex), from `confidentialAssets.legMediators`,
+   * or the asset's current mediators when the chain has not recorded leg mediators.
+   * The position in this list is the mediator index used by `legAffirmationStatus`.
+   */
+  mediators: string[];
 }
 
 // ============================================================================

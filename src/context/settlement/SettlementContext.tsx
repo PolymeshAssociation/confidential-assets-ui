@@ -7,6 +7,7 @@
 import type {
   DecryptedLegResult,
   SettlementDetailsChainData,
+  SettlementLegDetails,
   SettlementRecord,
   SettlementRole,
 } from '@/types/settlement';
@@ -62,13 +63,7 @@ export interface SettlementContextValue {
     settlementId: string;
     legId: number;
   }) => Promise<{
-    leg: {
-      legId: number;
-      assetId: string;
-      amount: string;
-      senderEncryptionKey: string;
-      receiverEncryptionKey: string;
-    };
+    leg: SettlementLegDetails;
     roles: SettlementRole[];
   }>;
 
