@@ -5,6 +5,16 @@ allowBuilds:
   esbuild: true
   utf-8-validate: true
 minimumReleaseAgeExclude:
-  - '@polymeshassociation/polymesh-sdk@30.0.0-beta.1'
+  - '@polymeshassociation/polymesh-types@7.8.0'
+# Keep one @polkadot stack, matching @polymeshassociation/polymesh-sdk (api 16.5.2, util 13.5.9).
+# The signing manager's extension-inject accepts any 16.x and would otherwise pull
+# @polkadot/types 16.5.6, which brings in @polkadot/util 14.
 overrides:
-  '@w3ux/crypto': 'file:./local_packages/w3ux-crypto'
+  '@polkadot/types': 16.5.2
+  '@polkadot/types-augment': 16.5.2
+  '@polkadot/types-codec': 16.5.2
+  '@polkadot/types-create': 16.5.2
+  '@polkadot/types-known': 16.5.2
+  '@polkadot/rpc-provider': 16.5.2
+  '@polkadot/rpc-core': 16.5.2
+  '@polkadot/rpc-augment': 16.5.2

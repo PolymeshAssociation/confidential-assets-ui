@@ -25,8 +25,8 @@ import {
   IconSearch,
   IconWallet,
 } from '@tabler/icons-react';
-import { Polkicon } from '@w3ux/react-polkicon';
 import { useMemo, useState } from 'react';
+import { Identicon } from './Identicon';
 import classes from './SigningKeySelectionModal.module.css';
 
 interface SigningKeySelectionModalProps {
@@ -172,11 +172,7 @@ export function SigningKeySelectionModal({
             })}
           >
             <Group align="flex-start" wrap="nowrap">
-              <Polkicon
-                address={selectedAccount.address}
-                fontSize="40px"
-                background="transparent"
-              />
+              <Identicon address={selectedAccount.address} size="40px" />
               <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
                 <Text fw={600} size="lg" lh={1.2} lineClamp={2}>
                   {selectedAccount.name || 'Unknown Key'}
@@ -314,11 +310,7 @@ export function SigningKeySelectionModal({
                   >
                     <Group justify="space-between" wrap="nowrap">
                       <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                        <Polkicon
-                          address={account.address}
-                          fontSize="30px"
-                          background="transparent"
-                        />
+                        <Identicon address={account.address} size="30px" />
                         <Stack gap={0} style={{ minWidth: 0 }}>
                           <Text size="sm" fw={500} lineClamp={1}>
                             {account.name ||

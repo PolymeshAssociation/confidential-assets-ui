@@ -2,7 +2,7 @@ import { useModal } from '@/hooks/useModal';
 import { usePolymesh } from '@/hooks/usePolymesh';
 import { Button, Group, Loader, Stack, Text } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
-import { Polkicon } from '@w3ux/react-polkicon';
+import { Identicon } from './Identicon';
 
 export function SigningKeySelectionButton() {
   const { selectedAccount, accountBalance, isAccountLoading } = usePolymesh();
@@ -60,11 +60,7 @@ export function SigningKeySelectionButton() {
                   `${selectedAccount.address.substring(0, 6)}...${selectedAccount.address.slice(-4)}`}
               </Text>
             </Stack>
-            <Polkicon
-              address={selectedAccount.address}
-              fontSize="32px"
-              background="transparent"
-            />
+            <Identicon address={selectedAccount.address} size="32px" />
             <IconChevronDown size="1rem" style={{ opacity: 0.5 }} />
           </Group>
         </Button>
