@@ -10,7 +10,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core';
 import {
   IconAlertTriangle,
@@ -101,7 +100,7 @@ export function GenerateKeyModal({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title={<Title order={4}>Generate New Confidential Keys</Title>}
+      title="Generate New Confidential Keys"
       size="md"
       closeOnClickOutside={false}
     >
