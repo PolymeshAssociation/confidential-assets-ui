@@ -6,7 +6,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist', 'local_packages']),
+  globalIgnores(['dist', 'local_packages', '.playwright-mcp']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

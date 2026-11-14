@@ -29,3 +29,5 @@ dist-ssr
 
 # temp ignore for local wasm package
 confidential-assets-wasm
+# Playwright MCP output (screenshots, logs, local test seed)
+.playwright-mcp/
