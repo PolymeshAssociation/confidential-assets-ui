@@ -23,10 +23,11 @@ import {
   IconCopy,
   IconInfoCircle,
   IconLock,
+  IconLockOpen,
   IconRefresh,
   IconX,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AssetDetailsDrawer } from '@/components';
 import { TruncatedKey } from '@/components/TruncatedKey';
@@ -42,6 +43,7 @@ import type {
   SettlementLegDetails,
   SettlementRole,
 } from '@/types/settlement';
+import { getErrorMessage, isPasswordEntryCancelled } from '@/utils/error';
 import { fromSmallestUnit } from '@/utils/tokenAmount';
 
 interface SettlementDetailsModalProps {
@@ -102,6 +104,12 @@ export function SettlementDetailsModal({
   >(new Map());
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // Set when batch decryption ends without decrypting anything (e.g. the unlock prompt was
+  // cancelled). Shows a manual "Decrypt legs" button instead of prompting again.
+  const [decryptAllError, setDecryptAllError] = useState<string | null>(null);
+  // `${settlementId}:${publicKey}` once auto-decrypt has run, so a cancelled or failed
+  // attempt does not immediately retrigger the unlock prompt.
+  const autoDecryptKeyRef = useRef<string | null>(null);
   const [viewAssetId, setViewAssetId] = useState<string | null>(null);
 
   // Load settlement details from chain
@@ -161,6 +169,7 @@ export function SettlementDetailsModal({
     if (!selectedKey || availableLegIds.length === 0 || isDecrypting) return;
 
     setIsDecrypting(true);
+    setDecryptAllError(null);
     setDecryptedLegs(new Map());
     setFailedLegs(new Set());
     setNotInvolvedLegs(new Set());
@@ -193,6 +202,11 @@ export function SettlementDetailsModal({
       });
     } catch (err) {
       console.error('Batch decryption failed:', err);
+      setDecryptAllError(
+        isPasswordEntryCancelled(err)
+          ? 'Unlock was cancelled. Unlock your confidential account to view and act on these legs.'
+          : getErrorMessage(err),
+      );
     } finally {
       setIsDecrypting(false);
     }
@@ -266,20 +280,19 @@ export function SettlementDetailsModal({
     ],
   );
 
-  // Auto-decrypt all available legs when modal opens
+  // Auto-decrypt all available legs once when the modal opens (per settlement and key).
+  // A cancelled unlock or a failure leaves the legs undecrypted; retrying here would
+  // reopen the unlock prompt in a loop, so the user retries with the button instead.
   useEffect(() => {
-    if (
-      selectedKey &&
-      availableLegIds.length > 0 &&
-      decryptedLegs.size === 0 &&
-      !isDecrypting
-    ) {
-      handleDecryptAllLegs();
-    }
+    if (!selectedKey || availableLegIds.length === 0 || isDecrypting) return;
+    const attemptKey = `${settlementId}:${selectedKey.publicKey}`;
+    if (autoDecryptKeyRef.current === attemptKey) return;
+    autoDecryptKeyRef.current = attemptKey;
+    handleDecryptAllLegs();
   }, [
     selectedKey,
+    settlementId,
     availableLegIds,
-    decryptedLegs.size,
     isDecrypting,
     handleDecryptAllLegs,
   ]);
@@ -292,7 +305,9 @@ export function SettlementDetailsModal({
       setAvailableLegIds([]);
       setSettlementStatus(null);
       setError(null);
+      setDecryptAllError(null);
       setIsDecrypting(false);
+      autoDecryptKeyRef.current = null;
       loadSettlementDetails();
     }
   }, [opened, settlementId, polkadotApi, loadSettlementDetails]);
@@ -568,6 +583,28 @@ export function SettlementDetailsModal({
                 </Group>
               )}
             </Group>
+
+            {decryptAllError && !isDecrypting && decryptedLegs.size === 0 && (
+              <Alert
+                icon={<IconLock size={16} />}
+                title="Legs not decrypted"
+                color="yellow"
+                variant="light"
+              >
+                <Group justify="space-between" wrap="nowrap" gap="md">
+                  <Text size="sm">{decryptAllError}</Text>
+                  <Button
+                    variant="default"
+                    size="xs"
+                    leftSection={<IconLockOpen size={14} />}
+                    onClick={() => handleDecryptAllLegs()}
+                    style={{ flexShrink: 0 }}
+                  >
+                    Unlock and decrypt
+                  </Button>
+                </Group>
+              </Alert>
+            )}
 
             {/* From v8.2.0 the chain prunes legs, memo and affirmation status at finalization */}
             {!isLoadingDetails &&

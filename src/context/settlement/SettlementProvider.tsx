@@ -35,7 +35,7 @@ import type {
   SettlementRecord,
   SettlementRole,
 } from '@/types/settlement';
-import { getErrorMessage } from '@/utils/error';
+import { getErrorMessage, isPasswordEntryCancelled } from '@/utils/error';
 import { notifications } from '@mantine/notifications';
 import { AccountPublicKeys, AssetState } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -308,6 +308,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           blockNumber: result.blockNumber,
         };
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Create failed:', err);
         notifications.update({
           id: notificationId,
@@ -431,6 +436,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
           roles,
         };
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Decrypt failed:', err);
         notifications.update({
           id: notificationId,
@@ -552,6 +562,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Sender affirmation failed:', err);
         if (!params.suppressNotifications) {
           notifications.update({
@@ -672,6 +687,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error(
           '[Settlement Provider] Receiver affirmation failed:',
           err,
@@ -776,6 +796,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error(
           `[Settlement Provider] Mediator ${actionName.toLowerCase()} failed:`,
           err,
@@ -893,6 +918,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Claim failed:', err);
         if (!params.suppressNotifications) {
           notifications.update({
@@ -1000,6 +1030,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Update counter failed:', err);
         notifications.update({
           id: notificationId,
@@ -1105,6 +1140,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Revert failed:', err);
         notifications.update({
           id: notificationId,
@@ -1466,6 +1506,11 @@ export function SettlementProvider({ children }: { children: ReactNode }) {
 
         return results;
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Settlement Provider] Batch decrypt failed:', err);
         notifications.update({
           id: notificationId,

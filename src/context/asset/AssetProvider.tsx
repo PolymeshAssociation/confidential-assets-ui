@@ -17,7 +17,7 @@ import {
   saveAccountAssetState,
 } from '@/services/storage/assetStorage';
 import type { AssetDetails, AssetMetadata } from '@/types/asset';
-import { getErrorMessage } from '@/utils/error';
+import { getErrorMessage, isPasswordEntryCancelled } from '@/utils/error';
 import { decodeMetadata } from '@/utils/metadata';
 import { notifications } from '@mantine/notifications';
 import type { PolymeshDartBpAssetAssetKeys } from '@polkadot/types/lookup';
@@ -376,6 +376,11 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
         return result.assetId;
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Asset Provider] Failed to create asset:', err);
         notifications.update({
           id: notificationId,
@@ -455,6 +460,11 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
         params.onProgress?.('Complete');
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Asset Provider] Failed to register asset:', err);
         notifications.update({
           id: notificationId,
@@ -594,6 +604,11 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
         return result;
       } catch (err) {
+        if (isPasswordEntryCancelled(err)) {
+          // Cancelled unlock: close the progress toast instead of showing a failure.
+          notifications.hide(notificationId);
+          throw err;
+        }
         console.error('[Asset Provider] Failed to mint asset:', err);
         notifications.update({
           id: notificationId,

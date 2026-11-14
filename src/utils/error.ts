@@ -15,3 +15,19 @@ export function getErrorMessage(err: unknown): string {
   const str = String(err);
   return str !== '[object Object]' ? str : 'Unknown error';
 }
+
+/**
+ * Thrown when the user cancels the unlock (password) prompt.
+ * A deliberate cancel is not a failure, so callers close their progress
+ * notification quietly instead of reporting an error.
+ */
+export class PasswordEntryCancelledError extends Error {
+  constructor() {
+    super('Password entry cancelled');
+    this.name = 'PasswordEntryCancelledError';
+  }
+}
+
+export function isPasswordEntryCancelled(err: unknown): boolean {
+  return err instanceof PasswordEntryCancelledError;
+}

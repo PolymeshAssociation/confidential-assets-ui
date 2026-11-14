@@ -9,6 +9,7 @@ import { confidentialKeyManager } from '@/services/confidential/keyManager';
 import * as keyStorage from '@/services/storage/keyStorage';
 import { ConfidentialError } from '@/types/confidential';
 import type { EncryptedConfidentialKeyRecord } from '@/types/storage';
+import { PasswordEntryCancelledError } from '@/utils/error';
 import type { ApiPromise } from '@polkadot/api';
 import type { AccountKeys } from '@polymesh/polymesh-dart-wasm';
 import type { ReactNode } from 'react';
@@ -241,7 +242,7 @@ export function ConfidentialKeyProvider({ children }: { children: ReactNode }) {
 
   const handlePasswordCancel = useCallback(() => {
     if (passwordResolver) {
-      passwordResolver.reject(new Error('Password entry cancelled'));
+      passwordResolver.reject(new PasswordEntryCancelledError());
       setPasswordModalOpen(false);
       setPendingKeyAlias(null);
       setEncryptedKeyToUnlock(null);
