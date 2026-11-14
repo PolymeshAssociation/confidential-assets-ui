@@ -58,7 +58,10 @@ export function AssetManagementPage() {
   const {
     ownedAssets,
     registeredAssets,
-    isLoading,
+    isLoadingOwnedAssets,
+    isLoadingRegisteredAssets,
+    ownedAssetsLoaded,
+    registeredAssetsLoaded,
     error,
     refreshOwnedAssets,
     refreshRegisteredAssets,
@@ -293,10 +296,12 @@ export function AssetManagementPage() {
         <Tabs value={activeTab} onChange={setActiveTab}>
           <Tabs.List>
             <Tabs.Tab value="registered" leftSection={<IconCoin size={18} />}>
-              Held Assets ({registeredAssets.length})
+              Held Assets
+              {registeredAssetsLoaded ? ` (${registeredAssets.length})` : ''}
             </Tabs.Tab>
             <Tabs.Tab value="owned" leftSection={<IconBriefcase size={18} />}>
-              Created Assets ({ownedAssets.length})
+              Created Assets
+              {ownedAssetsLoaded ? ` (${ownedAssets.length})` : ''}
             </Tabs.Tab>
           </Tabs.List>
 
@@ -492,7 +497,7 @@ export function AssetManagementPage() {
               </Card.Section>
 
               <Card.Section inheritPadding py="md">
-                <LoadingOverlay visible={isLoading} />
+                <LoadingOverlay visible={isLoadingRegisteredAssets} />
 
                 {!selectedKey ? (
                   <Card withBorder p="xl">
@@ -750,7 +755,7 @@ export function AssetManagementPage() {
               )}
 
               <Card.Section inheritPadding py="md">
-                <LoadingOverlay visible={isLoading} />
+                <LoadingOverlay visible={isLoadingOwnedAssets} />
 
                 {ownedAssets.length === 0 ? (
                   <Stack align="center" py={40}>

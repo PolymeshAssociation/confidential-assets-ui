@@ -14,7 +14,13 @@ export interface AssetContextValue {
   ownedAssets: AssetDetails[]; // Assets owned by current DID
   registeredAssets: (AssetDetails & { balance?: string })[]; // Assets registered to confidential account
 
-  isLoading: boolean;
+  isLoading: boolean; // Either list is loading
+  isLoadingOwnedAssets: boolean;
+  isLoadingRegisteredAssets: boolean;
+  /** True once `ownedAssets` has loaded for the current DID. */
+  ownedAssetsLoaded: boolean;
+  /** True once `registeredAssets` has loaded for the selected confidential key. */
+  registeredAssetsLoaded: boolean;
   error: string | null;
 
   // Asset operations

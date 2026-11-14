@@ -38,7 +38,17 @@ export function AssetProvider({ children }: { children: ReactNode }) {
   const { selectedKey, executeWithKey } = useConfidentialKey();
   const { submitTransaction } = useTransaction();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingOwnedAssets, setIsLoadingOwnedAssets] = useState(false);
+  const [isLoadingRegisteredAssets, setIsLoadingRegisteredAssets] =
+    useState(false);
+  // The DID / confidential key whose asset lists are currently loaded. Until a list has
+  // loaded for the current DID or key, its contents (and count) are not meaningful.
+  const [ownedAssetsLoadedFor, setOwnedAssetsLoadedFor] = useState<
+    string | null
+  >(null);
+  const [registeredAssetsLoadedFor, setRegisteredAssetsLoadedFor] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
   // Single source of truth for asset details from chain - using ref to avoid re-renders
@@ -218,7 +228,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      setIsLoading(true);
+      setIsLoadingOwnedAssets(true);
 
       // Query assets owned by this DID
       const ownedAssetsKeys =
@@ -240,13 +250,14 @@ export function AssetProvider({ children }: { children: ReactNode }) {
         .map((id) => assetDetailsMapRef.current.get(id))
         .filter((details): details is AssetDetails => details !== undefined);
       setOwnedAssets(owned);
+      setOwnedAssetsLoadedFor(accountIdentity);
     } catch (err) {
       console.error('[Asset Provider] Failed to refresh owned assets:', err);
       setError(
         err instanceof Error ? err.message : 'Failed to load owned assets',
       );
     } finally {
-      setIsLoading(false);
+      setIsLoadingOwnedAssets(false);
     }
   }, [polkadotApi, sdk, accountIdentity, fetchAssetDetails]);
 
@@ -258,7 +269,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      setIsLoading(true);
+      setIsLoadingRegisteredAssets(true);
 
       // Query assets registered to this confidential account
       const entries =
@@ -309,6 +320,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
             asset !== null,
         );
       setRegisteredAssets(registered);
+      setRegisteredAssetsLoadedFor(selectedKey.publicKey);
     } catch (err) {
       console.error(
         '[Asset Provider] Failed to refresh registered assets:',
@@ -318,7 +330,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
         err instanceof Error ? err.message : 'Failed to load registered assets',
       );
     } finally {
-      setIsLoading(false);
+      setIsLoadingRegisteredAssets(false);
     }
   }, [polkadotApi, selectedKey, fetchAssetDetails]);
 
@@ -637,7 +649,14 @@ export function AssetProvider({ children }: { children: ReactNode }) {
     registeredAssetBalances,
     ownedAssets,
     registeredAssets,
-    isLoading,
+    isLoading: isLoadingOwnedAssets || isLoadingRegisteredAssets,
+    isLoadingOwnedAssets,
+    isLoadingRegisteredAssets,
+    ownedAssetsLoaded:
+      accountIdentity !== null && ownedAssetsLoadedFor === accountIdentity,
+    registeredAssetsLoaded:
+      selectedKey !== null &&
+      registeredAssetsLoadedFor === selectedKey.publicKey,
     error,
     createAsset,
     registerAsset,
