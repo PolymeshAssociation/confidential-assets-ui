@@ -198,7 +198,8 @@ export function SendSettlementModal({
     if (!amount || !selectedAsset) return '';
 
     const numericAmount = parseFloat(amount);
-    if (numericAmount <= 0) return 'Amount must be greater than 0';
+    if (isNaN(numericAmount) || numericAmount < 0)
+      return 'Amount cannot be negative';
 
     const balance = parseFloat(selectedAsset.balance || '0');
     const balanceInTokens = balance / Math.pow(10, decimals);
@@ -217,7 +218,7 @@ export function SendSettlementModal({
   const canProceed =
     selectedAssetId &&
     amount &&
-    parseFloat(amount) > 0 &&
+    parseFloat(amount) >= 0 &&
     !amountError &&
     receiverAccountKey.trim() !== '' &&
     receiverEncryptionKey.trim() !== '' &&

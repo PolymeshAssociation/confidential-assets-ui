@@ -276,7 +276,7 @@ export class AccountAssetState {
      * Gets the current confidential balance for this account asset.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -1499,7 +1499,7 @@ export class AccountState {
      * Gets the confidential balance for this account.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -2198,31 +2198,34 @@ export class AssetState {
      */
     mediatorCount(): number;
     /**
-     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` value. `frozen` is `false`.
+     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` and
+     * `confidentialAssets.assetFrozen(assetId)` values.
      *
      * # Arguments
      * * `asset_id` - The unique identifier for this confidential asset (as a number).
      * * `asset_keys` - Either the SCALE-encoded `AssetKeys` as a `Uint8Array` or hex string, or an object
      *   `{ encKeys, mediators }` where `encKeys` are the auditor and mediator encryption public keys
      *   and `mediators` are the mediator account public keys, each as a hex string.
+     * * `frozen` - Whether the asset is frozen. Defaults to `false`.
      *
      * # Returns
      * A new `AssetState` object.
      *
      * # Errors
-     * * Throws an error if any key cannot be decoded or is invalid.
+     * * Throws an error if any key cannot be decoded or is invalid, or the bytes have trailing data.
      *
      * # Examples
      * ```javascript
      * // From Polkadot.js chain data (recommended)
      * const assetKeys = await api.query.confidentialAssets.keys(assetId);
-     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a());
+     * const frozen = await api.query.confidentialAssets.assetFrozen(assetId);
+     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a(), frozen.isSome);
      *
      * // Use in settlement legs
      * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
      * ```
      */
-    constructor(asset_id: number, asset_keys: any);
+    constructor(asset_id: number, asset_keys: any, frozen?: boolean | null);
     /**
      * Serializes the asset state to a SCALE-encoded byte array.
      *
@@ -3311,6 +3314,9 @@ export class SettlementBuilder {
  * The fields are accessible as properties in JavaScript.
  *
  * # Properties
+ * * `role` - The caller's role in the leg: `Sender`, `Receiver`, `Mediator` or `Auditor`
+ * * `roleIndex` - The caller's key index for a `Mediator` or `Auditor` role (number), otherwise
+ *   `undefined`
  * * `sender` - The sender's encryption public keys (`EncryptionPublicKey`)
  * * `receiver` - The receiver's encryption public keys (`EncryptionPublicKey`)
  * * `assetId` - The asset identifier (number)
@@ -3326,6 +3332,13 @@ export class SettlementBuilder {
  *     console.log('Receiver:', leg.receiver.toJson());
  *     console.log('Asset ID:', leg.assetId);
  *     console.log('Amount:', leg.amount);
+ * }
+ *
+ * // As a mediator, `roleIndex` is the index the chain records the affirmation under.
+ * const mediated = encryptedLeg.tryDecryptAsMediatorOrAuditor(encKeys, null, accountPublicKey);
+ * if (mediated?.role === 'Mediator') {
+ *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+ *         settlementRef, legId, { Mediator: mediated.roleIndex });
  * }
  * ```
  */
@@ -3344,6 +3357,30 @@ export class SettlementLeg {
     amount: bigint;
     assetId: number;
     receiver: EncryptionPublicKey;
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     */
+    get roleIndex(): number | undefined;
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     */
+    set roleIndex(value: number | null | undefined);
     role: string;
     sender: EncryptionPublicKey;
 }
@@ -3447,6 +3484,36 @@ export class SettlementLegEncrypted {
      * ```
      */
     static fromHex(hex_str: string): SettlementLegEncrypted;
+    /**
+     * Returns the mediator index of `affirmation_key` in this leg, without decrypting the leg.
+     *
+     * Each mediator entry of the leg is checked with `encryption_key` for an encryption of
+     * `affirmation_key`. This works for any account, including a sender or receiver that also
+     * mediates the leg, for which `tryDecrypt` reports only the participant role.
+     *
+     * # Arguments
+     * * `encryption_key` - The encryption key pair of the account.
+     * * `affirmation_key` - The account public key of the account.
+     *
+     * # Returns
+     * The index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(index))`), or `undefined` when the
+     * account is not a mediator of the leg.
+     *
+     * # Errors
+     * * Throws an error if the leg or `affirmation_key` cannot be decoded.
+     *
+     * # Example
+     * ```javascript
+     * const index = encryptedLeg.mediatorIndex(
+     *     accountKeys.encryptionKeyPair(), accountKeys.publicKeys().accountPublicKey());
+     * if (index !== undefined) {
+     *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+     *         settlementRef, legId, { Mediator: index });
+     * }
+     * ```
+     */
+    mediatorIndex(encryption_key: EncryptionKeyPair, affirmation_key: AccountPublicKey): number | undefined;
     /**
      * Serializes the encrypted leg to a SCALE-encoded byte array.
      *
@@ -3865,8 +3932,14 @@ export class SettlementProof {
 export function generateRandomSeed(): string;
 
 /**
- * Initialize the WASM module. This should be called once when loading the module.
- * It sets up panic hooks for better error messages in the browser console.
+ * Initialize the WASM module: sets up the console logger and the panic hook for better
+ * error messages in the browser console.
+ *
+ * It runs automatically when the module loads (`#[wasm_bindgen(start)]`) and is also
+ * exported, so callers may call it again. It is idempotent: later calls do nothing.
+ * Without this guard a second call re-registered the global logger, and `wasm_logger`
+ * reported "attempted to set a logger after the logging system was already initialized"
+ * with `console.error`.
  */
 export function init(): void;
 

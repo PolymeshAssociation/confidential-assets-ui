@@ -25,9 +25,9 @@ export interface MintAssetParams {
   did: string | Uint8Array;
 
   /**
-   * Amount to mint (as string to handle big numbers)
+   * Amount to mint, in the asset's smallest unit
    */
-  amount: number;
+  amount: bigint;
   /**
    * Base64-encoded account asset state bytes from storage
    */

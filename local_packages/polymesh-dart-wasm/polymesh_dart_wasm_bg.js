@@ -393,7 +393,7 @@ export class AccountAssetState {
      * Gets the current confidential balance for this account asset.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -2138,7 +2138,7 @@ export class AccountState {
      * Gets the confidential balance for this account.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -3128,34 +3128,38 @@ export class AssetState {
         return ret >>> 0;
     }
     /**
-     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` value. `frozen` is `false`.
+     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` and
+     * `confidentialAssets.assetFrozen(assetId)` values.
      *
      * # Arguments
      * * `asset_id` - The unique identifier for this confidential asset (as a number).
      * * `asset_keys` - Either the SCALE-encoded `AssetKeys` as a `Uint8Array` or hex string, or an object
      *   `{ encKeys, mediators }` where `encKeys` are the auditor and mediator encryption public keys
      *   and `mediators` are the mediator account public keys, each as a hex string.
+     * * `frozen` - Whether the asset is frozen. Defaults to `false`.
      *
      * # Returns
      * A new `AssetState` object.
      *
      * # Errors
-     * * Throws an error if any key cannot be decoded or is invalid.
+     * * Throws an error if any key cannot be decoded or is invalid, or the bytes have trailing data.
      *
      * # Examples
      * ```javascript
      * // From Polkadot.js chain data (recommended)
      * const assetKeys = await api.query.confidentialAssets.keys(assetId);
-     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a());
+     * const frozen = await api.query.confidentialAssets.assetFrozen(assetId);
+     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a(), frozen.isSome);
      *
      * // Use in settlement legs
      * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
      * ```
      * @param {number} asset_id
      * @param {any} asset_keys
+     * @param {boolean | null} [frozen]
      */
-    constructor(asset_id, asset_keys) {
-        const ret = wasm.assetstate_new(asset_id, asset_keys);
+    constructor(asset_id, asset_keys, frozen) {
+        const ret = wasm.assetstate_new(asset_id, asset_keys, isLikeNone(frozen) ? 0xFFFFFF : frozen ? 1 : 0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -4920,6 +4924,9 @@ if (Symbol.dispose) SettlementBuilder.prototype[Symbol.dispose] = SettlementBuil
  * The fields are accessible as properties in JavaScript.
  *
  * # Properties
+ * * `role` - The caller's role in the leg: `Sender`, `Receiver`, `Mediator` or `Auditor`
+ * * `roleIndex` - The caller's key index for a `Mediator` or `Auditor` role (number), otherwise
+ *   `undefined`
  * * `sender` - The sender's encryption public keys (`EncryptionPublicKey`)
  * * `receiver` - The receiver's encryption public keys (`EncryptionPublicKey`)
  * * `assetId` - The asset identifier (number)
@@ -4936,6 +4943,13 @@ if (Symbol.dispose) SettlementBuilder.prototype[Symbol.dispose] = SettlementBuil
  *     console.log('Asset ID:', leg.assetId);
  *     console.log('Amount:', leg.amount);
  * }
+ *
+ * // As a mediator, `roleIndex` is the index the chain records the affirmation under.
+ * const mediated = encryptedLeg.tryDecryptAsMediatorOrAuditor(encKeys, null, accountPublicKey);
+ * if (mediated?.role === 'Mediator') {
+ *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+ *         settlementRef, legId, { Mediator: mediated.roleIndex });
+ * }
  * ```
  */
 export class SettlementLeg {
@@ -4950,6 +4964,7 @@ export class SettlementLeg {
             amount: this.amount,
             assetId: this.assetId,
             receiver: this.receiver,
+            roleIndex: this.roleIndex,
             role: this.role,
             sender: this.sender,
         };
@@ -4987,6 +5002,22 @@ export class SettlementLeg {
     get receiver() {
         const ret = wasm.__wbg_get_settlementleg_receiver(this.__wbg_ptr);
         return EncryptionPublicKey.__wrap(ret);
+    }
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     * @returns {number | undefined}
+     */
+    get roleIndex() {
+        const ret = wasm.__wbg_get_settlementleg_roleIndex(this.__wbg_ptr);
+        return ret === 0xFFFFFF ? undefined : ret;
     }
     /**
      * @returns {string}
@@ -5029,6 +5060,21 @@ export class SettlementLeg {
         _assertClass(arg0, EncryptionPublicKey);
         var ptr0 = arg0.__destroy_into_raw();
         wasm.__wbg_set_settlementleg_receiver(this.__wbg_ptr, ptr0);
+    }
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     * @param {number | null} [arg0]
+     */
+    set roleIndex(arg0) {
+        wasm.__wbg_set_settlementleg_roleIndex(this.__wbg_ptr, isLikeNone(arg0) ? 0xFFFFFF : arg0);
     }
     /**
      * @param {string} arg0
@@ -5190,6 +5236,47 @@ export class SettlementLegEncrypted {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SettlementLegEncrypted.__wrap(ret[0]);
+    }
+    /**
+     * Returns the mediator index of `affirmation_key` in this leg, without decrypting the leg.
+     *
+     * Each mediator entry of the leg is checked with `encryption_key` for an encryption of
+     * `affirmation_key`. This works for any account, including a sender or receiver that also
+     * mediates the leg, for which `tryDecrypt` reports only the participant role.
+     *
+     * # Arguments
+     * * `encryption_key` - The encryption key pair of the account.
+     * * `affirmation_key` - The account public key of the account.
+     *
+     * # Returns
+     * The index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(index))`), or `undefined` when the
+     * account is not a mediator of the leg.
+     *
+     * # Errors
+     * * Throws an error if the leg or `affirmation_key` cannot be decoded.
+     *
+     * # Example
+     * ```javascript
+     * const index = encryptedLeg.mediatorIndex(
+     *     accountKeys.encryptionKeyPair(), accountKeys.publicKeys().accountPublicKey());
+     * if (index !== undefined) {
+     *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+     *         settlementRef, legId, { Mediator: index });
+     * }
+     * ```
+     * @param {EncryptionKeyPair} encryption_key
+     * @param {AccountPublicKey} affirmation_key
+     * @returns {number | undefined}
+     */
+    mediatorIndex(encryption_key, affirmation_key) {
+        _assertClass(encryption_key, EncryptionKeyPair);
+        _assertClass(affirmation_key, AccountPublicKey);
+        const ret = wasm.settlementlegencrypted_mediatorIndex(this.__wbg_ptr, encryption_key.__wbg_ptr, affirmation_key.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] === 0xFFFFFF ? undefined : ret[0];
     }
     /**
      * Serializes the encrypted leg to a SCALE-encoded byte array.
@@ -5792,8 +5879,14 @@ export function generateRandomSeed() {
 }
 
 /**
- * Initialize the WASM module. This should be called once when loading the module.
- * It sets up panic hooks for better error messages in the browser console.
+ * Initialize the WASM module: sets up the console logger and the panic hook for better
+ * error messages in the browser console.
+ *
+ * It runs automatically when the module loads (`#[wasm_bindgen(start)]`) and is also
+ * exported, so callers may call it again. It is idempotent: later calls do nothing.
+ * Without this guard a second call re-registered the global logger, and `wasm_logger`
+ * reported "attempted to set a logger after the logging system was already initialized"
+ * with `console.error`.
  */
 export function init() {
     wasm.init();
@@ -5900,6 +5993,10 @@ export function __wbg___wbindgen_string_get_72bdf95d3ae505b1(arg0, arg1) {
 export function __wbg___wbindgen_throw_1506f2235d1bdba0(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
 }
+export function __wbg_accountpublickey_new(arg0) {
+    const ret = AccountPublicKey.__wrap(arg0);
+    return ret;
+}
 export function __wbg_call_8a89609d89f6608a() { return handleError(function (arg0, arg1) {
     const ret = arg0.call(arg1);
     return ret;
@@ -5924,6 +6021,10 @@ export function __wbg_error_78ff5b3a29b770e0(arg0) {
 }
 export function __wbg_error_9ad1450feb5d541d(arg0, arg1, arg2, arg3) {
     console.error(arg0, arg1, arg2, arg3);
+}
+export function __wbg_getPrototypeOf_af285f52dda56f77(arg0) {
+    const ret = Object.getPrototypeOf(arg0);
+    return ret;
 }
 export function __wbg_getRandomValues_c44a50d8cfdaebeb() { return handleError(function (arg0, arg1) {
     arg0.getRandomValues(arg1);
@@ -5969,6 +6070,10 @@ export function __wbg_instanceof_Uint8Array_86f30649f63ef9c2(arg0) {
 }
 export function __wbg_isArray_67c2c9c4313f4448(arg0) {
     const ret = Array.isArray(arg0);
+    return ret;
+}
+export function __wbg_is_4801976d24bcae5b(arg0, arg1) {
+    const ret = Object.is(arg0, arg1);
     return ret;
 }
 export function __wbg_iterator_8732428d309e270e() {
@@ -6086,6 +6191,11 @@ export function __wbindgen_cast_0000000000000002(arg0, arg1) {
 export function __wbindgen_cast_0000000000000003(arg0, arg1) {
     // Cast intrinsic for `Ref(String) -> Externref`.
     const ret = getStringFromWasm0(arg0, arg1);
+    return ret;
+}
+export function __wbindgen_cast_0000000000000004(arg0) {
+    // Cast intrinsic for `U64 -> Externref`.
+    const ret = BigInt.asUintN(64, arg0);
     return ret;
 }
 export function __wbindgen_init_externref_table() {
