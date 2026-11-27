@@ -113,8 +113,7 @@ export function MultiLegSettlementModal({
         amount: (value, values, path) => {
           if (!value) return 'Amount is required';
           const amount = parseFloat(value);
-          if (isNaN(amount) || amount <= 0)
-            return 'Amount must be greater than 0';
+          if (isNaN(amount) || amount < 0) return 'Amount cannot be negative';
 
           const index = parseInt(path.split('.')[1]);
           const leg = values.legs[index];

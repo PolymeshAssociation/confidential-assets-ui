@@ -202,7 +202,7 @@ export function ReceiveSettlementModal({
   const canProceed =
     selectedAssetId &&
     amount &&
-    parseFloat(amount) > 0 &&
+    parseFloat(amount) >= 0 &&
     senderAccountKey.trim() !== '' &&
     senderEncryptionKey.trim() !== '' &&
     !senderError &&

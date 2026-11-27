@@ -4920,6 +4920,9 @@ if (Symbol.dispose) SettlementBuilder.prototype[Symbol.dispose] = SettlementBuil
  * The fields are accessible as properties in JavaScript.
  *
  * # Properties
+ * * `role` - The caller's role in the leg: `Sender`, `Receiver`, `Mediator` or `Auditor`
+ * * `roleIndex` - The caller's key index for a `Mediator` or `Auditor` role (number), otherwise
+ *   `undefined`
  * * `sender` - The sender's encryption public keys (`EncryptionPublicKey`)
  * * `receiver` - The receiver's encryption public keys (`EncryptionPublicKey`)
  * * `assetId` - The asset identifier (number)
@@ -4936,6 +4939,13 @@ if (Symbol.dispose) SettlementBuilder.prototype[Symbol.dispose] = SettlementBuil
  *     console.log('Asset ID:', leg.assetId);
  *     console.log('Amount:', leg.amount);
  * }
+ *
+ * // As a mediator, `roleIndex` is the index the chain records the affirmation under.
+ * const mediated = encryptedLeg.tryDecryptAsMediatorOrAuditor(encKeys, null, accountPublicKey);
+ * if (mediated?.role === 'Mediator') {
+ *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+ *         settlementRef, legId, { Mediator: mediated.roleIndex });
+ * }
  * ```
  */
 export class SettlementLeg {
@@ -4950,6 +4960,7 @@ export class SettlementLeg {
             amount: this.amount,
             assetId: this.assetId,
             receiver: this.receiver,
+            roleIndex: this.roleIndex,
             role: this.role,
             sender: this.sender,
         };
@@ -4987,6 +4998,22 @@ export class SettlementLeg {
     get receiver() {
         const ret = wasm.__wbg_get_settlementleg_receiver(this.__wbg_ptr);
         return EncryptionPublicKey.__wrap(ret);
+    }
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     * @returns {number | undefined}
+     */
+    get roleIndex() {
+        const ret = wasm.__wbg_get_settlementleg_roleIndex(this.__wbg_ptr);
+        return ret === 0xFFFFFF ? undefined : ret;
     }
     /**
      * @returns {string}
@@ -5029,6 +5056,21 @@ export class SettlementLeg {
         _assertClass(arg0, EncryptionPublicKey);
         var ptr0 = arg0.__destroy_into_raw();
         wasm.__wbg_set_settlementleg_receiver(this.__wbg_ptr, ptr0);
+    }
+    /**
+     * The caller's key index for this leg when `role` is `Mediator` or `Auditor`, otherwise
+     * `undefined`.
+     *
+     * For a mediator this is the index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(roleIndex))`), and the index
+     * `mediatorAffirmationProof` affirms with. It is the mediator's position in the leg's own
+     * mediator list, fixed when the settlement is created, so it does not change if the asset's
+     * mediators are updated later. For an auditor it is the index of the encryption key the
+     * leg was decrypted with.
+     * @param {number | null} [arg0]
+     */
+    set roleIndex(arg0) {
+        wasm.__wbg_set_settlementleg_roleIndex(this.__wbg_ptr, isLikeNone(arg0) ? 0xFFFFFF : arg0);
     }
     /**
      * @param {string} arg0
@@ -5190,6 +5232,47 @@ export class SettlementLegEncrypted {
             throw takeFromExternrefTable0(ret[1]);
         }
         return SettlementLegEncrypted.__wrap(ret[0]);
+    }
+    /**
+     * Returns the mediator index of `affirmation_key` in this leg, without decrypting the leg.
+     *
+     * Each mediator entry of the leg is checked with `encryption_key` for an encryption of
+     * `affirmation_key`. This works for any account, including a sender or receiver that also
+     * mediates the leg, for which `tryDecrypt` reports only the participant role.
+     *
+     * # Arguments
+     * * `encryption_key` - The encryption key pair of the account.
+     * * `affirmation_key` - The account public key of the account.
+     *
+     * # Returns
+     * The index the chain records the mediator's affirmation under
+     * (`legAffirmationStatus(settlementRef, legId, Mediator(index))`), or `undefined` when the
+     * account is not a mediator of the leg.
+     *
+     * # Errors
+     * * Throws an error if the leg or `affirmation_key` cannot be decoded.
+     *
+     * # Example
+     * ```javascript
+     * const index = encryptedLeg.mediatorIndex(
+     *     accountKeys.encryptionKeyPair(), accountKeys.publicKeys().accountPublicKey());
+     * if (index !== undefined) {
+     *     const status = await api.query.confidentialAssets.legAffirmationStatus(
+     *         settlementRef, legId, { Mediator: index });
+     * }
+     * ```
+     * @param {EncryptionKeyPair} encryption_key
+     * @param {AccountPublicKey} affirmation_key
+     * @returns {number | undefined}
+     */
+    mediatorIndex(encryption_key, affirmation_key) {
+        _assertClass(encryption_key, EncryptionKeyPair);
+        _assertClass(affirmation_key, AccountPublicKey);
+        const ret = wasm.settlementlegencrypted_mediatorIndex(this.__wbg_ptr, encryption_key.__wbg_ptr, affirmation_key.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] === 0xFFFFFF ? undefined : ret[0];
     }
     /**
      * Serializes the encrypted leg to a SCALE-encoded byte array.
@@ -5792,8 +5875,14 @@ export function generateRandomSeed() {
 }
 
 /**
- * Initialize the WASM module. This should be called once when loading the module.
- * It sets up panic hooks for better error messages in the browser console.
+ * Initialize the WASM module: sets up the console logger and the panic hook for better
+ * error messages in the browser console.
+ *
+ * It runs automatically when the module loads (`#[wasm_bindgen(start)]`) and is also
+ * exported, so callers may call it again. It is idempotent: later calls do nothing.
+ * Without this guard a second call re-registered the global logger, and `wasm_logger`
+ * reported "attempted to set a logger after the logging system was already initialized"
+ * with `console.error`.
  */
 export function init() {
     wasm.init();

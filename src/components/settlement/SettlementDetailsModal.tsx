@@ -637,15 +637,7 @@ export function SettlementDetailsModal({
                   ? assetDetailsMap.get(decryptedLeg.details.assetId)
                   : null;
 
-                // Find the user's mediator index in this leg. Use the leg's own mediators
-                // (`legMediators`), not the asset's current ones, which can change after the
-                // settlement is created. Mediators are identified by their account public key.
-                const userMediatorIndex =
-                  selectedKey && decryptedLeg
-                    ? decryptedLeg.details.mediators.indexOf(
-                        selectedKey.publicKey,
-                      )
-                    : -1;
+                const userMediatorIndex = decryptedLeg?.details.mediatorIndex;
 
                 return (
                   <Accordion.Item key={legId} value={legId.toString()}>
@@ -793,7 +785,7 @@ export function SettlementDetailsModal({
                               const senderStatus = affirmStatus?.sender;
                               const receiverStatus = affirmStatus?.receiver;
                               const mediatorStatus =
-                                userMediatorIndex !== -1 && affirmStatus
+                                userMediatorIndex !== undefined && affirmStatus
                                   ? affirmStatus.mediators.get(
                                       userMediatorIndex,
                                     )

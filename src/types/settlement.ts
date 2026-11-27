@@ -48,9 +48,15 @@ export interface SettlementLegDetails {
   /**
    * Mediator account public keys for this leg (hex), from `confidentialAssets.legMediators`,
    * or the asset's current mediators when the chain has not recorded leg mediators.
-   * The position in this list is the mediator index used by `legAffirmationStatus`.
    */
   mediators: string[];
+  /**
+   * The user's mediator index in this leg, as DART reports it from the leg's mediator entries
+   * (`roleIndex` of a leg decrypted as mediator, or `mediatorIndex` for a sender or receiver).
+   * This is the index `legAffirmationStatus` and the mediator affirmation proof use.
+   * `undefined` when the user is not a mediator for the leg.
+   */
+  mediatorIndex?: number;
 }
 
 // ============================================================================

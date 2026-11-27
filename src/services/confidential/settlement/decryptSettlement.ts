@@ -6,7 +6,11 @@
 
 import type { SettlementLegDetails } from '@/types/settlement';
 import type { ApiPromise } from '@polkadot/api';
-import type { AccountKeys } from '@polymesh/polymesh-dart-wasm';
+import type {
+  AccountKeys,
+  SettlementLeg,
+  SettlementLegEncrypted,
+} from '@polymesh/polymesh-dart-wasm';
 import { queryEncryptedLeg, queryLegMediators } from './settlementHelpers';
 
 // ============================================================================
@@ -72,26 +76,10 @@ export async function decryptSettlement(
   // Try to decrypt as sender/receiver first
   let decryptedLeg = encryptedLeg.tryDecrypt(accountKeys);
   let decryptedAs: DecryptSettlementResult['decryptedAs'] = 'participant';
+  let mediatorIndex: number | undefined;
 
   if (!decryptedLeg) {
-    // Try to decrypt as mediator/auditor. Passing the account public key as the
-    // affirmation key lets DART report `Mediator` when this account mediates the leg.
-    // Without it, every leg decrypted this way reports `Auditor`.
-    const encryptionKeyPair = accountKeys.encryptionKeyPair();
-    const publicKeys = accountKeys.publicKeys();
-    const accountPublicKey = publicKeys.accountPublicKey();
-    try {
-      decryptedLeg = encryptedLeg.tryDecryptAsMediatorOrAuditor(
-        encryptionKeyPair,
-        null,
-        accountPublicKey,
-      );
-    } finally {
-      // SECURITY: Clear encryption key pair after use
-      encryptionKeyPair.clear();
-      accountPublicKey.free();
-      publicKeys.free();
-    }
+    decryptedLeg = tryDecryptAsMediatorOrAuditor(encryptedLeg, accountKeys);
 
     if (!decryptedLeg) {
       throw new Error(
@@ -99,8 +87,8 @@ export async function decryptSettlement(
       );
     }
 
-    decryptedAs =
-      decryptedLeg.role.toLowerCase() === 'mediator' ? 'mediator' : 'auditor';
+    mediatorIndex = mediatorIndexOf(decryptedLeg);
+    decryptedAs = mediatorIndex !== undefined ? 'mediator' : 'auditor';
   }
 
   // Extract leg details
@@ -109,8 +97,7 @@ export async function decryptSettlement(
   const assetId = decryptedLeg.assetId.toString();
 
   // `legMediators` is not always written (testnet v8.2.0 leaves it empty for a settlement
-  // created with the asset's current keys). Fall back to the asset's current mediators,
-  // which is what the chain's mediator indices refer to in that case.
+  // created with the asset's current keys). Fall back to the asset's current mediators.
   if (mediators.length === 0) {
     const assetKeys = await polkadotApi.query.confidentialAssets.keys(assetId);
     if (assetKeys.isSome) {
@@ -120,6 +107,12 @@ export async function decryptSettlement(
     }
   }
 
+  // A sender or receiver can also mediate the leg. `tryDecrypt` reports only the participant
+  // role, so look up the mediator index from the leg's mediator entries.
+  if (decryptedAs === 'participant') {
+    mediatorIndex = accountMediatorIndex(encryptedLeg, accountKeys);
+  }
+
   const legDetails: SettlementLegDetails = {
     legId,
     assetId,
@@ -127,10 +120,70 @@ export async function decryptSettlement(
     senderEncryptionKey,
     receiverEncryptionKey,
     mediators,
+    mediatorIndex,
   };
 
   return {
     leg: legDetails,
     decryptedAs,
   };
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Decrypt a leg with the account's encryption key as a mediator or auditor. The account public
+ * key is passed as the affirmation key, so DART reports `Mediator` with `roleIndex` set when the
+ * account mediates the leg, and `Auditor` otherwise.
+ */
+function tryDecryptAsMediatorOrAuditor(
+  encryptedLeg: SettlementLegEncrypted,
+  accountKeys: AccountKeys,
+): SettlementLeg | undefined {
+  const encryptionKeyPair = accountKeys.encryptionKeyPair();
+  const publicKeys = accountKeys.publicKeys();
+  const accountPublicKey = publicKeys.accountPublicKey();
+  try {
+    return encryptedLeg.tryDecryptAsMediatorOrAuditor(
+      encryptionKeyPair,
+      null,
+      accountPublicKey,
+      null,
+    );
+  } finally {
+    // SECURITY: Clear encryption key pair after use
+    encryptionKeyPair.clear();
+    accountPublicKey.free();
+    publicKeys.free();
+  }
+}
+
+/**
+ * The mediator index DART reports for a leg decrypted as `Mediator`, otherwise `undefined`.
+ */
+function mediatorIndexOf(leg: SettlementLeg): number | undefined {
+  return leg.role.toLowerCase() === 'mediator' ? leg.roleIndex : undefined;
+}
+
+/**
+ * The account's mediator index in the leg, from the leg's mediator entries without decrypting the
+ * leg, otherwise `undefined`.
+ */
+function accountMediatorIndex(
+  encryptedLeg: SettlementLegEncrypted,
+  accountKeys: AccountKeys,
+): number | undefined {
+  const encryptionKeyPair = accountKeys.encryptionKeyPair();
+  const publicKeys = accountKeys.publicKeys();
+  const accountPublicKey = publicKeys.accountPublicKey();
+  try {
+    return encryptedLeg.mediatorIndex(encryptionKeyPair, accountPublicKey);
+  } finally {
+    // SECURITY: Clear encryption key pair after use
+    encryptionKeyPair.clear();
+    accountPublicKey.free();
+    publicKeys.free();
+  }
 }
