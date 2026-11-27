@@ -539,7 +539,7 @@ export function AssetProvider({ children }: { children: ReactNode }) {
 
             const mintResult = await mintConfidentialAsset({
               did,
-              amount: parseInt(params.amount, 10),
+              amount: BigInt(params.amount),
               stateBytes: storedState.stateBytes,
               polkadotApi,
               accountKeys,

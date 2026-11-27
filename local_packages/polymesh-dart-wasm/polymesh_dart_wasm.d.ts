@@ -276,7 +276,7 @@ export class AccountAssetState {
      * Gets the current confidential balance for this account asset.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -1499,7 +1499,7 @@ export class AccountState {
      * Gets the confidential balance for this account.
      *
      * # Returns
-     * The balance as a `bigint`.
+     * The balance as a number up to `Number.MAX_SAFE_INTEGER`, and as a `bigint` above it.
      *
      * # Example
      * ```javascript
@@ -2198,31 +2198,34 @@ export class AssetState {
      */
     mediatorCount(): number;
     /**
-     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` value. `frozen` is `false`.
+     * Creates a new asset state from the chain's `confidentialAssets.keys(assetId)` and
+     * `confidentialAssets.assetFrozen(assetId)` values.
      *
      * # Arguments
      * * `asset_id` - The unique identifier for this confidential asset (as a number).
      * * `asset_keys` - Either the SCALE-encoded `AssetKeys` as a `Uint8Array` or hex string, or an object
      *   `{ encKeys, mediators }` where `encKeys` are the auditor and mediator encryption public keys
      *   and `mediators` are the mediator account public keys, each as a hex string.
+     * * `frozen` - Whether the asset is frozen. Defaults to `false`.
      *
      * # Returns
      * A new `AssetState` object.
      *
      * # Errors
-     * * Throws an error if any key cannot be decoded or is invalid.
+     * * Throws an error if any key cannot be decoded or is invalid, or the bytes have trailing data.
      *
      * # Examples
      * ```javascript
      * // From Polkadot.js chain data (recommended)
      * const assetKeys = await api.query.confidentialAssets.keys(assetId);
-     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a());
+     * const frozen = await api.query.confidentialAssets.assetFrozen(assetId);
+     * const assetState = new AssetState(assetId, assetKeys.unwrap().toU8a(), frozen.isSome);
      *
      * // Use in settlement legs
      * const leg = new LegBuilder(senderKeys, receiverKeys, assetState, amount);
      * ```
      */
-    constructor(asset_id: number, asset_keys: any);
+    constructor(asset_id: number, asset_keys: any, frozen?: boolean | null);
     /**
      * Serializes the asset state to a SCALE-encoded byte array.
      *
